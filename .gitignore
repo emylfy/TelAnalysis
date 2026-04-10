@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+.pytest_cache/
+
+# User-generated assets (chats, exports, graphs, csvs, wordclouds)
+asset/
+
+# Local config (may contain user-specific overrides)
+config.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# nltk data (downloaded at first run)
+nltk_data/
