@@ -1,3 +1,6 @@
+streamlit
+plotly
+pyvis
 pywebio
 jmespath
 nltk
