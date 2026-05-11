@@ -19,6 +19,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from analysis import anniversaries as anniversaries_mod
+from analysis import forwards as forwards_mod
 from analysis import graph as graph_mod
 from analysis import highlights as highlights_mod
 from analysis import latency as latency_mod
@@ -1243,6 +1244,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             i18n.t("вопросы %"),
                             i18n.t("восклицания %"),
                             i18n.t("ALL-CAPS %"),
+                            i18n.t("реплаи %"),
                         ]
                         fig_rad = go.Figure()
                         for st_obj in sorted(speak.values(), key=lambda x: -x.msg_count):
@@ -1250,6 +1252,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                 st_obj.question_ratio * 100,
                                 st_obj.exclamation_ratio * 100,
                                 st_obj.caps_ratio * 100,
+                                st_obj.reply_ratio * 100,
                             ]
                             is_picked = st_obj.user_id == user_id
                             fig_rad.add_trace(
@@ -1271,7 +1274,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         st.plotly_chart(fig_rad, use_container_width=True)
                     else:
                         # Single-user fallback to flat metrics
-                        r1, r2, r3 = st.columns(3)
+                        r1, r2, r3, r4 = st.columns(4)
                         r1.metric(
                             i18n.t("Доля вопросов"),
                             f"{style.question_ratio * 100:.1f}%",
@@ -1284,6 +1287,38 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             i18n.t("Доля ALL-CAPS"),
                             f"{style.caps_ratio * 100:.1f}%",
                         )
+                        r4.metric(
+                            i18n.t("Доля реплаев"),
+                            f"{style.reply_ratio * 100:.1f}%",
+                            help=i18n.t(
+                                "Доля сообщений-ответов на конкретное другое (quote-reply)"
+                            ),
+                        )
+
+                    # Forwards: %-of-msgs reshared from elsewhere + top sources.
+                    # Surfaces "reposter" vs "original-thinker" stance.
+                    fwd_stats = forwards_mod.analyze(messages, top_sources=5)
+                    fwd = fwd_stats.per_user.get(user_id)
+                    if fwd and fwd.total_messages and fwd.forwarded_count:
+                        st.subheader(i18n.t("Пересылки"))
+                        fc1, fc2 = st.columns([1, 3])
+                        fc1.metric(
+                            i18n.t("Доля пересылок"),
+                            f"{fwd.forwarded_ratio * 100:.1f}%",
+                            help=i18n.t("{n} из {t} сообщений — пересылки откуда-то ещё.").format(
+                                n=fwd.forwarded_count, t=fwd.total_messages
+                            ),
+                        )
+                        if fwd.top_sources:
+                            with fc2:
+                                st.caption(i18n.t("Топ источников:"))
+                                src_df = pd.DataFrame(fwd.top_sources, columns=["source", "count"])
+                                st.dataframe(
+                                    src_df,
+                                    use_container_width=True,
+                                    hide_index=True,
+                                    height=180,
+                                )
                     # Time-of-day persona + length distribution
                     cp1, cp2 = st.columns(2)
                     with cp1:

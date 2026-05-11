@@ -56,6 +56,10 @@ class SpeakingStyle:
     # Per-day earliest message — separates "writes first thing in the morning"
     # from "active in the afternoon", which time_of_day buckets blur together.
     first_msg_minutes: list[int] = field(default_factory=list)
+    # Replies (msg with reply_to_message_id) vs new sends. Reply-thread users
+    # vs flat-style users have very different conversation rhythms — surfacing
+    # this separates "always quotes back" from "drops one-liners".
+    reply_count: int = 0  # share = reply_count / msg_count
 
     @property
     def first_msg_median(self) -> int | None:
@@ -64,6 +68,11 @@ class SpeakingStyle:
             return None
         s = sorted(self.first_msg_minutes)
         return s[len(s) // 2]
+
+    @property
+    def reply_ratio(self) -> float:
+        """Share of this user's messages that quote-reply to another message."""
+        return self.reply_count / self.msg_count if self.msg_count else 0.0
 
     @property
     def first_msg_median_hhmm(self) -> str:
@@ -136,6 +145,7 @@ def analyze(messages: list[dict]) -> dict[str, SpeakingStyle]:
     # Per-day earliest message timestamp (minutes-from-midnight) per user.
     # Walk in chronological order; first message on each calendar date wins.
     user_first_per_day: dict[str, dict[str, int]] = defaultdict(dict)
+    user_replies: dict[str, int] = defaultdict(int)
 
     for m in messages:
         if not isinstance(m, dict):
@@ -149,6 +159,8 @@ def analyze(messages: list[dict]) -> dict[str, SpeakingStyle]:
         if not text:
             continue
         user_texts[uid].append(text)
+        if m.get("reply_to_message_id") is not None:
+            user_replies[uid] += 1
         d = _parse(m.get("date"))
         if d is not None:
             user_hours[uid].append(d.hour)
@@ -202,5 +214,6 @@ def analyze(messages: list[dict]) -> dict[str, SpeakingStyle]:
             time_of_day=time_of_day,
             length_buckets=length_buckets,
             first_msg_minutes=list(user_first_per_day.get(uid, {}).values()),
+            reply_count=user_replies.get(uid, 0),
         )
     return out
