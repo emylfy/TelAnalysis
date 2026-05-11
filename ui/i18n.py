@@ -225,6 +225,8 @@ EN: dict[str, str] = {
     "Длиннейшая цепочка quote-reply подряд. Глубина 1 = одиночный ответ, 5+ = глубокая ветка с реплаями на реплаи.": "Longest consecutive quote-reply chain. Depth 1 = single reply, 5+ = deep branch with replies-on-replies.",
     "Распределение глубины reply-цепочек": "Reply Chain Depth Distribution",
     "глубина (хопов)": "depth (hops)",
+    "Распределение длин разговоров": "Conversation Length Distribution",
+    "сообщений в разговоре": "messages per conversation",
     "на {n} быстрее": "{n} faster",
     "на {n} медленнее": "{n} slower",
     "так же": "same",

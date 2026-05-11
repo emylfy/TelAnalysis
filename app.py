@@ -571,6 +571,51 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             ),
                         )
 
+                    # Conversation length distribution + top-10 longest.
+                    # Avg/median above hide the shape — most chats are bursty
+                    # (lots of 1-2 sessions and a fat tail of long ones).
+                    if sess_stats.duration_buckets:
+                        with st.expander(i18n.t("Распределение длин разговоров")):
+                            dur_df = pd.DataFrame(
+                                list(sess_stats.duration_buckets.items()),
+                                columns=["bucket", "count"],
+                            )
+                            fig_dur = px.bar(
+                                dur_df,
+                                x="bucket",
+                                y="count",
+                                template="telanalysis",
+                            )
+                            fig_dur.update_layout(
+                                height=240,
+                                margin=dict(l=0, r=0, t=10, b=0),
+                                xaxis=dict(title=i18n.t("сообщений в разговоре")),
+                            )
+                            st.plotly_chart(fig_dur, use_container_width=True)
+
+                            # Top-10 longest sessions table — date, count, duration
+                            top_sess = sorted(sess_stats.sessions, key=lambda s: -s.msg_count)[:10]
+                            top_rows = []
+                            for s in top_sess:
+                                dur_min = int((s.end - s.start).total_seconds() / 60)
+                                top_rows.append(
+                                    {
+                                        "date": s.start.strftime("%Y-%m-%d %H:%M"),
+                                        "messages": s.msg_count,
+                                        "duration": (
+                                            f"{dur_min} min"
+                                            if dur_min < 90
+                                            else f"{dur_min // 60}h {dur_min % 60}m"
+                                        ),
+                                    }
+                                )
+                            st.dataframe(
+                                pd.DataFrame(top_rows),
+                                use_container_width=True,
+                                hide_index=True,
+                                height=320,
+                            )
+
             # Section 3: «О чём говорят» — emojis + media + links
             es = ui_cache.emojis(cache_key, messages)
             ms = ui_cache.media(cache_key, messages)
