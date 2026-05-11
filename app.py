@@ -18,8 +18,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from analysis import graph as graph_mod
 from analysis import anniversaries as anniversaries_mod
+from analysis import graph as graph_mod
 from analysis import highlights as highlights_mod
 from analysis import latency as latency_mod
 from analysis import (

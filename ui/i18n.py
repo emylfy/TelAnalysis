@@ -166,16 +166,13 @@ EN: dict[str, str] = {
     "Phrase length": "Phrase length",
     "bigrams (2 words)": "bigrams (2 words)",
     "trigrams (3 words)": "trigrams (3 words)",
-    "No repeated phrases found.": "No repeated phrases found.",
     "Слова во времени": "Words Over Time",
     "Words to track (comma-separated)": "Words to track (comma-separated)",
-    "например: привет, спасибо, люблю": "e.g.: hello, thanks, love",
     "Granularity": "Granularity",
     "week": "week",
     "day": "day",
     "month": "month",
     "Counting…": "Counting…",
-    "No matches.": "No matches.",
     "Богатство словаря": "Vocabulary Richness",
     "TTR = unique / total tokens (after stop-word filtering). Higher = more diverse vocabulary. TTR is length-sensitive — shorter samples score higher; compare users with similar token counts.": "TTR = unique / total tokens (after stop-word filtering). Higher = more diverse vocabulary. TTR is length-sensitive — shorter samples score higher; compare users with similar token counts.",
     "Per-user": "Per User",
@@ -301,12 +298,12 @@ EN: dict[str, str] = {
     "Любимая эмоджи: {em} ({n} раз, {p}% всех эмоджи).": "Favorite emoji: {em} ({n} times, {p}% of all emojis).",
     "Голосовых: {n} ({total} суммарно, в среднем {avg}).": "Voice: {n} ({total} total, {avg} on average).",
     "Отвечают обычно за {m}, в 90% случаев — быстрее {p}.": "Usually reply in {m}, 90% of the time within {p}.",
-    # highlight cards (top_highlights)
+    # highlight cards (top_highlights) — labels also reused by other tabs
     "Пиковый час": "Peak Hour",
     "Самый громкий день": "Loudest Day",
     "Любимая эмоджи": "Favorite Emoji",
-    "Самый длинный стрик": "Longest Streak",
-    "Самое долгое молчание": "Longest Silence",
+    # "Самый длинный стрик" already defined above (per-user streaks block)
+    # "Самое долгое молчание" already defined above (per-user streaks block)
     "Медиана ответа": "Median Reply",
     "p90 ответа": "p90 Reply",
     "Всего ответов": "Total Replies",

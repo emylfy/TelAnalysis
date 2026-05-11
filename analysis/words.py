@@ -3,6 +3,7 @@ Pure functions: take messages, return structured results."""
 
 from __future__ import annotations
 
+import math as _math
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -133,8 +134,6 @@ def _mtld_bidirectional(tokens: list[str]) -> float:
 # Quantifies which words are CHARACTERISTIC of one user vs another, rather
 # than just frequent. "блять" common in both → filtered out; "ага" only used
 # by one → surfaces.
-
-import math as _math
 
 
 def distinguishing_words(
@@ -299,9 +298,6 @@ def analyze(messages: list[dict], most_com: int = 30) -> WordsResult:
             adjusted.append(s)
             if date_str:
                 dated_scores.append((date_str, s, uid))
-        scores = adjusted
-    else:
-        scores = []  # leave placeholder zeros
 
     # Per-user aggregates. Sentiment is averaged WEIGHTED by token count so
     # one-word "ага" doesn't equal a paragraph. Falls back to plain mean for
