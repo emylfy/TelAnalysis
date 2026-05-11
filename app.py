@@ -668,6 +668,35 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         )
                     )
 
+                # Q&A subset — replies to messages containing '?'. Usually
+                # faster than the chat-wide median (people respond quickly to
+                # explicit questions); the gap shows responsiveness vs noise.
+                if lat.qa_seconds:
+                    delta = lat.qa_median_seconds - lat.median_seconds
+                    delta_label = (
+                        i18n.t("на {n} быстрее").format(n=latency_mod.humanize_seconds(abs(delta)))
+                        if delta < 0
+                        else i18n.t("на {n} медленнее").format(
+                            n=latency_mod.humanize_seconds(delta)
+                        )
+                        if delta > 0
+                        else i18n.t("так же")
+                    )
+                    qa_c1, qa_c2, qa_c3 = st.columns(3)
+                    qa_c1.metric(
+                        i18n.t("Q&A медиана"),
+                        latency_mod.humanize_seconds(lat.qa_median_seconds),
+                        help=i18n.t(
+                            "Медиана ответа на сообщения с '?'. Сравнение с обычной "
+                            "медианой ответа: {d}."
+                        ).format(d=delta_label),
+                    )
+                    qa_c2.metric(
+                        i18n.t("Q&A p90"),
+                        latency_mod.humanize_seconds(lat.qa_p90_seconds),
+                    )
+                    qa_c3.metric(i18n.t("Q&A пар"), f"{len(lat.qa_seconds):,}")
+
             if participants:
                 p_df = pd.DataFrame(participants, columns=["user_id", "name", "messages"])
                 st.dataframe(p_df, use_container_width=True, hide_index=True, height=320)

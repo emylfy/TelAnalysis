@@ -18,6 +18,12 @@ class LatencyStats:
     # numbers above don't include slow replies.
     dropped_over_cap: int = 0
     cap_hours: int = 24
+    # Q&A subset — pairs where the original message contains '?'. Replies to
+    # questions tend to come faster than generic acknowledgements, so this is
+    # a much sharper "responsiveness" metric than the chat-wide median.
+    qa_seconds: list[int] = None  # type: ignore[assignment]
+    qa_median_seconds: float = 0.0
+    qa_p90_seconds: float = 0.0
 
 
 def _ts(m: dict) -> int | None:
@@ -48,10 +54,14 @@ def compute(messages: list[dict], cap_hours: int = 24) -> LatencyStats:
             p90_seconds=0.0,
             dropped_over_cap=0,
             cap_hours=cap_hours,
+            qa_seconds=[],
         )
 
-    # id -> (timestamp, responder_id) for fast lookup
+    # id -> (timestamp, has_question, responder_id) — has_question is True
+    # if the original message text contains '?'. Used to split Q&A pairs out
+    # of the general latency distribution.
     ts_index: dict = {}
+    has_q_index: dict = {}
     for m in messages:
         if not isinstance(m, dict):
             continue
@@ -60,10 +70,24 @@ def compute(messages: list[dict], cap_hours: int = 24) -> LatencyStats:
             ts = _ts(m)
             if ts is not None:
                 ts_index[mid] = ts
+                # Question detection: cheap check on text/caption.
+                txt = m.get("text")
+                if isinstance(txt, list):
+                    txt = "".join(
+                        x
+                        if isinstance(x, str)
+                        else (x.get("text", "") if isinstance(x, dict) else "")
+                        for x in txt
+                    )
+                if not isinstance(txt, str):
+                    txt = ""
+                cap = m.get("caption") if isinstance(m.get("caption"), str) else ""
+                has_q_index[mid] = "?" in (txt + cap)
 
     user_names: dict[str, str] = {}
     overall: list[int] = []
     per_user: dict[str, list[int]] = defaultdict(list)
+    qa: list[int] = []
     cap_seconds = cap_hours * 3600
     dropped = 0
 
@@ -90,11 +114,17 @@ def compute(messages: list[dict], cap_hours: int = 24) -> LatencyStats:
             user_names[responder] = m.get("from") or responder
         overall.append(delta)
         per_user[responder].append(delta)
+        if has_q_index.get(rid):
+            qa.append(delta)
 
     overall_sorted = sorted(overall)
     median = overall_sorted[len(overall_sorted) // 2] if overall_sorted else 0.0
     p90_idx = int(len(overall_sorted) * 0.9)
     p90 = overall_sorted[p90_idx] if overall_sorted else 0.0
+
+    qa_sorted = sorted(qa)
+    qa_median = qa_sorted[len(qa_sorted) // 2] if qa_sorted else 0.0
+    qa_p90 = qa_sorted[int(len(qa_sorted) * 0.9)] if qa_sorted else 0.0
 
     return LatencyStats(
         overall_seconds=overall,
@@ -104,6 +134,9 @@ def compute(messages: list[dict], cap_hours: int = 24) -> LatencyStats:
         p90_seconds=float(p90),
         dropped_over_cap=dropped,
         cap_hours=cap_hours,
+        qa_seconds=qa,
+        qa_median_seconds=float(qa_median),
+        qa_p90_seconds=float(qa_p90),
     )
 
 
