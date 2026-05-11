@@ -34,6 +34,7 @@ from analysis import monologues as monologues_mod
 from analysis import (
     render as render_mod,
 )
+from analysis import stickers as stickers_mod
 from analysis import theme as theme_mod
 from analysis import (
     words as words_mod,
@@ -1692,6 +1693,26 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         )
                     else:
                         st.caption(i18n.t("Эмоджи не найдены."))
+
+                    # Sticker-emoji preferences. Telegram desktop export
+                    # anonymises sticker file paths so we can't get pack
+                    # name; sticker_emoji is the next-best signal of mood.
+                    sticker_stats = stickers_mod.analyze(messages, top_n=10)
+                    user_st = sticker_stats.per_user.get(user_id)
+                    if user_st and user_st.total_stickers:
+                        st.markdown(
+                            f"**{i18n.t('Стикеры')}** · "
+                            + i18n.t("{n} всего, эмодзи в которые помечены:").format(
+                                n=user_st.total_stickers
+                            )
+                        )
+                        st_df = pd.DataFrame(user_st.top_emojis, columns=["emoji", "count"])
+                        st.dataframe(
+                            st_df,
+                            use_container_width=True,
+                            hide_index=True,
+                            height=240,
+                        )
 
                 # Reply latency for this user (responder)
                 with col_b:

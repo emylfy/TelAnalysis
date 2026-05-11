@@ -227,6 +227,8 @@ EN: dict[str, str] = {
     "глубина (хопов)": "depth (hops)",
     "Распределение длин разговоров": "Conversation Length Distribution",
     "сообщений в разговоре": "messages per conversation",
+    "Стикеры": "Stickers",
+    "{n} всего, эмодзи в которые помечены:": "{n} total, emojis they're tagged with:",
     "на {n} быстрее": "{n} faster",
     "на {n} медленнее": "{n} slower",
     "так же": "same",
