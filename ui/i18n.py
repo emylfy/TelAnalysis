@@ -210,6 +210,8 @@ EN: dict[str, str] = {
     "Доля пересылок": "Forward Rate",
     "{n} из {t} сообщений — пересылки откуда-то ещё.": "{n} of {t} messages — forwarded from elsewhere.",
     "Топ источников:": "Top Sources:",
+    "Самые длинные монологи": "Longest Monologues",
+    "Подряд N+ сообщений от одного юзера без ответа другого. Высокий N — кто-то рассказывал длинную историю или выговаривался.": "N+ consecutive messages from one user with no reply in between. High N = someone told a long story or vented.",
     "Первое сообщение дня (медиана)": "First Message Of Day (Median)",
     "Самое раннее сообщение, усреднённое по всем активным дням. Нижнее = жаворонок, более позднее = сова.": "Earliest message averaged over all active days. Earlier = early bird, later = night owl.",
     "у других: ": "others: ",

@@ -28,6 +28,7 @@ from analysis import (
     overview,
 )
 from analysis import media as media_mod
+from analysis import monologues as monologues_mod
 from analysis import (
     render as render_mod,
 )
@@ -669,6 +670,38 @@ for tab, (_, key) in zip(tabs, tab_specs):
             if participants:
                 p_df = pd.DataFrame(participants, columns=["user_id", "name", "messages"])
                 st.dataframe(p_df, use_container_width=True, hide_index=True, height=320)
+
+            # Longest monologues — runs of N+ consecutive messages from one
+            # user without anyone else interjecting. Storytelling vs venting
+            # signal that the latency stats above completely hide.
+            mono_stats = monologues_mod.analyze(messages, top_n=10, min_run=3)
+            if mono_stats.longest:
+                st.markdown(f"#### {i18n.t('Самые длинные монологи')}")
+                st.caption(
+                    i18n.t(
+                        "Подряд N+ сообщений от одного юзера без ответа другого. "
+                        "Высокий N — кто-то рассказывал длинную историю или выговаривался."
+                    )
+                )
+                mono_rows = []
+                for r in mono_stats.longest:
+                    mins = int(r.duration_seconds / 60)
+                    mono_rows.append(
+                        {
+                            "user": r.name,
+                            "messages": r.msg_count,
+                            "from": r.start.strftime("%Y-%m-%d %H:%M"),
+                            "duration": f"{mins} min"
+                            if mins < 90
+                            else f"{mins // 60}h {mins % 60}m",
+                        }
+                    )
+                st.dataframe(
+                    pd.DataFrame(mono_rows),
+                    use_container_width=True,
+                    hide_index=True,
+                    height=320,
+                )
 
             st.caption(f"Rendered in {time.time() - t0:.1f}s")
 
