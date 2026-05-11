@@ -33,18 +33,83 @@ Streamlit-дашборд для анализа Telegram-чатов из лока
 **Per-user**
 - Daily timeline юзера, его hour×weekday heatmap, top emojis, reply latency, top words с wordcloud
 
+## Установка
+
+Требуется **Python 3.10+** (зависимости `pandas 3.x` и `streamlit 1.57+` старее не поддерживают).
+
+### macOS
+
+```bash
+# 1. Python 3.10+ через Homebrew (если ещё нет)
+brew install python@3.12
+
+# 2. venv + зависимости
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Apple Silicon (M1/M2/M3): всё работает из коробки — у `torch`, `pandas`, `wordcloud` есть готовые arm64-wheel'ы, ничего собирать не надо.
+
+### Linux (Ubuntu/Debian)
+
+```bash
+# 1. Системные пакеты — Python 3.10+, venv, build-essential для редких сборок
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip build-essential
+
+# Если в дистрибутиве Python <3.10 (Ubuntu 20.04 и старше):
+#   sudo add-apt-repository ppa:deadsnakes/ppa
+#   sudo apt install -y python3.12 python3.12-venv
+
+# 2. venv + зависимости
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### Linux (Fedora/RHEL)
+
+```bash
+sudo dnf install -y python3 python3-pip python3-virtualenv gcc gcc-c++ make
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### Linux (Arch)
+
+```bash
+sudo pacman -S --needed python python-pip base-devel
+python -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
 ## Запуск
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+source .venv/bin/activate   # если ещё не активирован
 streamlit run app.py
 ```
 
 Открыть http://localhost:8501. В сайдбаре указать путь к `result.json` (для больших архивов лучше путь, чем upload — десятикратно быстрее).
 
-NLTK-данные (`stopwords`, `punkt_tab`) скачиваются автоматически при первом запуске анализа слов. Опциональный sentiment — `pip install -r requirements-sentiment.txt` (~1GB).
+NLTK-данные (`stopwords`, `punkt_tab`) скачиваются автоматически при первом запуске анализа слов. Если на macOS первый `nltk.download()` падает с SSL-ошибкой, прогони один раз `/Applications/Python\ 3.x/Install\ Certificates.command` (только если ставил Python с python.org installer-ом, не через brew).
+
+## Опциональный sentiment-анализ
+
+Русский/английский сентимент через `rubert-tiny2-russian-sentiment` (~1GB на диске + 50MB модель при первом использовании):
+
+```bash
+pip install -r requirements-sentiment.txt
+```
+
+Перезапусти streamlit после установки. Модель не понимает сарказм/шутки/слэнг — числа берите со скепсисом.
 
 UI-настройки лежат в `.streamlit/config.toml` (по умолчанию скрыта Deploy-кнопка и отключена телеметрия).
 
