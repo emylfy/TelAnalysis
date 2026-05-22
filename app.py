@@ -89,7 +89,7 @@ with st.sidebar:
     if loaded_path:
         with st.expander(f"📄 {loaded_label}", expanded=False):
             st.caption(loaded_path)
-            if st.button(i18n.t("Загрузить другой файл"), use_container_width=True):
+            if st.button(i18n.t("Загрузить другой файл"), width="stretch"):
                 st.session_state.pop("loaded_path", None)
                 st.session_state.pop("loaded_label", None)
                 # Drop chat / date filters that referenced the old file.
@@ -242,7 +242,7 @@ if bounds is not None:
         label = i18n.t("Период · вся история")
     _spacer, _period_col = st.columns([5, 2])
     with _period_col:
-        with st.popover(label, use_container_width=True):
+        with st.popover(label, width="stretch"):
             date_range = st.date_input(
                 i18n.t("Период"),
                 value=(init_from, init_to),
@@ -415,7 +415,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         clicked_iso = pd.to_datetime(clicks[0]["x"]).strftime("%Y-%m-%d")
                         st.session_state["selected_day"] = clicked_iso
                 else:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
                     st.caption(
                         i18n.t(
                             "Установите `streamlit-plotly-events` чтобы кликом по графику смотреть детали дня."
@@ -477,7 +477,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 )
                 cal_fig = ui_components.calendar_heatmap_fig(df, binary=(cal_mode == "binary"))
                 if cal_fig is not None:
-                    st.plotly_chart(cal_fig, use_container_width=True)
+                    st.plotly_chart(cal_fig, width="stretch")
                 if cal_mode == "binary" and not df.empty:
                     active = int((df["messages"] > 0).sum())
                     total = len(df)
@@ -512,7 +512,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     xaxis=dict(title="hour", dtick=2),
                     yaxis=dict(title=""),
                 )
-                st.plotly_chart(heat, use_container_width=True)
+                st.plotly_chart(heat, width="stretch")
                 cap_h = highlights_mod.caplet_peak_hour(grid)
                 if cap_h:
                     st.caption(cap_h)
@@ -554,7 +554,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         barmode="overlay",
                         legend=dict(orientation="h"),
                     )
-                    st.plotly_chart(fig_ovl, use_container_width=True)
+                    st.plotly_chart(fig_ovl, width="stretch")
                     peak_overlap = max(range(24), key=lambda i: ov[i])
                     st.caption(
                         i18n.t(
@@ -614,7 +614,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                 margin=dict(l=0, r=0, t=10, b=0),
                                 xaxis=dict(title=i18n.t("сообщений в разговоре")),
                             )
-                            st.plotly_chart(fig_dur, use_container_width=True)
+                            st.plotly_chart(fig_dur, width="stretch")
 
                             # Top-10 longest sessions table — date, count, duration
                             top_sess = sorted(sess_stats.sessions, key=lambda s: -s.msg_count)[:10]
@@ -634,7 +634,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                 )
                             st.dataframe(
                                 pd.DataFrame(top_rows),
-                                use_container_width=True,
+                                width="stretch",
                                 hide_index=True,
                                 height=320,
                             )
@@ -649,7 +649,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 emo_df = pd.DataFrame(es.chat_top, columns=["emoji", "count"])
                 fig_emo = px.bar(emo_df.head(20), x="emoji", y="count", template="telanalysis")
                 fig_emo.update_layout(height=260, margin=dict(l=0, r=0, t=10, b=0))
-                st.plotly_chart(fig_emo, use_container_width=True)
+                st.plotly_chart(fig_emo, width="stretch")
                 cap_e = highlights_mod.caplet_top_emoji(es)
                 if cap_e:
                     st.caption(cap_e)
@@ -659,7 +659,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         b=f"{es.messages_with_emoji:,}".replace(",", " "),
                     )
                 ):
-                    st.dataframe(emo_df, use_container_width=True, hide_index=True, height=300)
+                    st.dataframe(emo_df, width="stretch", hide_index=True, height=300)
 
             if ms.by_kind:
                 pie_df = pd.DataFrame(
@@ -679,7 +679,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     )
                     fig_pie.update_layout(height=320, margin=dict(l=0, r=0, t=40, b=0))
                     fig_pie.update_traces(textposition="inside", textinfo="percent+label")
-                    st.plotly_chart(fig_pie, use_container_width=True)
+                    st.plotly_chart(fig_pie, width="stretch")
                 with col_voice:
                     if ms.voice_count:
                         st.metric(i18n.t("Голосовые"), f"{ms.voice_count:,}")
@@ -702,7 +702,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     dom_df = pd.DataFrame(ms.top_domains, columns=["domain", "count"])
                     fig_dom = px.bar(dom_df.head(15), x="domain", y="count", template="telanalysis")
                     fig_dom.update_layout(height=280, margin=dict(l=0, r=0, t=10, b=0))
-                    st.plotly_chart(fig_dom, use_container_width=True)
+                    st.plotly_chart(fig_dom, width="stretch")
 
             # Section 4: «Кто кому» — participants + reply latency
             participants = ui_cache.participants(cache_key, messages)
@@ -768,7 +768,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
 
             if participants:
                 p_df = pd.DataFrame(participants, columns=["user_id", "name", "messages"])
-                st.dataframe(p_df, use_container_width=True, hide_index=True, height=320)
+                st.dataframe(p_df, width="stretch", hide_index=True, height=320)
 
             # Longest monologues — runs of N+ consecutive messages from one
             # user without anyone else interjecting. Storytelling vs venting
@@ -797,7 +797,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     )
                 st.dataframe(
                     pd.DataFrame(mono_rows),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     height=320,
                 )
@@ -838,7 +838,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     margin=dict(l=0, r=0, t=40, b=0),
                     xaxis=dict(title=i18n.t("глубина (хопов)"), dtick=1),
                 )
-                st.plotly_chart(fig_cd, use_container_width=True)
+                st.plotly_chart(fig_cd, width="stretch")
 
             if not g.nodes:
                 st.info(i18n.t("No participants found in this chat (only service events?)."))
@@ -863,10 +863,10 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         title=i18n.t("Who messages, who replies"),
                     )
                     fig_int.update_layout(height=360, margin=dict(l=0, r=0, t=40, b=0))
-                    st.plotly_chart(fig_int, use_container_width=True)
+                    st.plotly_chart(fig_int, width="stretch")
                     st.dataframe(
                         sdf.drop(columns=["user_id"]),
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True,
                         height=240,
                     )
@@ -952,8 +952,8 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     title=i18n.t("Топ 30 из {total}").format(total=len(top_df)),
                 )
                 fig_top.update_layout(height=350, margin=dict(l=0, r=0, t=40, b=0))
-                st.plotly_chart(fig_top, use_container_width=True)
-                st.dataframe(top_df, use_container_width=True, hide_index=True, height=300)
+                st.plotly_chart(fig_top, width="stretch")
+                st.dataframe(top_df, width="stretch", hide_index=True, height=300)
                 if res.sentiment_available:
                     sarcasm_note = (
                         i18n.t(
@@ -1004,7 +1004,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             margin=dict(l=0, r=0, t=40, b=0),
                             yaxis_title=i18n.t("среднее compound"),
                         )
-                        st.plotly_chart(fig_chat, use_container_width=True)
+                        st.plotly_chart(fig_chat, width="stretch")
 
                     # per-user overlay if 2+ users
                     if len(res.users) >= 2:
@@ -1033,7 +1033,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                 yaxis_title=i18n.t("среднее compound"),
                                 legend_title="",
                             )
-                            st.plotly_chart(fig_u, use_container_width=True)
+                            st.plotly_chart(fig_u, width="stretch")
 
                     # Sentiment by hour-of-day & weekday — circadian / weekly
                     # rhythm of mood. Часто противоположно weekly trend:
@@ -1059,7 +1059,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                     xaxis=dict(title=i18n.t("час"), dtick=2),
                                     yaxis=dict(title=i18n.t("среднее compound")),
                                 )
-                                st.plotly_chart(fig_h, use_container_width=True)
+                                st.plotly_chart(fig_h, width="stretch")
                         if by_wd:
                             with s_wd_col:
                                 wd_df = pd.DataFrame(by_wd)
@@ -1079,7 +1079,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                     xaxis=dict(title=""),
                                     yaxis=dict(title=i18n.t("среднее compound")),
                                 )
-                                st.plotly_chart(fig_wd, use_container_width=True)
+                                st.plotly_chart(fig_wd, width="stretch")
 
                     st.caption(
                         i18n.t(
@@ -1113,7 +1113,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         st.caption(i18n.t("Самые позитивные ({n})").format(n=extr_n))
                         st.dataframe(
                             pd.DataFrame(most_pos, columns=["text", "sentiment", "user"]),
-                            use_container_width=True,
+                            width="stretch",
                             hide_index=True,
                             height=400,
                         )
@@ -1121,7 +1121,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         st.caption(i18n.t("Самые негативные ({n})").format(n=extr_n))
                         st.dataframe(
                             pd.DataFrame(most_neg, columns=["text", "sentiment", "user"]),
-                            use_container_width=True,
+                            width="stretch",
                             hide_index=True,
                             height=400,
                         )
@@ -1148,8 +1148,8 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     template="telanalysis",
                 )
                 fig_phr.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
-                st.plotly_chart(fig_phr, use_container_width=True)
-                st.dataframe(phr_df, use_container_width=True, hide_index=True, height=300)
+                st.plotly_chart(fig_phr, width="stretch")
+                st.dataframe(phr_df, width="stretch", hide_index=True, height=300)
             else:
                 st.caption(i18n.t("Повторяющихся фраз не найдено."))
 
@@ -1194,7 +1194,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         margin=dict(l=0, r=0, t=10, b=0),
                         legend_title="",
                     )
-                    st.plotly_chart(fig_tr, use_container_width=True)
+                    st.plotly_chart(fig_tr, width="stretch")
                     totals = (
                         tdf.groupby("term")["count"]
                         .sum()
@@ -1203,7 +1203,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     )
                     st.dataframe(
                         totals,
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True,
                         height=200,
                     )
@@ -1235,7 +1235,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 )
                 st.dataframe(
                     voc_df,
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     height=240,
                 )
@@ -1264,7 +1264,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             tw = pd.DataFrame(pick.top_words, columns=["word", "count"])
                             st.dataframe(
                                 tw,
-                                use_container_width=True,
+                                width="stretch",
                                 hide_index=True,
                                 height=300,
                             )
@@ -1286,7 +1286,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         )
                         st.dataframe(
                             m_df,
-                            use_container_width=True,
+                            width="stretch",
                             hide_index=True,
                             height=400,
                         )
@@ -1300,12 +1300,12 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     cc1, cc2 = st.columns(2)
                     cc1.dataframe(
                         pd.DataFrame(res.emails, columns=["email"]),
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True,
                     )
                     cc2.dataframe(
                         pd.DataFrame(res.phones, columns=["phone"]),
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True,
                     )
             st.caption(f"Rendered in {time.time() - t0:.1f}s")
@@ -1332,8 +1332,8 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     title=i18n.t("Топ 50 из {total}").format(total=len(top_df)),
                 )
                 fig_top.update_layout(height=400, margin=dict(l=0, r=0, t=40, b=0))
-                st.plotly_chart(fig_top, use_container_width=True)
-                st.dataframe(top_df, use_container_width=True, hide_index=True, height=400)
+                st.plotly_chart(fig_top, width="stretch")
+                st.dataframe(top_df, width="stretch", hide_index=True, height=400)
             st.caption(f"Rendered in {time.time() - t0:.1f}s")
 
         elif key == "perusers":
@@ -1442,7 +1442,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                     ),
                                     xaxis=dict(title=""),
                                 )
-                                st.plotly_chart(fig_fm, use_container_width=True)
+                                st.plotly_chart(fig_fm, width="stretch")
 
                     # Radar of tone signals — all participants overlaid so you
                     # can see how the picked user compares. Each axis is a
@@ -1479,7 +1479,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             polar=dict(radialaxis=dict(visible=True)),
                             legend=dict(orientation="h"),
                         )
-                        st.plotly_chart(fig_rad, use_container_width=True)
+                        st.plotly_chart(fig_rad, width="stretch")
                     else:
                         # Single-user fallback to flat metrics
                         r1, r2, r3, r4 = st.columns(4)
@@ -1523,7 +1523,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                 src_df = pd.DataFrame(fwd.top_sources, columns=["source", "count"])
                                 st.dataframe(
                                     src_df,
-                                    use_container_width=True,
+                                    width="stretch",
                                     hide_index=True,
                                     height=180,
                                 )
@@ -1545,7 +1545,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             color_discrete_sequence=["#5B8FF9"],
                         )
                         fig_tod.update_layout(height=240, margin=dict(l=0, r=0, t=10, b=0))
-                        st.plotly_chart(fig_tod, use_container_width=True)
+                        st.plotly_chart(fig_tod, width="stretch")
                     with cp2:
                         st.markdown(f"**{style.length_persona}** · {i18n.t('длина сообщения')}")
                         lb_df = pd.DataFrame(
@@ -1562,7 +1562,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             color_discrete_sequence=["#5AD8A6"],
                         )
                         fig_lb.update_layout(height=240, margin=dict(l=0, r=0, t=10, b=0))
-                        st.plotly_chart(fig_lb, use_container_width=True)
+                        st.plotly_chart(fig_lb, width="stretch")
 
                 # Reciprocity (when 2-user chat)
                 rec = ui_cache.reciprocity(cache_key, messages)
@@ -1629,7 +1629,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         ):
                             st.dataframe(
                                 sil_df,
-                                use_container_width=True,
+                                width="stretch",
                                 hide_index=True,
                                 height=240,
                             )
@@ -1675,7 +1675,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         title=i18n.t("{name} — ежедневная активность").format(name=user_name),
                     )
                     fig_pu.update_layout(height=300, margin=dict(l=0, r=0, t=40, b=0))
-                    st.plotly_chart(fig_pu, use_container_width=True)
+                    st.plotly_chart(fig_pu, width="stretch")
 
                 # Hour × weekday
                 pu_grid = overview.hour_weekday_heatmap(user_msgs)
@@ -1696,7 +1696,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         margin=dict(l=0, r=0, t=40, b=0),
                         xaxis=dict(title="hour", dtick=2),
                     )
-                    st.plotly_chart(heat, use_container_width=True)
+                    st.plotly_chart(heat, width="stretch")
 
                 col_a, col_b = st.columns(2)
 
@@ -1709,7 +1709,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         emo_df = pd.DataFrame(user_emo, columns=["emoji", "count"])
                         st.dataframe(
                             emo_df,
-                            use_container_width=True,
+                            width="stretch",
                             hide_index=True,
                             height=300,
                         )
@@ -1731,7 +1731,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         st_df = pd.DataFrame(user_st.top_emojis, columns=["emoji", "count"])
                         st.dataframe(
                             st_df,
-                            use_container_width=True,
+                            width="stretch",
                             hide_index=True,
                             height=240,
                         )
@@ -1764,7 +1764,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             xaxis_title=i18n.t("минут"),
                             yaxis_title=i18n.t("count (log)"),
                         )
-                        st.plotly_chart(fig_lat_pu, use_container_width=True)
+                        st.plotly_chart(fig_lat_pu, width="stretch")
                     else:
                         st.caption(i18n.t("У этого участника нет ответов."))
 
@@ -1788,7 +1788,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     tw_df = pd.DataFrame(user_stat.top_words, columns=["word", "count"])
                     st.dataframe(
                         tw_df,
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True,
                         height=300,
                     )
@@ -1822,7 +1822,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         )
                     st.dataframe(
                         pd.DataFrame(mat_rows),
-                        use_container_width=True,
+                        width="stretch",
                         hide_index=True,
                         height=180,
                     )
@@ -1858,7 +1858,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                     )
                                     st.dataframe(
                                         df_a,
-                                        use_container_width=True,
+                                        width="stretch",
                                         hide_index=True,
                                         height=400,
                                     )
@@ -1873,7 +1873,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                     )
                                     st.dataframe(
                                         df_b,
-                                        use_container_width=True,
+                                        width="stretch",
                                         hide_index=True,
                                         height=400,
                                     )
@@ -1904,7 +1904,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             st.caption(i18n.t("{name} — позитивные").format(name=user_name))
                             st.dataframe(
                                 pd.DataFrame(u_pos, columns=["text", "sentiment"]),
-                                use_container_width=True,
+                                width="stretch",
                                 hide_index=True,
                                 height=320,
                             )
@@ -1912,7 +1912,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             st.caption(i18n.t("{name} — негативные").format(name=user_name))
                             st.dataframe(
                                 pd.DataFrame(u_neg, columns=["text", "sentiment"]),
-                                use_container_width=True,
+                                width="stretch",
                                 hide_index=True,
                                 height=320,
                             )
