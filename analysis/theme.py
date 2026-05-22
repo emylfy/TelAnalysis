@@ -233,6 +233,11 @@ button[data-baseweb="tab"] {{
     font-size: 0.95rem;
     padding: 0.5rem 0.75rem;
 }}
+
+/* Lift selectbox / popover portals above the sticky tab bar (z-index: 99). */
+div[data-baseweb="popover"] {{
+    z-index: 1000 !important;
+}}
 </style>
 """
 
