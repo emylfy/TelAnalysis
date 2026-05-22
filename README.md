@@ -124,7 +124,12 @@ source .venv/bin/activate   # if not already active
 streamlit run app.py
 ```
 
-Open <http://localhost:8501>. In the sidebar, point to your `result.json` — for archives larger than ~65 MB, **File Path** mode is significantly faster than drag-and-drop (no base64 over WebSocket).
+Open <http://localhost:8501>. In the sidebar the **Source** radio offers two modes:
+
+- **Upload** (default) — drag `result.json` into the dropzone or click to pick. Best under ~65 MB.
+- **File Path** — paste an absolute or repo-relative path (e.g. `demo/group_demo.json`). Significantly faster for big archives — skips the base64-over-WebSocket roundtrip.
+
+After loading, the file is summarised in a collapsed pill at the top of the sidebar; expand it to swap to a different file. The data never leaves your machine — see [Privacy](#privacy).
 
 NLTK data (`stopwords`, `punkt_tab`) downloads automatically on the first word-analysis run. If `nltk.download()` errors out on macOS with an SSL cert problem, run `/Applications/Python\ 3.x/Install\ Certificates.command` once — applies only to the python.org installer, not the Homebrew build.
 
@@ -134,7 +139,13 @@ There's a generator for two synthetic exports — a 7-person studio chat and a 1
 
 ```bash
 python3 tools/gen_demo_data.py   # writes demo/group_demo.json + demo/personal_demo.json
-streamlit run app.py             # then point the sidebar at one of those paths
+streamlit run app.py
+```
+
+In the sidebar switch the **Source** radio to **File Path** and paste:
+```
+demo/group_demo.json       # 7-person studio chat, ~70k messages
+demo/personal_demo.json    # 1-on-1, ~18k messages
 ```
 
 Content is sampled from vocab pools with a fixed RNG seed; no real conversations are referenced. Files are gitignored — regenerate any time.
