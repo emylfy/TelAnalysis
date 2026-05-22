@@ -1,76 +1,103 @@
+<div align="right">
+
+**English** · [Русский](README.ru.md)
+
+</div>
+
 # TelAnalysis
 
-Streamlit-дашборд для анализа Telegram-чатов из локального экспорта.
+[![CI](https://github.com/emylfy/TelAnalysis/actions/workflows/ci.yml/badge.svg)](https://github.com/emylfy/TelAnalysis/actions/workflows/ci.yml)
+![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
+![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green.svg)
+![Built with Streamlit](https://img.shields.io/badge/built%20with-Streamlit-FF4B4B.svg)
 
-Поддерживает оба формата выгрузки:
-- **single chat** (`Settings → Export chat history`) — сразу загружается
-- **full archive** (`Settings → Advanced → Export Telegram data`) — в сайдбаре появляется селектор чатов (с поиском и фильтром по типу)
+> Streamlit dashboard for analysing Telegram chat exports — runs entirely on your machine. Drop in `result.json`, get heatmaps, network graphs, word clouds, reply latency, sentiment arcs, and per-user breakdowns.
 
-Адаптируется под тип чата: для каналов/групп/личных/saved messages показываются только релевантные табы.
+<p align="center">
+  <img src="docs/screenshots/group-01-overview.png" alt="Overview tab — KPIs, hero, daily timeline, peak hours" width="900">
+</p>
 
-## Что внутри
+## What it does
 
-**Overview**
-- KPI: total messages / unique users / days active / media / service
-- Plotly area-chart активности по дням
-- Calendar heatmap (год × неделя × день)
-- Hour × weekday heatmap
-- Топ эмодзи и распределение reply latency
+Reads a Telegram desktop export (single chat or full archive) and renders an interactive dashboard. Tabs adapt to chat type — channels get broadcast-style stats, groups get the network graph and per-user breakdown, 1-on-1 chats get matched-pair analytics.
 
-**Graph**
-- Для групп — интерактивный force-directed pyvis-граф (drag/zoom/hover, толщина рёбер по частоте, цвет — Louvain communities)
-- Для маленьких чатов — bar chart "кто отправлял / отвечал / получал ответы"
-- Экспорт edges/nodes в CSV для Gephi
+Both export shapes are supported:
+- **Single chat** — `Settings → Export Chat History`
+- **Full archive** — `Settings → Advanced → Export Telegram Data` → a chat picker appears in the sidebar
 
-**Words**
-- Топ слов по чату: wordcloud + bar chart + virtualized table
-- Per-user picker: wordcloud юзера, его сообщения с sentiment-скором, top-words
-- Извлечение email и телефонов
+UI ships in **RU / EN** (toggle in the sidebar). Chat content is left untouched — wordclouds and message previews show whatever language the messages are in.
 
-**Channel**
-- Wordcloud + частотный анализ для broadcast-каналов
+## Features
 
-**Per-user**
-- Daily timeline юзера, его hour×weekday heatmap, top emojis, reply latency, top words с wordcloud
+| Tab | What you get |
+| --- | --- |
+| **Overview** | KPI cards (messages, participants, days active, media, voice time), Plotly area chart of daily activity, calendar heatmap (year × week × day, with binary "did we talk today" toggle), hour × weekday heatmap, top emojis, reply latency distribution, Q&A latency split |
+| **Network** | Interactive force-directed pyvis graph (drag / zoom / hover, edge thickness by interaction count, node colour by Louvain community), reply-chain depth metrics, "who replies to whom" matrix. Falls back to a bar chart for small chats. Edges/nodes export to CSV for Gephi |
+| **Words** | Wordcloud + top words bar chart + virtualised table, n-gram phrase extraction (bigrams/trigrams), russian-profanity tracker per user (`hits / 100 msgs`), unique-vocabulary index, email + phone extraction |
+| **Channel** | Broadcast-style wordcloud and frequency analysis for channels |
+| **Per-user** | Per-user daily timeline, hour × weekday heatmap, top emojis, sticker-emoji preferences, reply latency, top words with wordcloud, speaking-style radar (avg message length, question rate, emoji rate, reply rate), longest monologues, forwards source breakdown |
+| **Highlights** | Auto-generated "Spotify Wrapped" cards, anniversary milestones, conversation-length distribution, top-10 longest sessions |
 
-## Установка
+Optional Russian/English **sentiment analysis** powered by `rubert-tiny2-russian-sentiment` — adds a per-user sentiment score, sentiment-over-time line, and sentiment by hour-of-day / weekday.
 
-Требуется **Python 3.10+** (зависимости `pandas 3.x` и `streamlit 1.57+` старее не поддерживают).
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/group-02-network.png" alt="Network tab — force-directed graph with communities"></td>
+    <td width="50%"><img src="docs/screenshots/group-03-words.png" alt="Words tab — wordcloud and top phrases"></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/group-04-per-user.png" alt="Per-User tab — speaking style radar and timeline"></td>
+    <td width="50%"><img src="docs/screenshots/personal-01-sentiment.png" alt="Sentiment over time — relationship arc in a 1-on-1 chat"></td>
+  </tr>
+</table>
+
+## Privacy
+
+Everything runs locally. The dashboard does not send your chat data anywhere — no analytics, no telemetry, no remote API calls. The only network activity is on first run:
+
+- NLTK downloads its `stopwords` + `punkt_tab` corpora (~10 MB).
+- *Optional only:* if you install `requirements-sentiment.txt`, HuggingFace downloads the `rubert-tiny2-russian-sentiment` model (~50 MB) the first time you open a tab that needs it.
+
+After that first launch the app works fully offline. `.streamlit/config.toml` ships with the Deploy button hidden and Streamlit telemetry disabled.
+
+## Install
+
+Requires **Python 3.10+** (`pandas 3.x` and `streamlit 1.57+` no longer support older versions).
 
 ### macOS
 
 ```bash
-# 1. Python 3.10+ через Homebrew (если ещё нет)
+# 1. Python 3.10+ via Homebrew (if not already installed)
 brew install python@3.12
 
-# 2. venv + зависимости
+# 2. venv + dependencies
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Apple Silicon (M1/M2/M3): всё работает из коробки — у `torch`, `pandas`, `wordcloud` есть готовые arm64-wheel'ы, ничего собирать не надо.
+Apple Silicon (M1/M2/M3) works out of the box — `torch`, `pandas`, `wordcloud` all ship arm64 wheels, nothing to compile.
 
-### Linux (Ubuntu/Debian)
+### Linux (Ubuntu / Debian)
 
 ```bash
-# 1. Системные пакеты — Python 3.10+, venv, build-essential для редких сборок
+# 1. System packages — Python 3.10+, venv, build-essential for the occasional source build
 sudo apt update
 sudo apt install -y python3 python3-venv python3-pip build-essential
 
-# Если в дистрибутиве Python <3.10 (Ubuntu 20.04 и старше):
+# If your distro ships Python <3.10 (Ubuntu 20.04 and older):
 #   sudo add-apt-repository ppa:deadsnakes/ppa
 #   sudo apt install -y python3.12 python3.12-venv
 
-# 2. venv + зависимости
+# 2. venv + dependencies
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Linux (Fedora/RHEL)
+### Linux (Fedora / RHEL)
 
 ```bash
 sudo dnf install -y python3 python3-pip python3-virtualenv gcc gcc-c++ make
@@ -90,30 +117,39 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Запуск
+## Run
 
 ```bash
-source .venv/bin/activate   # если ещё не активирован
+source .venv/bin/activate   # if not already active
 streamlit run app.py
 ```
 
-Открыть http://localhost:8501. В сайдбаре указать путь к `result.json` (для больших архивов лучше путь, чем upload — десятикратно быстрее).
+Open <http://localhost:8501>. In the sidebar, point to your `result.json` — for archives larger than ~65 MB, **File Path** mode is significantly faster than drag-and-drop (no base64 over WebSocket).
 
-NLTK-данные (`stopwords`, `punkt_tab`) скачиваются автоматически при первом запуске анализа слов. Если на macOS первый `nltk.download()` падает с SSL-ошибкой, прогони один раз `/Applications/Python\ 3.x/Install\ Certificates.command` (только если ставил Python с python.org installer-ом, не через brew).
+NLTK data (`stopwords`, `punkt_tab`) downloads automatically on the first word-analysis run. If `nltk.download()` errors out on macOS with an SSL cert problem, run `/Applications/Python\ 3.x/Install\ Certificates.command` once — applies only to the python.org installer, not the Homebrew build.
 
-## Опциональный sentiment-анализ
+### Try it without your own data
 
-Русский/английский сентимент через `rubert-tiny2-russian-sentiment` (~1GB на диске + 50MB модель при первом использовании):
+There's a generator for two synthetic exports — a 7-person studio chat and a 1-on-1 — purely for previewing the dashboard:
+
+```bash
+python3 tools/gen_demo_data.py   # writes demo/group_pixelfox.json + demo/personal_anya.json
+streamlit run app.py             # then point the sidebar at one of those paths
+```
+
+Content is sampled from vocab pools with a fixed RNG seed; no real conversations are referenced. Files are gitignored — regenerate any time.
+
+## Optional: sentiment analysis
+
+Russian / English sentiment via `rubert-tiny2-russian-sentiment` (~1 GB on disk, 50 MB model on first call):
 
 ```bash
 pip install -r requirements-sentiment.txt
 ```
 
-Перезапусти streamlit после установки. Модель не понимает сарказм/шутки/слэнг — числа берите со скепсисом.
+Restart Streamlit after install. The model is not sarcasm-aware and does not understand slang or jokes — read the numbers with healthy scepticism.
 
-UI-настройки лежат в `.streamlit/config.toml` (по умолчанию скрыта Deploy-кнопка и отключена телеметрия).
-
-## Тесты и линт
+## Tests & lint
 
 ```bash
 pip install ruff pytest
@@ -121,20 +157,21 @@ ruff check .
 pytest
 ```
 
-CI на push/PR (`.github/workflows/ci.yml`) гоняет то же самое.
+CI runs the same on every push and PR (`.github/workflows/ci.yml`).
 
-## Источник
+## Credits
 
-Проект построен на основе [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)). Спасибо автору за изначальный проект и логику разбора Telegram-экспорта.
+Built on top of [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)). Thanks for the original project and the Telegram-export parsing logic.
 
-Эта версия:
-- Переписан UI с pywebio на Streamlit (виртуализованные таблицы — больше не зависает на чатах в десятки тысяч сообщений)
-- Заменён matplotlib-граф на интерактивный pyvis с community detection
-- Добавлены heatmaps активности (hour × weekday, calendar), emoji-аналитика, reply latency
-- Добавлен Per-user tab
-- Wordcloud в анализе чатов, не только каналов
-- Чистка модулей: убран мёртвый код, исправлены баги в `remove_emojis` (уничтожал английский текст и обрезал после первой эмодзи), убрана гонка `ThreadPoolExecutor` где она ничего не давала из-за GIL
+What this fork changes:
+- Rewrote the UI from pywebio to Streamlit (virtualised tables — no longer hangs on tens-of-thousands-of-messages chats)
+- Replaced the matplotlib network with an interactive pyvis graph + community detection
+- Added activity heatmaps (hour × weekday, calendar), emoji analytics, reply latency
+- Added a Per-user tab
+- Wordcloud now runs on group chats, not just channels
+- Cleaned up dead code; fixed bugs in `remove_emojis` (destroyed English text and truncated after the first emoji), removed a `ThreadPoolExecutor` race that did nothing useful under the GIL
+- Added: reply-chain depth, conversation-length distribution, longest monologues, russian-profanity tracker, sticker-emoji preferences, forwards-ratio, Q&A latency split, sentiment by hour/weekday, binary calendar heatmap, longest-streak detection, anniversaries
 
-## Лицензия
+## License
 
-GPL-3.0 (унаследована из оригинала). См. `LICENSE`.
+GPL-3.0 (inherited from the original). See [`LICENSE`](LICENSE).
