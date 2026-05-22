@@ -56,6 +56,20 @@ theme_mod.set_mode("dark")
 st.markdown(theme_mod.css(), unsafe_allow_html=True)
 
 
+def _df(data, *args, height=None, **kwargs):
+    """Wrap st.dataframe with a content-aware height cap.
+
+    Glide Data Grid pads unused vertical space with empty striped rows when the
+    configured `height` exceeds the natural row count. The user sees what looks
+    like a half-empty scrollable table, but there is nothing to scroll to —
+    here we shrink `height` to the actual content (header ≈ 38px, row ≈ 35px)
+    while keeping the original value as a cap for genuinely long tables.
+    """
+    if isinstance(height, int) and hasattr(data, "__len__"):
+        height = min(38 + max(len(data), 1) * 35, height)
+    return st.dataframe(data, *args, height=height, **kwargs)
+
+
 # Sidebar — file picker collapses after a file is loaded.
 # State: st.session_state["loaded_path"] / ["loaded_label"]. While unset,
 # the full Source toggle + uploader/path is shown. Once set, the uploader UI
@@ -632,7 +646,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                         ),
                                     }
                                 )
-                            st.dataframe(
+                            _df(
                                 pd.DataFrame(top_rows),
                                 width="stretch",
                                 hide_index=True,
@@ -659,7 +673,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         b=f"{es.messages_with_emoji:,}".replace(",", " "),
                     )
                 ):
-                    st.dataframe(emo_df, width="stretch", hide_index=True, height=300)
+                    _df(emo_df, width="stretch", hide_index=True, height=300)
 
             if ms.by_kind:
                 pie_df = pd.DataFrame(
@@ -768,7 +782,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
 
             if participants:
                 p_df = pd.DataFrame(participants, columns=["user_id", "name", "messages"])
-                st.dataframe(p_df, width="stretch", hide_index=True, height=320)
+                _df(p_df, width="stretch", hide_index=True, height=320)
 
             # Longest monologues — runs of N+ consecutive messages from one
             # user without anyone else interjecting. Storytelling vs venting
@@ -795,7 +809,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             else f"{mins // 60}h {mins % 60}m",
                         }
                     )
-                st.dataframe(
+                _df(
                     pd.DataFrame(mono_rows),
                     width="stretch",
                     hide_index=True,
@@ -864,7 +878,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     )
                     fig_int.update_layout(height=360, margin=dict(l=0, r=0, t=40, b=0))
                     st.plotly_chart(fig_int, width="stretch")
-                    st.dataframe(
+                    _df(
                         sdf.drop(columns=["user_id"]),
                         width="stretch",
                         hide_index=True,
@@ -953,7 +967,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 )
                 fig_top.update_layout(height=350, margin=dict(l=0, r=0, t=40, b=0))
                 st.plotly_chart(fig_top, width="stretch")
-                st.dataframe(top_df, width="stretch", hide_index=True, height=300)
+                _df(top_df, width="stretch", hide_index=True, height=300)
                 if res.sentiment_available:
                     sarcasm_note = (
                         i18n.t(
@@ -1111,7 +1125,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     ec1, ec2 = st.columns(2)
                     with ec1:
                         st.caption(i18n.t("Самые позитивные ({n})").format(n=extr_n))
-                        st.dataframe(
+                        _df(
                             pd.DataFrame(most_pos, columns=["text", "sentiment", "user"]),
                             width="stretch",
                             hide_index=True,
@@ -1119,7 +1133,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         )
                     with ec2:
                         st.caption(i18n.t("Самые негативные ({n})").format(n=extr_n))
-                        st.dataframe(
+                        _df(
                             pd.DataFrame(most_neg, columns=["text", "sentiment", "user"]),
                             width="stretch",
                             hide_index=True,
@@ -1149,7 +1163,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 )
                 fig_phr.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
                 st.plotly_chart(fig_phr, width="stretch")
-                st.dataframe(phr_df, width="stretch", hide_index=True, height=300)
+                _df(phr_df, width="stretch", hide_index=True, height=300)
             else:
                 st.caption(i18n.t("Повторяющихся фраз не найдено."))
 
@@ -1201,7 +1215,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         .reset_index()
                         .sort_values("count", ascending=False)
                     )
-                    st.dataframe(
+                    _df(
                         totals,
                         width="stretch",
                         hide_index=True,
@@ -1233,7 +1247,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         "MTLD < 50 для коротких выборок недостоверен."
                     )
                 )
-                st.dataframe(
+                _df(
                     voc_df,
                     width="stretch",
                     hide_index=True,
@@ -1262,7 +1276,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             )
                         if pick.top_words:
                             tw = pd.DataFrame(pick.top_words, columns=["word", "count"])
-                            st.dataframe(
+                            _df(
                                 tw,
                                 width="stretch",
                                 hide_index=True,
@@ -1284,7 +1298,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                 n=f"{len(m_df):,}".replace(",", " ")
                             )
                         )
-                        st.dataframe(
+                        _df(
                             m_df,
                             width="stretch",
                             hide_index=True,
@@ -1333,7 +1347,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 )
                 fig_top.update_layout(height=400, margin=dict(l=0, r=0, t=40, b=0))
                 st.plotly_chart(fig_top, width="stretch")
-                st.dataframe(top_df, width="stretch", hide_index=True, height=400)
+                _df(top_df, width="stretch", hide_index=True, height=400)
             st.caption(f"Rendered in {time.time() - t0:.1f}s")
 
         elif key == "perusers":
@@ -1521,7 +1535,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             with fc2:
                                 st.caption(i18n.t("Топ источников:"))
                                 src_df = pd.DataFrame(fwd.top_sources, columns=["source", "count"])
-                                st.dataframe(
+                                _df(
                                     src_df,
                                     width="stretch",
                                     hide_index=True,
@@ -1627,7 +1641,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         with st.expander(
                             i18n.t("Самые долгие молчания ({n})").format(n=len(sil_df))
                         ):
-                            st.dataframe(
+                            _df(
                                 sil_df,
                                 width="stretch",
                                 hide_index=True,
@@ -1707,7 +1721,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     st.subheader(i18n.t("Топ эмоджи"))
                     if user_emo:
                         emo_df = pd.DataFrame(user_emo, columns=["emoji", "count"])
-                        st.dataframe(
+                        _df(
                             emo_df,
                             width="stretch",
                             hide_index=True,
@@ -1729,7 +1743,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             )
                         )
                         st_df = pd.DataFrame(user_st.top_emojis, columns=["emoji", "count"])
-                        st.dataframe(
+                        _df(
                             st_df,
                             width="stretch",
                             hide_index=True,
@@ -1786,7 +1800,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 if user_stat and user_stat.top_words:
                     st.subheader(i18n.t("Топ {n} слов").format(n=len(user_stat.top_words)))
                     tw_df = pd.DataFrame(user_stat.top_words, columns=["word", "count"])
-                    st.dataframe(
+                    _df(
                         tw_df,
                         width="stretch",
                         hide_index=True,
@@ -1820,7 +1834,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                 "hits/100msgs": round(u.hits_per_100, 1),
                             }
                         )
-                    st.dataframe(
+                    _df(
                         pd.DataFrame(mat_rows),
                         width="stretch",
                         hide_index=True,
@@ -1856,7 +1870,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                         [(w, round(lo, 2), c) for w, lo, c in a_dist],
                                         columns=["word", "log-odds", "count"],
                                     )
-                                    st.dataframe(
+                                    _df(
                                         df_a,
                                         width="stretch",
                                         hide_index=True,
@@ -1871,7 +1885,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                         [(w, round(lo, 2), c) for w, lo, c in b_dist],
                                         columns=["word", "log-odds", "count"],
                                     )
-                                    st.dataframe(
+                                    _df(
                                         df_b,
                                         width="stretch",
                                         hide_index=True,
@@ -1902,7 +1916,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         e1, e2 = st.columns(2)
                         with e1:
                             st.caption(i18n.t("{name} — позитивные").format(name=user_name))
-                            st.dataframe(
+                            _df(
                                 pd.DataFrame(u_pos, columns=["text", "sentiment"]),
                                 width="stretch",
                                 hide_index=True,
@@ -1910,7 +1924,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             )
                         with e2:
                             st.caption(i18n.t("{name} — негативные").format(name=user_name))
-                            st.dataframe(
+                            _df(
                                 pd.DataFrame(u_neg, columns=["text", "sentiment"]),
                                 width="stretch",
                                 hide_index=True,
