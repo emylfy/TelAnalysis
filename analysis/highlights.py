@@ -73,21 +73,6 @@ def _bold(s: Any) -> str:
     return f"<b>{s}</b>"
 
 
-def _hour_to_human(h: int) -> str:
-    """RU-only legacy helper kept for backwards-compat. Prefer i18n.hour_to_human."""
-    if h == 0:
-        return "полночь"
-    if h < 5:
-        return f"{h}:00 ночи"
-    if h < 12:
-        return f"{h}:00 утра"
-    if h == 12:
-        return "полдень"
-    if h < 18:
-        return f"{h}:00 дня"
-    return f"{h}:00 вечера"
-
-
 def _peak_hour_weekday(grid: list[list[int]]) -> tuple[int, int, int] | None:
     """(weekday 0..6, hour 0..23, count) for the hottest cell. None if all zero."""
     best = None

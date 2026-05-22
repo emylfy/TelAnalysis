@@ -528,7 +528,7 @@ def weekday_short_labels() -> list[str]:
     return _RU_WD_SHORT if get_lang() == "ru" else _EN_WD_SHORT
 
 
-# hour-of-day humanizer (mirrors highlights._hour_to_human, lang-aware)
+# hour-of-day humanizer, lang-aware
 
 
 def hour_to_human(h: int) -> str:

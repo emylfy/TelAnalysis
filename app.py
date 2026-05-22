@@ -49,8 +49,7 @@ st.set_page_config(
 
 # Theme — locked to dark. Streamlit chrome is dark via .streamlit/config.toml
 # and we don't expose a runtime switch.
-theme_mod.set_mode("dark")
-st.markdown(theme_mod.css(), unsafe_allow_html=True)
+st.markdown(theme_mod.CSS, unsafe_allow_html=True)
 
 
 def _df(data, *args, height=None, **kwargs):

@@ -87,11 +87,6 @@ def _build_template() -> go.layout.Template:
 pio.templates[TEMPLATE_NAME] = _build_template()
 
 
-def set_mode(mode: str) -> None:
-    """No-op kept for callers passing `set_mode("dark")`. Light is gone."""
-    return None
-
-
 def apply(fig: go.Figure, *, height: int | None = None, title: str | None = None) -> go.Figure:
     """Apply the unified template + tight margins to a figure."""
     fig.update_layout(
@@ -240,9 +235,3 @@ div[data-baseweb="popover"] {{
 }}
 </style>
 """
-
-
-def css() -> str:
-    """Backwards-compat: app.py used to call css() to refresh per-mode. Now
-    just returns the static CSS."""
-    return CSS

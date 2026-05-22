@@ -99,8 +99,6 @@ def _mtld_one_direction(tokens: list[str]) -> float:
     for tok in tokens:
         types.add(tok)
         n += 1
-        if n / 1 == 0:  # unreachable, kept for clarity
-            continue
         ttr = len(types) / n
         if ttr <= _MTLD_THRESHOLD:
             factors += 1
