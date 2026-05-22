@@ -64,6 +64,11 @@ def _df(data, *args, height=None, **kwargs):
     """
     if isinstance(height, int) and hasattr(data, "__len__"):
         height = min(38 + max(len(data), 1) * 35, height)
+    if height is None:
+        # No height = streamlit auto-sizes to content (default 'auto'). Used
+        # when the table is wrapped in an expander — natural height + page
+        # scroll avoids Glide's wheel-handler init lag.
+        return st.dataframe(data, *args, **kwargs)
     return st.dataframe(data, *args, height=height, **kwargs)
 
 
@@ -114,31 +119,29 @@ def _per_user_words_fragment(res):
         if q.strip():
             matches = m_df[m_df["text"].str.contains(q, case=False, na=False, regex=False)]
             m_df_view = matches.head(SHOW_N)
-            st.caption(
-                i18n.t("Найдено {n} (показаны первые {k})").format(
-                    n=f"{len(matches):,}".replace(",", " "),
-                    k=min(len(matches), SHOW_N),
-                )
+            count_label = i18n.t("Найдено {n} (первые {k})").format(
+                n=f"{len(matches):,}".replace(",", " "),
+                k=min(len(matches), SHOW_N),
             )
         else:
             m_df_view = m_df.tail(SHOW_N)
-            st.caption(
-                i18n.t(
-                    "Последние {k} из {n} · введи поиск чтобы найти конкретное"
-                ).format(
-                    k=min(SHOW_N, len(m_df)),
-                    n=f"{len(m_df):,}".replace(",", " "),
-                )
+            count_label = i18n.t("Последние {k} из {n}").format(
+                k=min(SHOW_N, len(m_df)),
+                n=f"{len(m_df):,}".replace(",", " "),
             )
-        _df(
-            m_df_view,
-            width="stretch",
-            hide_index=True,
-            height=400,
-            column_config={
-                "text": st.column_config.TextColumn(width="large"),
-            },
-        )
+        # Expander + natural-height table: collapsed by default, so the heavy
+        # Glide Data Grid only mounts when the user opts in. Without `height=`
+        # the table sizes to its rows — the surrounding page scrolls, Glide's
+        # wheel-handler init no longer competes with browser scroll.
+        with st.expander(count_label, expanded=False):
+            _df(
+                m_df_view,
+                width="stretch",
+                hide_index=True,
+                column_config={
+                    "text": st.column_config.TextColumn(width="large"),
+                },
+            )
 
 
 # Sidebar — file picker collapses after a file is loaded.
