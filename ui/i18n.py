@@ -159,6 +159,7 @@ EN: dict[str, str] = {
     "Последние {k} из {n} · введи поиск чтобы найти конкретное": "Last {k} of {n} · use search to find specific ones",
     "Найдено {n} (первые {k})": "Found {n} (first {k})",
     "Последние {k} из {n}": "Last {k} of {n}",
+    "Полная таблица ({n})": "Full table ({n})",
     "Найдены контакты: {e} email, {p} телефонов": "Found Contacts: {e} emails, {p} phones",
     "Сентимент во времени": "Sentiment Over Time",
     "Средний сентимент по чату (по неделям)": "Chat-Wide Weekly Average Sentiment",

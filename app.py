@@ -101,7 +101,11 @@ def _per_user_words_fragment(res):
             )
         if pick.top_words:
             tw = pd.DataFrame(pick.top_words, columns=["word", "count"])
-            _df(tw, width="stretch", hide_index=True, height=300)
+            with st.expander(
+                i18n.t("Топ {n} слов").format(n=len(tw)),
+                expanded=False,
+            ):
+                _df(tw, width="stretch", hide_index=True)
     with cu2:
         if res.sentiment_available:
             m_df = pd.DataFrame(pick.messages, columns=["text", "sentiment"])
@@ -1041,7 +1045,11 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 )
                 fig_top.update_layout(height=350, margin=dict(l=0, r=0, t=40, b=0))
                 st.plotly_chart(fig_top, width="stretch")
-                _df(top_df, width="stretch", hide_index=True, height=300)
+                with st.expander(
+                    i18n.t("Полная таблица ({n})").format(n=len(top_df)),
+                    expanded=False,
+                ):
+                    _df(top_df, width="stretch", hide_index=True)
                 if res.sentiment_available:
                     sarcasm_note = (
                         i18n.t(
@@ -1198,21 +1206,25 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     most_neg = sorted(all_msgs, key=lambda r: r[1])[:extr_n]
                     ec1, ec2 = st.columns(2)
                     with ec1:
-                        st.caption(i18n.t("Самые позитивные ({n})").format(n=extr_n))
-                        _df(
-                            pd.DataFrame(most_pos, columns=["text", "sentiment", "user"]),
-                            width="stretch",
-                            hide_index=True,
-                            height=400,
-                        )
+                        with st.expander(
+                            i18n.t("Самые позитивные ({n})").format(n=extr_n),
+                            expanded=False,
+                        ):
+                            _df(
+                                pd.DataFrame(most_pos, columns=["text", "sentiment", "user"]),
+                                width="stretch",
+                                hide_index=True,
+                            )
                     with ec2:
-                        st.caption(i18n.t("Самые негативные ({n})").format(n=extr_n))
-                        _df(
-                            pd.DataFrame(most_neg, columns=["text", "sentiment", "user"]),
-                            width="stretch",
-                            hide_index=True,
-                            height=400,
-                        )
+                        with st.expander(
+                            i18n.t("Самые негативные ({n})").format(n=extr_n),
+                            expanded=False,
+                        ):
+                            _df(
+                                pd.DataFrame(most_neg, columns=["text", "sentiment", "user"]),
+                                width="stretch",
+                                hide_index=True,
+                            )
 
             # Repeated phrases (n-grams)
             st.subheader(i18n.t("Повторяющиеся фразы"))
@@ -1237,7 +1249,11 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 )
                 fig_phr.update_layout(height=320, margin=dict(l=0, r=0, t=10, b=0))
                 st.plotly_chart(fig_phr, width="stretch")
-                _df(phr_df, width="stretch", hide_index=True, height=300)
+                with st.expander(
+                    i18n.t("Полная таблица ({n})").format(n=len(phr_df)),
+                    expanded=False,
+                ):
+                    _df(phr_df, width="stretch", hide_index=True)
             else:
                 st.caption(i18n.t("Повторяющихся фраз не найдено."))
 
