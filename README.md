@@ -117,6 +117,29 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+### Windows (10 / 11)
+
+```powershell
+# 1. Python 3.10+ — pick ONE
+winget install -e --id Python.Python.3.12
+# or the installer from https://www.python.org/downloads/
+#   ✓ tick "Add python.exe to PATH" on the first screen
+
+# 2. venv + dependencies (PowerShell)
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+If PowerShell refuses to run `Activate.ps1` (`running scripts is disabled`), allow user-scope scripts once:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+In Command Prompt instead: `.\.venv\Scripts\activate.bat`. The Microsoft Store build of Python also works, but the python.org / winget installers are easier to find on `PATH`.
+
 ## Run
 
 ```bash
