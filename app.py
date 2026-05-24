@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import os
 import tempfile
-import time
 
 import pandas as pd
 import plotly.express as px
@@ -190,51 +189,44 @@ with st.sidebar:
                 st.rerun()
         json_path = loaded_path
     else:
-        src_mode = st.radio(
-            i18n.t("Источник"),
-            options=["upload", "path"],
-            format_func=lambda x: i18n.t("Загрузить") if x == "upload" else i18n.t("Путь к файлу"),
-            horizontal=True,
-            help=i18n.t(
-                "Drag & drop по умолчанию. Для экспортов 65MB+ выбирай «Путь к файлу» — "
-                "быстрее, без base64 через WebSocket."
-            ),
-        )
-
-        if src_mode == "upload":
-            upload = st.file_uploader(
-                i18n.t("Перетащи result.json сюда"),
-                type=["json"],
-                help=i18n.t("Или нажми и выбери файл вручную."),
-            )
-            if upload is not None:
-                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json", prefix="tla_")
-                tmp.write(upload.read())
-                tmp.close()
-                json_path = tmp.name
-                st.session_state["loaded_path"] = json_path
-                st.session_state["loaded_label"] = upload.name
-                st.rerun()
-        else:
+        col_path, col_drop = st.columns([5, 1], vertical_alignment="bottom")
+        with col_path:
             path_input = st.text_input(
                 i18n.t("Путь к result.json"),
                 value=st.session_state.get("last_path", ""),
                 placeholder="/Users/me/.../result.json",
+                label_visibility="collapsed",
             )
-            if path_input:
-                if os.path.exists(path_input):
-                    json_path = path_input
-                    st.session_state["last_path"] = path_input
+        with col_drop:
+            with st.popover("↑", help=i18n.t("Загрузка файла (<65MB)")):
+                upload = st.file_uploader(
+                    i18n.t("result.json"),
+                    type=["json"],
+                    label_visibility="collapsed",
+                )
+                if upload is not None:
+                    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json", prefix="tla_")
+                    tmp.write(upload.read())
+                    tmp.close()
+                    json_path = tmp.name
                     st.session_state["loaded_path"] = json_path
-                    st.session_state["loaded_label"] = os.path.basename(path_input)
+                    st.session_state["loaded_label"] = upload.name
                     st.rerun()
-                else:
-                    st.error(i18n.t("Файл не найден"))
+
+        if path_input:
+            if os.path.exists(path_input):
+                json_path = path_input
+                st.session_state["last_path"] = path_input
+                st.session_state["loaded_path"] = json_path
+                st.session_state["loaded_label"] = os.path.basename(path_input)
+                st.rerun()
+            else:
+                st.error(i18n.t("Файл не найден"))
 
 if json_path is None:
     st.info(
         i18n.t(
-            "Выбери JSON-экспорт telegram в сайдбаре слева.\n\n"
+            "JSON-экспорт telegram — в сайдбаре слева.\n\n"
             "**Один чат** — `Настройки → Экспорт переписки`.\n\n"
             "**Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`. "
             "Появится выбор чата."
@@ -475,7 +467,6 @@ tabs = st.tabs([t[0] for t in tab_specs])
 for tab, (_, key) in zip(tabs, tab_specs):
     with tab:
         if key == "overview":
-            t0 = time.time()
             per_day = ui_cache.per_day(cache_key, messages)
             grid = ui_cache.hour_weekday(cache_key, messages)
 
@@ -509,7 +500,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     st.plotly_chart(fig, width="stretch")
                     st.caption(
                         i18n.t(
-                            "Установите `streamlit-plotly-events` чтобы кликом по графику смотреть детали дня."
+                            "Для drill-down по клику нужен `streamlit-plotly-events`."
                         )
                     )
 
@@ -893,10 +884,8 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     height=320,
                 )
 
-            st.caption(f"Rendered in {time.time() - t0:.1f}s")
 
         elif key == "graph":
-            t0 = time.time()
             g = ui_cache.graph_data(cache_key, messages)
             chain_stats = chains_mod.analyze(messages)
             cgraph1, cgraph2, cgraph3, cgraph4 = st.columns(4)
@@ -1009,7 +998,6 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     file_name=f"edges_{chat.id}.csv",
                     mime="text/csv",
                 )
-            st.caption(f"Rendered in {time.time() - t0:.1f}s")
 
         elif key == "words":
             most_com = st.slider(
@@ -1020,7 +1008,6 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 step=5,
                 help=i18n.t("Сколько слов показывать в облаках и таблицах"),
             )
-            t0 = time.time()
             res = ui_cache.words(cache_key, messages, most_com)
 
             cwords1, cwords2, cwords3 = st.columns(3)
@@ -1061,18 +1048,18 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         i18n.t(
                             "Средний сентимент (rubert-tiny2-russian-sentiment, RU/EN): "
                             "{s} (диапазон −1 негативно … +1 позитивно){extra}. "
-                            "⚠ Не понимает сарказм, шутки и слэнг — числа берите со скепсисом."
+                            "⚠ Не различает сарказм, шутки и слэнг — цифры условны."
                         ).format(s=f"{res.chat_avg_sentiment:+.3f}", extra=sarcasm_note)
                     )
                 else:
                     st.info(
                         i18n.t(
-                            "Сентимент-анализ **отключён** — установи опциональные "
-                            "зависимости чтобы включить оценки RU/EN:\n\n"
+                            "Сентимент-анализ **отключён** — требуются опциональные "
+                            "зависимости для RU/EN-оценок:\n\n"
                             "```\npip install -r requirements-sentiment.txt\n```\n\n"
                             "Добавит ~1GB (torch + transformers) плюс 50MB модель при "
-                            "первом запуске. Перезапусти Streamlit после установки. "
-                            "Модель не выкупает сарказм, шутки и слэнг — это curiosity-фича, не диагностика."
+                            "первом запуске. После установки нужен рестарт Streamlit. "
+                            "Модель не различает сарказм, шутки и слэнг — вспомогательная метрика, не диагностика."
                         )
                     )
 
@@ -1178,8 +1165,8 @@ for tab, (_, key) in zip(tabs, tab_specs):
 
                     st.caption(
                         i18n.t(
-                            "⚠ Sentiment не выкупает сарказм, шутки и слэнг. "
-                            "Используй для тренда, не для абсолютных значений."
+                            "⚠ Sentiment не различает сарказм, шутки и слэнг. "
+                            "Подходит для тренда, не для абсолютных значений."
                         )
                     )
 
@@ -1362,10 +1349,8 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         width="stretch",
                         hide_index=True,
                     )
-            st.caption(f"Rendered in {time.time() - t0:.1f}s")
 
         elif key == "channel":
-            t0 = time.time()
             res = ui_cache.channel(cache_key, messages, most_com)
             cc1, cc2 = st.columns(2)
             cc1.metric(i18n.t("Топ слов"), f"{len(res.top_words):,}")
@@ -1388,10 +1373,8 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 fig_top.update_layout(height=400, margin=dict(l=0, r=0, t=40, b=0))
                 st.plotly_chart(fig_top, width="stretch")
                 _df(top_df, width="stretch", hide_index=True, height=400)
-            st.caption(f"Rendered in {time.time() - t0:.1f}s")
 
         elif key == "perusers":
-            t0 = time.time()
             participants = ui_cache.participants(cache_key, messages)
             if not participants:
                 st.info(i18n.t("В этом чате нет идентифицируемых участников."))
@@ -1399,7 +1382,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                 # Pick a user
                 pu_options = participants  # already sorted desc by msg count
                 pick_idx = st.selectbox(
-                    i18n.t("Выбери участника"),
+                    i18n.t("Участник"),
                     options=range(len(pu_options)),
                     format_func=lambda i: (
                         f"{pu_options[i][1]} · {i18n.n_messages(pu_options[i][2])}"
@@ -1970,7 +1953,6 @@ for tab, (_, key) in zip(tabs, tab_specs):
                                 hide_index=True,
                                 height=320,
                             )
-            st.caption(f"Rendered in {time.time() - t0:.1f}s")
 
         elif key == "highlights":
             # Old Highlights tab dropped — was a markdown rehash of Overview/

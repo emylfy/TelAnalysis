@@ -31,4 +31,5 @@ Thumbs.db
 nltk_data/
 .ruff_cache/
 .playwright-mcp/
-screenshots/
+# Top-level screenshots/ from ad-hoc dev sessions. docs/screenshots/ is tracked.
+/screenshots/

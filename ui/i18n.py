@@ -24,15 +24,11 @@ except ImportError:
 EN: dict[str, str] = {
     # sidebar / chrome
     "анализ переписок telegram": "Telegram Chat Analytics",
-    "Источник": "Source",
-    "Загрузить": "Upload",
-    "Путь к файлу": "File Path",
-    "Перетащи result.json сюда": "Drop result.json here",
-    "Или нажми и выбери файл вручную.": "Or click to pick a file.",
+    "result.json": "result.json",
     "Путь к result.json": "Path to result.json",
     "Файл не найден": "File not found",
     "Загрузить другой файл": "Load Another File",
-    "Drag & drop по умолчанию. Для экспортов 65MB+ выбирай «Путь к файлу» — быстрее, без base64 через WebSocket.": "Drag & drop is the default. For 65MB+ exports use 'File Path' — faster, no base64 over WebSocket.",
+    "Загрузка файла (<65MB)": "File upload (<65MB)",
     "Один чат: **{name}**": "Single Chat: **{name}**",
     "Архив: **{n} чатов**": "Archive: **{n} chats**",
     "Тип чата": "Chat Type",
@@ -43,7 +39,7 @@ EN: dict[str, str] = {
     "Чат": "Chat",
     "ID чата": "Chat ID",
     # empty state
-    "Выбери JSON-экспорт telegram в сайдбаре слева.\n\n**Один чат** — `Настройки → Экспорт переписки`.\n\n**Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`. Появится выбор чата.": "Pick a Telegram JSON export in the sidebar.\n\n**Single chat** — `Settings → Export Chat History`.\n\n**Full archive** — `Settings → Advanced → Export Telegram Data`. A chat picker will appear.",
+    "JSON-экспорт telegram — в сайдбаре слева.\n\n**Один чат** — `Настройки → Экспорт переписки`.\n\n**Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`. Появится выбор чата.": "Telegram JSON export — in the sidebar on the left.\n\n**Single chat** — `Settings → Export Chat History`.\n\n**Full archive** — `Settings → Advanced → Export Telegram Data`. A chat picker will appear.",
     # period filter
     "Период · вся история": "Period · Full History",
     "Период": "Period",
@@ -89,7 +85,7 @@ EN: dict[str, str] = {
     "О чём говорят": "What About",
     "Кто кому": "Who To Whom",
     # Overview — captions / sub-elements
-    "Установите `streamlit-plotly-events` чтобы кликом по графику смотреть детали дня.": "Install `streamlit-plotly-events` to drill into a day by clicking the chart.",
+    "Для drill-down по клику нужен `streamlit-plotly-events`.": "Install `streamlit-plotly-events` to drill into a day by clicking the chart.",
     "Выбран день: {d}": "Selected Day: {d}",
     "очистить": "Clear",
     "Топ эмоджи дня: {top}": "Top Emojis Of The Day: {top}",
@@ -129,7 +125,7 @@ EN: dict[str, str] = {
     "Топ {n} слов по чату": "Top {n} Words Across The Chat",
     "Облако слов (по всему чату)": "Wordcloud (Chat-Wide)",
     "Топ 30 из {total}": "Top 30 of {total}",
-    "Средний сентимент (rubert-tiny2-russian-sentiment, RU/EN): {s} (диапазон −1 негативно … +1 позитивно){extra}. ⚠ Не понимает сарказм, шутки и слэнг — числа берите со скепсисом.": "Average sentiment (rubert-tiny2-russian-sentiment, RU/EN): {s} (range −1 negative … +1 positive){extra}. ⚠ Doesn't catch sarcasm, jokes or slang — take numbers with skepticism.",
+    "Средний сентимент (rubert-tiny2-russian-sentiment, RU/EN): {s} (диапазон −1 негативно … +1 позитивно){extra}. ⚠ Не различает сарказм, шутки и слэнг — цифры условны.": "Average sentiment (rubert-tiny2-russian-sentiment, RU/EN): {s} (range −1 negative … +1 positive){extra}. ⚠ Doesn't catch sarcasm, jokes or slang — take numbers with skepticism.",
     " · {n} фрагментов уполовинены sarcasm-emoji эвристикой (🙃🤡🙄💀…)": " · {n} fragments halved by sarcasm-emoji heuristic (🙃🤡🙄💀…)",
     "минут до ответа": "minutes to reply",
     "минут": "minutes",
@@ -148,7 +144,7 @@ EN: dict[str, str] = {
     "триграммы (3 слова)": "trigrams (3 words)",
     "Сколько крайних показывать": "How many extremes to show",
     "Сколько": "How many",
-    "TTR = уникальные / всего токенов (после фильтра стоп-слов). Выше = разнообразнее словарь. TTR зависит от длины — короткие выборки получают выше; сравнивай юзеров с похожим количеством токенов.": "TTR = unique / total tokens (after stop-word filter). Higher = more diverse vocabulary. TTR is length-sensitive — shorter samples score higher; compare users with similar token counts.",
+    "TTR = уникальные / всего токенов (после фильтра стоп-слов). Выше = разнообразнее словарь. TTR зависит от длины — короткие выборки получают выше; корректно сравнивать юзеров с похожим количеством токенов.": "TTR = unique / total tokens (after stop-word filter). Higher = more diverse vocabulary. TTR is length-sensitive — shorter samples score higher; compare users with similar token counts.",
     "Участник": "Participant",
     "Облако слов — {name}": "Wordcloud — {name}",
     "Средний сентимент: {s} ⚠ не учитывает сарказм/шутки/слэнг": "Average Sentiment: {s} ⚠ doesn't account for sarcasm/jokes/slang",
@@ -189,10 +185,9 @@ EN: dict[str, str] = {
     "All {n} message fragments": "All {n} message fragments",
     "Found contacts: {e} emails, {p} phones": "Found Contacts: {e} emails, {p} phones",
     # Words tab — sentiment hint
-    "Сентимент-анализ **отключён** — установи опциональные зависимости чтобы включить оценки RU/EN:\n\n```\npip install -r requirements-sentiment.txt\n```\n\nДобавит ~1GB (torch + transformers) плюс 50MB модель при первом запуске. Перезапусти Streamlit после установки. Модель не выкупает сарказм, шутки и слэнг — это curiosity-фича, не диагностика.": "Sentiment analysis is **disabled** — install optional deps to enable RU/EN sentiment scores:\n\n```\npip install -r requirements-sentiment.txt\n```\n\nAdds ~1GB (torch + transformers) plus a 50MB model on first use. Restart Streamlit after install. Model doesn't catch sarcasm, jokes or slang — treat as curiosity, not diagnosis.",
-    "Average sentiment (rubert-tiny2-russian-sentiment, RU/EN): {s} (range −1 negative … +1 positive){extra}. ⚠ Не понимает сарказм, шутки и слэнг — числа берите со скепсисом.": "Average sentiment (rubert-tiny2-russian-sentiment, RU/EN): {s} (range −1 negative … +1 positive){extra}. ⚠ Doesn't catch sarcasm, jokes or slang — take numbers with a grain of salt.",
+    "Сентимент-анализ **отключён** — требуются опциональные зависимости для RU/EN-оценок:\n\n```\npip install -r requirements-sentiment.txt\n```\n\nДобавит ~1GB (torch + transformers) плюс 50MB модель при первом запуске. После установки нужен рестарт Streamlit. Модель не различает сарказм, шутки и слэнг — вспомогательная метрика, не диагностика.": "Sentiment analysis is **disabled** — optional deps required for RU/EN sentiment scores:\n\n```\npip install -r requirements-sentiment.txt\n```\n\nAdds ~1GB (torch + transformers) plus a 50MB model on first use. Restart Streamlit afterwards. Model doesn't catch sarcasm, jokes or slang — supplementary metric, not diagnosis.",
     " · {n} fragments halved by sarcasm-emoji heuristic (🙃🤡🙄💀…)": " · {n} fragments halved by sarcasm-emoji heuristic (🙃🤡🙄💀…)",
-    "⚠ Sentiment не выкупает сарказм, шутки и слэнг. Используй для тренда, не для абсолютных значений.": "⚠ Sentiment doesn't catch sarcasm, jokes or slang. Use for trends, not absolute values.",
+    "⚠ Sentiment не различает сарказм, шутки и слэнг. Подходит для тренда, не для абсолютных значений.": "⚠ Sentiment doesn't catch sarcasm, jokes or slang. Use for trends, not absolute values.",
     # tabs — Channel
     "Топ слов: {n}": "Top Words: {n}",
     "Токенов (raw)": "Tokens (Raw)",
@@ -201,7 +196,6 @@ EN: dict[str, str] = {
     "Топ 50 из {total}": "Top 50 Of {total}",
     # tabs — Per-user
     "В этом чате нет идентифицируемых участников.": "No identifiable participants in this chat.",
-    "Выбери участника": "Pick A Participant",
     "Доля чата": "Share Of Chat",
     "Манера речи": "Speaking Style",
     "Средняя длина": "Avg Msg Length",
@@ -273,6 +267,7 @@ EN: dict[str, str] = {
     "Обратное — {a} → {b}: медиана {m}, за 5м {p}%. Разница 5-мин ответа: **{d:+.1f} pp**": "Reverse — {a} → {b}: median {m}, 5m {p}%. Difference in 5-min response rate: **{d:+.1f} pp**",
     "Стрики и молчания": "Streaks & Silences",
     "Самый длинный стрик": "Longest Streak",
+    "Самое долгое молчание": "Longest Silence",
     "Текущий стрик": "Current Streak",
     "Всего активных дней": "Total Active Days",
     "Самые долгие молчания ({n})": "Longest Silences ({n})",
@@ -343,8 +338,7 @@ EN: dict[str, str] = {
     "Пиковый час": "Peak Hour",
     "Самый громкий день": "Loudest Day",
     "Любимая эмоджи": "Favorite Emoji",
-    # "Самый длинный стрик" already defined above (per-user streaks block)
-    # "Самое долгое молчание" already defined above (per-user streaks block)
+    # "Самый длинный стрик" / "Самое долгое молчание" already defined above (per-user streaks block)
     "Медиана ответа": "Median Reply",
     "p90 ответа": "p90 Reply",
     "Всего ответов": "Total Replies",
