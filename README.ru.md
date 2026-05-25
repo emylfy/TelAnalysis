@@ -7,7 +7,7 @@
 # TelAnalysis
 
 [![CI](https://github.com/emylfy/TelAnalysis/actions/workflows/ci.yml/badge.svg)](https://github.com/emylfy/TelAnalysis/actions/workflows/ci.yml)
-![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)
+![Python 3.11–3.14](https://img.shields.io/badge/python-3.11--3.14-blue.svg)
 ![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green.svg)
 ![Built with Streamlit](https://img.shields.io/badge/built%20with-Streamlit-FF4B4B.svg)
 
@@ -62,7 +62,7 @@ UI на **RU / EN** (переключатель в сайдбаре). Содер
 
 ## Установка
 
-Требуется **Python 3.11+** (зависимости `pandas 3.x` и `streamlit 1.57+` старее не поддерживают).
+Требуется **Python 3.11+** (зависимости `pandas 3.x` и `streamlit 1.57+` старее не поддерживают). В CI проверяется на 3.11, 3.12, 3.13 и 3.14.
 
 ### macOS
 
