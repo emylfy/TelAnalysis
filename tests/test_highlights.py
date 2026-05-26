@@ -19,7 +19,6 @@ def _kpis(**overrides):
         last_date="2024-12-31",
         days_active=731,
         media_messages=400,
-        service_messages=10,
     )
     base.update(overrides)
     return overview.Kpis(**base)

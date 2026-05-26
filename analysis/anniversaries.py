@@ -32,7 +32,6 @@ class Milestone:
     label: str  # e.g. "1 год", "50 000 сообщений"
     value: int  # 365 or 50000 etc — the threshold itself
     when: date | None = None  # when crossed; None if not yet
-    upcoming: bool = False  # True when value > current
     days_until: int | None = None  # only set when upcoming
 
 
@@ -85,7 +84,6 @@ def compute(
                 label=_label_days(n),
                 value=n,
                 when=when,
-                upcoming=True,
                 days_until=n - days_since,
             )
 
@@ -114,7 +112,6 @@ def compute(
         upcoming_count = Milestone(
             label=_label_count(next_target),
             value=next_target,
-            upcoming=True,
             days_until=est_days,
         )
 

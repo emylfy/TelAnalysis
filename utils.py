@@ -1,5 +1,4 @@
 import json
-import os
 import re
 import string
 
@@ -23,42 +22,6 @@ def sanitize_chat_filename(name, chat_id):
     base = re.sub(r"[^\w\-]+", "_", base, flags=re.UNICODE)
     base = base.strip("_")[:60] or "chat"
     return f"{base}_{chat_id}"
-
-
-def build_chat_options(data):
-    opts = []
-    for chat in data["chats"]["list"]:
-        cid = chat.get("id")
-        name = chat.get("name") or "Saved Messages"
-        ctype = chat.get("type", "?")
-        msg_count = len(chat.get("messages") or [])
-        label = f"{name} [{ctype}] ({msg_count} msgs)"
-        opts.append({"label": label, "value": str(cid)})
-    return opts
-
-
-def find_chat_by_id(data, chat_id):
-    for chat in data["chats"]["list"]:
-        if str(chat.get("id")) == str(chat_id):
-            return chat
-    return None
-
-
-def write_chat_as_single(chat, asset_dir="asset"):
-    cid = chat.get("id")
-    name = chat.get("name")
-    safe = sanitize_chat_filename(name, cid)
-    payload = {
-        "name": name or "Saved Messages",
-        "type": chat.get("type"),
-        "id": cid,
-        "messages": chat.get("messages") or [],
-    }
-    os.makedirs(asset_dir, exist_ok=True)
-    path = os.path.join(asset_dir, f"{safe}.json")
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False)
-    return path
 
 
 DEFAULT_CONF = {

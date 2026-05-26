@@ -16,7 +16,6 @@ class MediaStats:
     by_kind: dict[str, int] = field(default_factory=dict)
     voice_total_seconds: int = 0
     voice_count: int = 0
-    voice_received_seconds_per_user: dict[str, int] = field(default_factory=dict)
     top_domains: list[tuple[str, int]] = field(default_factory=list)
     total_links: int = 0
 

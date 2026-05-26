@@ -19,7 +19,6 @@ class ChainStats:
     avg_depth: float = 0.0  # average chain depth
     chain_count: int = 0  # how many chains we found
     depth_distribution: list[tuple[int, int]] = field(default_factory=list)
-    longest_chain_root_id: int | None = None  # message id at the bottom
 
 
 def analyze(messages: list[dict]) -> ChainStats:
@@ -77,12 +76,9 @@ def analyze(messages: list[dict]) -> ChainStats:
     distribution = Counter(depths)
     distrib_pairs = sorted(distribution.items())
 
-    longest_leaf = leaves[depths.index(max_d)]
-
     return ChainStats(
         max_depth=max_d,
         avg_depth=avg_d,
         chain_count=len(leaves),
         depth_distribution=distrib_pairs,
-        longest_chain_root_id=longest_leaf,
     )

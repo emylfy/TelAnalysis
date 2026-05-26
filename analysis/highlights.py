@@ -17,38 +17,6 @@ from typing import Any
 
 from ui import i18n
 
-# Backwards-compat aliases — older callers / tests may import these names.
-_WEEKDAYS_RU = ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"]
-_MONTHS_GEN = [
-    "января",
-    "февраля",
-    "марта",
-    "апреля",
-    "мая",
-    "июня",
-    "июля",
-    "августа",
-    "сентября",
-    "октября",
-    "ноября",
-    "декабря",
-]
-_MONTHS_PREP = [
-    "январе",
-    "феврале",
-    "марте",
-    "апреле",
-    "мае",
-    "июне",
-    "июле",
-    "августе",
-    "сентябре",
-    "октябре",
-    "ноябре",
-    "декабре",
-]
-_MONTHS_RU = _MONTHS_PREP
-
 
 @dataclass
 class Highlight:
@@ -433,20 +401,3 @@ def caplet_latency(latency) -> str | None:
         m=latency_mod.humanize_seconds(latency.median_seconds),
         p=latency_mod.humanize_seconds(latency.p90_seconds),
     )
-
-
-def caplet_streak(streaks) -> str | None:
-    if streaks is None:
-        return None
-    bits = []
-    if streaks.longest_streak_days > 1:
-        bits.append(
-            f"подряд активных дней: {_fmt_int(streaks.longest_streak_days)} "
-            f"({streaks.longest_streak_start} → {streaks.longest_streak_end})"
-        )
-    if streaks.longest_silences:
-        gs, ge, gd = streaks.longest_silences[0]
-        bits.append(f"самое долгое молчание: {_fmt_int(gd)} дней ({gs} → {ge})")
-    if not bits:
-        return None
-    return " · ".join(bits) + "."

@@ -45,7 +45,6 @@ class SpeakingStyle:
     avg_chars: float
     avg_words: float
     median_chars: int
-    longest_text: str
     longest_chars: int
     question_ratio: float  # share of msgs with '?'
     exclamation_ratio: float  # share of msgs with '!'
@@ -206,7 +205,6 @@ def analyze(messages: list[dict]) -> dict[str, SpeakingStyle]:
             avg_chars=sum(chars) / n,
             avg_words=sum(words) / n,
             median_chars=median_c,
-            longest_text=texts[longest_idx],
             longest_chars=chars[longest_idx],
             question_ratio=questions / n,
             exclamation_ratio=excl / n,

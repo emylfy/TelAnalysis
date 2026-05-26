@@ -19,7 +19,6 @@ class DirectionStats:
     responder_name: str
     initiator_id: str
     initiator_name: str
-    response_count: int
     median_seconds: float
     p90_seconds: float
     within_5m: float  # share answered within 5 minutes
@@ -30,7 +29,6 @@ class DirectionStats:
 @dataclass
 class ReciprocityResult:
     available: bool  # only computed for exactly 2 distinct senders
-    pair: tuple[str, str] | None = None  # (user_a_id, user_b_id)
     a_to_b: DirectionStats | None = None  # b answered after a
     b_to_a: DirectionStats | None = None  # a answered after b
 
@@ -94,7 +92,6 @@ def compute(messages: list[dict], cap_hours: int = 24) -> ReciprocityResult:
             responder_name=name_of.get(responder_id, responder_id),
             initiator_id=initiator_id,
             initiator_name=name_of.get(initiator_id, initiator_id),
-            response_count=n,
             median_seconds=float(med),
             p90_seconds=float(p90),
             within_5m=within(5 * 60),
@@ -105,7 +102,6 @@ def compute(messages: list[dict], cap_hours: int = 24) -> ReciprocityResult:
     a, b = distinct
     return ReciprocityResult(
         available=True,
-        pair=(a, b),
         a_to_b=stats(a, b),
         b_to_a=stats(b, a),
     )

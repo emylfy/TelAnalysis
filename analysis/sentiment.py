@@ -111,18 +111,6 @@ def _load():
     return tok, model, torch, device, pos_idx, neg_idx
 
 
-def is_loaded() -> bool:
-    return _load.cache_info().currsize > 0
-
-
-def score_compound(text: str) -> float:
-    """Single-text scoring. Convenient for one-off checks; for many texts
-    use score_batch — it's much faster."""
-    if not isinstance(text, str) or not text.strip():
-        return 0.0
-    return score_batch([text])[0]
-
-
 def score_batch(texts: list[str], batch_size: int = _DEFAULT_BATCH) -> list[float]:
     """Score a list of texts. Returns compound scores in [-1, +1].
     If the optional dependencies aren't installed, returns a list of zeros

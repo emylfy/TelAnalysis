@@ -19,7 +19,6 @@ class Kpis:
     last_date: str | None
     days_active: int
     media_messages: int
-    service_messages: int
 
 
 def _parse_date(s: str) -> datetime | None:
@@ -35,15 +34,11 @@ def compute_kpis(messages: list[dict]) -> Kpis:
     total = len(messages)
     users = set()
     media = 0
-    service = 0
     first = None
     last = None
     for m in messages:
         if not isinstance(m, dict):
             continue
-        mtype = m.get("type")
-        if mtype == "service":
-            service += 1
         if any(k in m for k in ("photo", "file", "media_type", "voice_message")):
             media += 1
         uid = m.get("from_id") or m.get("actor_id")
@@ -65,7 +60,6 @@ def compute_kpis(messages: list[dict]) -> Kpis:
         last_date=last.strftime("%Y-%m-%d") if last else None,
         days_active=days_active,
         media_messages=media,
-        service_messages=service,
     )
 
 
@@ -114,12 +108,6 @@ def hour_distribution_per_user(
             out[uid] = (name, [0] * 24)
         out[uid][1][d.hour] += 1
     return out
-
-
-def calendar_data(messages: list[dict]) -> list[tuple[str, int]]:
-    """Per-day counts as (date_iso, count). Same as messages_per_day, but
-    explicit name for the calendar heatmap consumer."""
-    return messages_per_day(messages)
 
 
 def date_bounds(messages: list[dict]) -> tuple[str, str] | None:
