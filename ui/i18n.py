@@ -39,7 +39,8 @@ EN: dict[str, str] = {
     "Чат": "Chat",
     "ID чата": "Chat ID",
     # empty state
-    "JSON-экспорт telegram — в сайдбаре слева.\n\n**Один чат** — `Настройки → Экспорт переписки`.\n\n**Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`. Появится выбор чата.": "Telegram JSON export — in the sidebar on the left.\n\n**Single chat** — `Settings → Export Chat History`.\n\n**Full archive** — `Settings → Advanced → Export Telegram Data`. A chat picker will appear.",
+    "JSON-экспорт telegram — в сайдбаре слева.\n\n**Один чат** — `Настройки → Экспорт переписки`.\n\n**Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`. Появится выбор чата.\n\nHTML-экспорт тоже принимается (путь к папке или `messages.html`), но JSON точнее.": "Telegram JSON export — in the sidebar on the left.\n\n**Single chat** — `Settings → Export Chat History`.\n\n**Full archive** — `Settings → Advanced → Export Telegram Data`. A chat picker will appear.\n\nHTML exports are also accepted (path to the folder or `messages.html`), but JSON is more accurate.",
+    "HTML-экспорт: текст и время разобраны точно, но идентификаторы участников восстановлены по имени. В группах вкладки «Сеть» и «По участникам» менее точны (тёзки/переименования сольются). Для полного анализа экспортируй в формате JSON.": "HTML export: text and timestamps are parsed exactly, but participant identities are reconstructed from display names. In groups the Network and Per-User tabs are less accurate (namesakes/renames collapse together). Export as JSON for full analysis.",
     # period filter
     "Период · вся история": "Period · Full History",
     "Период": "Period",
@@ -263,6 +264,7 @@ EN: dict[str, str] = {
     "{name}: медианный ответ": "{name}: Median Response",
     "к {n}": "to {n}",
     "За 5 мин": "Within 5 Min",
+    "За 30 мин": "Within 30 Min",
     "За 1 час": "Within 1 Hour",
     "Обратное — {a} → {b}: медиана {m}, за 5м {p}%. Разница 5-мин ответа: **{d:+.1f} pp**": "Reverse — {a} → {b}: median {m}, 5m {p}%. Difference in 5-min response rate: **{d:+.1f} pp**",
     "Стрики и молчания": "Streaks & Silences",

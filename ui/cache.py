@@ -51,10 +51,13 @@ from analysis import (
 )
 
 
-@st.cache_data(show_spinner="Loading JSON…")
+@st.cache_data(show_spinner="Loading export…")
 def load_data(path: str, mtime: float) -> dict:
-    """Cached load by (path, mtime). mtime ensures cache invalidates on edit."""
-    return loader.load_json(path)
+    """Cached load by (path, mtime). mtime ensures cache invalidates on edit.
+
+    Dispatches JSON vs HTML via loader.load_export.
+    """
+    return loader.load_export(path)
 
 
 @st.cache_data(show_spinner="Computing KPIs…")
@@ -136,6 +139,13 @@ def sessions(cache_key: str, _messages: list, gap_minutes: int):
 @st.cache_data(show_spinner="Mining phrases…")
 def phrases(cache_key: str, _messages: list, n: int, top: int):
     return phrases_mod.top_phrases(_messages, n=n, top=top)
+
+
+@st.cache_data(show_spinner="Mining per-user phrases…")
+def per_user_phrases(cache_key: str, _messages: list, n: int, top: int):
+    # Computed once per chat for all users; the Per-User tab indexes the result
+    # by the selected user_id, so switching users doesn't recompute.
+    return phrases_mod.per_user_phrases(_messages, n=n, top=top)
 
 
 @st.cache_data(show_spinner="Computing reciprocity…")

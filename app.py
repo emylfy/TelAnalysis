@@ -201,11 +201,12 @@ with st.sidebar:
             with st.popover("↑", help=i18n.t("Загрузка файла (<65MB)")):
                 upload = st.file_uploader(
                     i18n.t("result.json"),
-                    type=["json"],
+                    type=["json", "html"],
                     label_visibility="collapsed",
                 )
                 if upload is not None:
-                    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json", prefix="tla_")
+                    suffix = ".html" if upload.name.lower().endswith((".html", ".htm")) else ".json"
+                    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix="tla_")
                     tmp.write(upload.read())
                     tmp.close()
                     json_path = tmp.name
@@ -229,16 +230,28 @@ if json_path is None:
             "JSON-экспорт telegram — в сайдбаре слева.\n\n"
             "**Один чат** — `Настройки → Экспорт переписки`.\n\n"
             "**Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`. "
-            "Появится выбор чата."
+            "Появится выбор чата.\n\n"
+            "HTML-экспорт тоже принимается (путь к папке или `messages.html`), "
+            "но JSON точнее."
         )
     )
     st.stop()
 
 data = ui_cache.load_data(json_path, os.path.getmtime(json_path))
 chats = loader.list_chats(data)
+is_html_source = data.get("_source") == "html"
 
 with st.sidebar:
     st.divider()
+    if is_html_source:
+        st.warning(
+            i18n.t(
+                "HTML-экспорт: текст и время разобраны точно, но идентификаторы "
+                "участников восстановлены по имени. В группах вкладки «Сеть» и "
+                "«По участникам» менее точны (тёзки/переименования сольются). "
+                "Для полного анализа экспортируй в формате JSON."
+            )
+        )
     if len(chats) == 1:
         chat = chats[0]
         st.success(i18n.t("Один чат: **{name}**").format(name=chat.name))
@@ -604,7 +617,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
 
                 user_hours = overview.hour_distribution_per_user(messages)
                 if len(user_hours) == 2:
-                    (uid_a, (name_a, hrs_a)), (uid_b, (name_b, hrs_b)) = list(user_hours.items())
+                    (_, (name_a, hrs_a)), (_, (name_b, hrs_b)) = list(user_hours.items())
                     total_a = sum(hrs_a) or 1
                     total_b = sum(hrs_b) or 1
                     norm_a = [h / total_a for h in hrs_a]
@@ -1609,7 +1622,7 @@ for tab, (_, key) in zip(tabs, tab_specs):
                     other_dir = rec.b_to_a if my_dir is rec.a_to_b else rec.a_to_b
                     if my_dir is not None:
                         st.subheader(i18n.t("Взаимность ответов"))
-                        rec1, rec2, rec3 = st.columns(3)
+                        rec1, rec2, rec3, rec4 = st.columns(4)
                         rec1.metric(
                             i18n.t("{name}: медианный ответ").format(name=user_name),
                             latency_mod.humanize_seconds(my_dir.median_seconds),
@@ -1620,6 +1633,10 @@ for tab, (_, key) in zip(tabs, tab_specs):
                             f"{my_dir.within_5m * 100:.1f}%",
                         )
                         rec3.metric(
+                            i18n.t("За 30 мин"),
+                            f"{my_dir.within_30m * 100:.1f}%",
+                        )
+                        rec4.metric(
                             i18n.t("За 1 час"),
                             f"{my_dir.within_60m * 100:.1f}%",
                         )
@@ -1829,6 +1846,40 @@ for tab, (_, key) in zip(tabs, tab_specs):
                         hide_index=True,
                         height=300,
                     )
+
+                # Repeated phrases (n-grams) for this user — surfaces signature
+                # turns of phrase, not just single words.
+                st.subheader(i18n.t("Повторяющиеся фразы"))
+                pu_n_choice = st.radio(
+                    i18n.t("Длина фразы"),
+                    options=["bi", "tri"],
+                    format_func=lambda x: (
+                        i18n.t("биграммы (2 слова)") if x == "bi" else i18n.t("триграммы (3 слова)")
+                    ),
+                    horizontal=True,
+                    key="phr_n_pu",
+                )
+                pu_n_words = 2 if pu_n_choice == "bi" else 3
+                pu_phr = ui_cache.per_user_phrases(
+                    cache_key, messages, n=pu_n_words, top=15
+                ).get(user_id, [])
+                if pu_phr:
+                    pu_phr_df = pd.DataFrame(pu_phr, columns=["phrase", "count"])
+                    fig_pu_phr = px.bar(
+                        pu_phr_df,
+                        x="phrase",
+                        y="count",
+                        template="telanalysis",
+                    )
+                    fig_pu_phr.update_layout(height=300, margin=dict(l=0, r=0, t=10, b=0))
+                    st.plotly_chart(fig_pu_phr, width="stretch")
+                    with st.expander(
+                        i18n.t("Полная таблица ({n})").format(n=len(pu_phr_df)),
+                        expanded=False,
+                    ):
+                        _df(pu_phr_df, width="stretch", hide_index=True)
+                else:
+                    st.caption(i18n.t("Повторяющихся фраз не найдено."))
 
                 # Mat (RU profanity) per-user table. Compares all participants
                 # so you see who swears more in this chat — single user gives
