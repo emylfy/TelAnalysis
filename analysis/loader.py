@@ -1,8 +1,13 @@
-"""Telegram export JSON loader.
+"""Telegram export loader.
 
-Two shapes are supported:
+Two JSON shapes are supported:
 - Single-chat export: top-level dict with `name`, `type`, `messages`.
 - Full archive export: top-level `chats.list[*]` of chats.
+
+HTML exports (Telegram Desktop "Export chat history" → HTML) are also accepted
+via `analysis.html_loader`; `load_export` dispatches on path/extension. HTML is
+lossier than JSON (see html_loader docstring) — the resulting dict carries a
+`_source` marker so the UI can warn.
 
 Loaders return a list of `Chat` records normalised to single-chat shape so
 the rest of the pipeline doesn't care which export it came from.
@@ -10,7 +15,9 @@ the rest of the pipeline doesn't care which export it came from.
 
 from __future__ import annotations
 
+import glob
 import json
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -34,6 +41,32 @@ def is_full_export(data: dict) -> bool:
 def load_json(path: str) -> dict:
     with open(path, encoding="utf-8", errors="replace") as f:
         return json.load(f)
+
+
+def load_export(path: str) -> dict:
+    """Load a Telegram export (JSON or HTML) into single-export dict shape.
+
+    Dispatch:
+    - directory → prefer `result.json`, else fall back to `messages*.html`;
+    - `.html`/`.htm` file → HTML loader;
+    - anything else → JSON loader.
+
+    HTML results carry `_source == "html"`; JSON results have no `_source`.
+    """
+    # Imported lazily so the JSON path doesn't pull in the HTML parser.
+    from analysis import html_loader
+
+    if os.path.isdir(path):
+        json_in_dir = os.path.join(path, "result.json")
+        if os.path.exists(json_in_dir):
+            return load_json(json_in_dir)
+        if glob.glob(os.path.join(path, "messages*.html")):
+            return html_loader.parse_html_export(path)
+        raise FileNotFoundError(f"no result.json or messages*.html in {path}")
+
+    if os.path.splitext(path)[1].lower() in (".html", ".htm"):
+        return html_loader.parse_html_export(path)
+    return load_json(path)
 
 
 def list_chats(data: dict) -> list[Chat]:

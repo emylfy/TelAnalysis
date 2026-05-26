@@ -19,7 +19,9 @@
 
 ## What it does
 
-Reads a Telegram desktop export (single chat or full archive) and renders an interactive dashboard. Tabs adapt to chat type — channels get broadcast-style stats, groups get the network graph and per-user breakdown, 1-on-1 chats get matched-pair analytics.
+Reads a Telegram Desktop export (single chat or full archive) and renders an interactive dashboard. Tabs adapt to chat type — channels get broadcast-style stats, groups get the network graph and per-user breakdown, 1-on-1 chats get matched-pair analytics.
+
+> **JSON is recommended** — in the export dialog switch the format from the default *HTML* to *Machine-readable JSON*. **HTML exports also work** (drop in the export folder or `messages.html`), but they're lossier: Telegram's HTML has no participant IDs, so the Network and Per-User tabs are less accurate for groups (the app warns on load). Either way, exporting is a Telegram Desktop feature — mobile and the native macOS client can't export chat history.
 
 Both export shapes are supported:
 - **Single chat** — `Settings → Export Chat History`
@@ -149,8 +151,8 @@ streamlit run app.py
 
 Open <http://localhost:8501>. In the sidebar the **Source** radio offers two modes:
 
-- **Upload** (default) — drag `result.json` into the dropzone or click to pick. Best under ~65 MB.
-- **File Path** — paste an absolute or repo-relative path (e.g. `demo/group_demo.json`). Significantly faster for big archives — skips the base64-over-WebSocket roundtrip.
+- **Upload** (default) — drag `result.json` (or a `messages.html`) into the dropzone or click to pick. Best under ~65 MB.
+- **File Path** — paste an absolute or repo-relative path (e.g. `demo/group_demo.json`, or a path to an export folder / `messages.html`). Significantly faster for big archives — skips the base64-over-WebSocket roundtrip.
 
 After loading, the file is summarised in a collapsed pill at the top of the sidebar; expand it to swap to a different file. The data never leaves your machine — see [Privacy](#privacy).
 
