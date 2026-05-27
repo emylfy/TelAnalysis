@@ -7,6 +7,7 @@ import { fmtInt } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { BarsH } from "@/components/charts"
 import { TabLoading } from "@/components/loading"
+import { SentimentBlock } from "@/Sentiment"
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -121,7 +122,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
         </Section>
       )}
 
-      {!w.sentiment_available && <p className="text-sm text-muted-foreground">{t("sentimentOff")}</p>}
+      <SentimentBlock path={path} sel={sel} />
     </div>
   )
 }

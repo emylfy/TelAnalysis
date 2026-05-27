@@ -57,11 +57,15 @@ export interface MediaStats {
 }
 export interface EmojiStats {
   chat_top: [string, number][]
+  per_user: Record<string, [string, number][]>
+  user_names: Record<string, string>
   total_emojis: number
   messages_with_emoji: number
 }
 export interface LatencyStats {
   overall_seconds: number[]
+  per_user_seconds: Record<string, number[]>
+  user_names: Record<string, string>
   median_seconds: number
   p90_seconds: number
   qa_seconds: number[]
@@ -132,6 +136,117 @@ export interface GraphResult {
   edges: [string, string, string][]
   summary: InteractionRow[]
 }
+export interface ChainStats {
+  max_depth: number
+  avg_depth: number
+  chain_count: number
+  depth_distribution: [number, number][]
+}
+export interface SentimentPoint {
+  period?: string
+  hour?: number
+  weekday?: number
+  user_id?: string
+  avg: number
+  count: number
+}
+export interface SentimentResult {
+  available: boolean
+  avg?: number
+  sarcasm_marked?: number
+  weekly?: SentimentPoint[]
+  per_user_weekly?: SentimentPoint[]
+  by_hour?: SentimentPoint[]
+  by_weekday?: SentimentPoint[]
+  user_names?: Record<string, string>
+  positive?: [string, number, string][]
+  negative?: [string, number, string][]
+}
+export interface Distinguishing {
+  available: boolean
+  a_name?: string
+  b_name?: string
+  a?: [string, number, number][]
+  b?: [string, number, number][]
+}
+export interface DirectionStats {
+  responder_id: string
+  responder_name: string
+  initiator_id: string
+  initiator_name: string
+  median_seconds: number
+  p90_seconds: number
+  within_5m: number
+  within_30m: number
+  within_60m: number
+}
+export interface Reciprocity {
+  available: boolean
+  a_to_b: DirectionStats | null
+  b_to_a: DirectionStats | null
+}
+export interface StreakStats {
+  longest_streak_days: number
+  longest_streak_start: string | null
+  longest_streak_end: string | null
+  current_streak_days: number
+  total_active_days: number
+  longest_silences: [string, string, number][]
+}
+export interface InitiatorRow {
+  user_id: string
+  name: string
+  initiations: number
+  share: number
+}
+export interface InitiatorStats {
+  gap_hours: number
+  rows: InitiatorRow[]
+  total_initiations: number
+}
+export interface UserForwards {
+  user_id: string
+  name: string
+  total_messages: number
+  forwarded_count: number
+  top_sources: [string, number][]
+}
+export interface ForwardsStats {
+  per_user: Record<string, UserForwards>
+  chat_total_messages: number
+  chat_forwarded_count: number
+}
+export interface UserMat {
+  user_id: string
+  name: string
+  total_messages: number
+  mat_messages: number
+  mat_hits: number
+}
+export interface MatStats {
+  per_user: Record<string, UserMat>
+  weekly_totals: [string, number][]
+}
+export interface UserStickers {
+  user_id: string
+  name: string
+  total_stickers: number
+  top_emojis: [string, number][]
+}
+export interface Milestone {
+  label: string
+  value: number
+  when: string | null
+  days_until: number | null
+}
+export interface Anniversaries {
+  days_since_start: number
+  total_messages: number
+  crossed_days: Milestone[]
+  crossed_counts: Milestone[]
+  upcoming_day: Milestone | null
+  upcoming_count: Milestone | null
+}
 
 // chat / period selector passed to every analysis call
 type Sel = { chat?: string; from?: string; to?: string; lang?: string }
@@ -144,8 +259,12 @@ export const api = {
   kpis: (path: string, s?: Sel) => get<Kpis>("kpis", p(path, s)),
   hero: (path: string, s?: Sel) => get<Hero>("hero", p(path, s)),
   highlights: (path: string, s?: Sel) => get<{ highlights: Highlight[] }>("highlights", p(path, s)),
-  perDay: (path: string, s?: Sel) => get<{ per_day: [string, number][] }>("per-day", p(path, s)),
-  hourWeekday: (path: string, s?: Sel) => get<{ grid: number[][] }>("hour-weekday", p(path, s)),
+  perDay: (path: string, s?: Sel, user?: string) =>
+    get<{ per_day: [string, number][] }>("per-day", { ...p(path, s), user }),
+  hourWeekday: (path: string, s?: Sel, user?: string) =>
+    get<{ grid: number[][] }>("hour-weekday", { ...p(path, s), user }),
+  participants: (path: string, s?: Sel) =>
+    get<{ participants: [string, string, number][] }>("participants", p(path, s)),
   media: (path: string, s?: Sel) => get<MediaStats>("media", p(path, s)),
   emojis: (path: string, s?: Sel) => get<EmojiStats>("emojis", p(path, s)),
   latency: (path: string, s?: Sel) => get<LatencyStats>("latency", p(path, s)),
@@ -156,10 +275,22 @@ export const api = {
   phrases: (path: string, s?: Sel, n = 2, top = 30) =>
     get<{ phrases: [string, number][] }>("phrases", { ...p(path, s), n, top }),
   graph: (path: string, s?: Sel) => get<GraphResult>("graph", p(path, s)),
+  chains: (path: string, s?: Sel) => get<ChainStats>("chains", p(path, s)),
   channel: (path: string, s?: Sel) => get<ChannelResult>("channel", p(path, s)),
   speaking: (path: string, s?: Sel) => get<Record<string, SpeakingStyle>>("speaking", p(path, s)),
   perUserPhrases: (path: string, s?: Sel, n = 2, top = 15) =>
     get<Record<string, [string, number][]>>("per-user-phrases", { ...p(path, s), n, top }),
+  sentiment: (path: string, s?: Sel, top = 10) => get<SentimentResult>("sentiment", { ...p(path, s), top }),
+  distinguishing: (path: string, s?: Sel, top = 15) =>
+    get<Distinguishing>("distinguishing", { ...p(path, s), top }),
+  reciprocity: (path: string, s?: Sel) => get<Reciprocity>("reciprocity", p(path, s)),
+  streaks: (path: string, s?: Sel, user?: string) =>
+    get<StreakStats>("streaks", { ...p(path, s), user }),
+  initiators: (path: string, s?: Sel) => get<InitiatorStats>("initiators", p(path, s)),
+  forwards: (path: string, s?: Sel) => get<ForwardsStats>("forwards", p(path, s)),
+  mat: (path: string, s?: Sel) => get<MatStats>("mat", p(path, s)),
+  stickers: (path: string, s?: Sel) => get<Record<string, UserStickers>>("stickers", p(path, s)),
+  anniversaries: (path: string, s?: Sel) => get<Anniversaries>("anniversaries", p(path, s)),
 }
 
 /** Wordcloud is an image endpoint — build the URL for an <img src>. */
