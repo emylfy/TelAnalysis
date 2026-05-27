@@ -1,0 +1,4 @@
+# Backend (FastAPI) deps — the React SPA migration (see plan).
+# Analysis deps live in the root requirements.txt; this app imports analysis/.
+fastapi>=0.136
+uvicorn[standard]>=0.47
