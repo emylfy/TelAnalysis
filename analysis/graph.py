@@ -157,11 +157,12 @@ def render_pyvis_html(graph: GraphData, height: str = "700px") -> str | None:
     except Exception:
         pass
 
-    palette = [
-        "#5B8FF9",
-        "#5AD8A6",
-        "#F6BD16",
-        "#E86452",
+    # Reuse the shared colorway so community colours match the rest of the
+    # dashboard, then extend with extra distinct hues for graphs with many
+    # communities.
+    from analysis import theme as theme_mod
+
+    palette = list(theme_mod.COLORWAY) + [
         "#6DC8EC",
         "#945FB9",
         "#FF9845",
@@ -173,8 +174,8 @@ def render_pyvis_html(graph: GraphData, height: str = "700px") -> str | None:
     net = Network(
         height=height,
         width="100%",
-        bgcolor="#0e1117",
-        font_color="#e6e6e6",
+        bgcolor=theme_mod.PALETTE["bg"],
+        font_color=theme_mod.PALETTE["neutral_bright"],
         directed=False,
         notebook=False,
         cdn_resources="remote",

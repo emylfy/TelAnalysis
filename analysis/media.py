@@ -10,6 +10,8 @@ from urllib.parse import urlparse
 
 import jmespath
 
+from ui import i18n
+
 
 @dataclass
 class MediaStats:
@@ -20,26 +22,30 @@ class MediaStats:
     total_links: int = 0
 
 
-_KIND_LABELS = {
-    "text": "Text",
-    "photo": "Photo",
-    "video_file": "Video",
-    "video_message": "Video msg (round)",
-    "voice_message": "Voice",
-    "audio_file": "Audio",
-    "sticker": "Sticker",
-    "animation": "Animation/GIF",
-    "file": "File",
-    "location": "Location",
-    "contact": "Contact",
-    "poll": "Poll",
-    "service": "Service",
-    "other": "Other",
+_KIND_LABELS: dict[str, tuple[str, str]] = {
+    "text": ("Текст", "Text"),
+    "photo": ("Фото", "Photo"),
+    "video_file": ("Видео", "Video"),
+    "video_message": ("Кружок", "Video msg (round)"),
+    "voice_message": ("Голосовое", "Voice"),
+    "audio_file": ("Аудио", "Audio"),
+    "sticker": ("Стикер", "Sticker"),
+    "animation": ("GIF", "Animation/GIF"),
+    "file": ("Файл", "File"),
+    "location": ("Геопозиция", "Location"),
+    "contact": ("Контакт", "Contact"),
+    "poll": ("Опрос", "Poll"),
+    "service": ("Сервисное", "Service"),
+    "other": ("Другое", "Other"),
 }
 
 
 def kind_label(kind: str) -> str:
-    return _KIND_LABELS.get(kind, kind)
+    """Localized media-kind label (RU/EN). Unknown kinds fall back to the code."""
+    pair = _KIND_LABELS.get(kind)
+    if pair is None:
+        return kind
+    return pair[0] if i18n.get_lang() == "ru" else pair[1]
 
 
 def _classify(m: dict) -> str:
@@ -162,15 +168,15 @@ def analyze(messages: list[dict]) -> MediaStats:
 def humanize_duration(seconds: int) -> str:
     seconds = int(seconds)
     if seconds < 60:
-        return f"{seconds}s"
+        return f"{seconds}{i18n.dur_unit('s')}"
     minutes = seconds // 60
     s = seconds % 60
     if minutes < 60:
-        return f"{minutes}m {s}s"
+        return f"{minutes}{i18n.dur_unit('m')} {s}{i18n.dur_unit('s')}"
     hours = minutes // 60
     m = minutes % 60
     if hours < 24:
-        return f"{hours}h {m}m"
+        return f"{hours}{i18n.dur_unit('h')} {m}{i18n.dur_unit('m')}"
     days = hours // 24
     h = hours % 24
-    return f"{days}d {h}h"
+    return f"{days}{i18n.dur_unit('d')} {h}{i18n.dur_unit('h')}"

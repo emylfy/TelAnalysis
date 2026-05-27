@@ -11,11 +11,29 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from analysis import theme as theme_mod
+from ui import i18n
 
 
 def fmt_int(n: int) -> str:
     """Thin-space-grouped integer (Russian convention)."""
     return f"{int(n):,}".replace(",", " ")
+
+
+def logo_svg(size: int = 56) -> str:
+    """Brand mark — a rounded tile with three ascending bars in the palette.
+    Shared by the onboarding welcome and the sidebar brand so they stay in sync.
+    """
+    p = theme_mod.PALETTE
+    return (
+        f"<svg width='{size}' height='{size}' viewBox='0 0 56 56' fill='none' "
+        "style='display:inline-block;vertical-align:middle'>"
+        "<rect width='56' height='56' rx='14' fill='rgba(255,255,255,0.04)' "
+        "stroke='rgba(255,255,255,0.10)'/>"
+        f"<rect x='15' y='30' width='6' height='11' rx='2' fill='{p['primary']}'/>"
+        f"<rect x='25' y='22' width='6' height='19' rx='2' fill='{p['success']}'/>"
+        f"<rect x='35' y='15' width='6' height='26' rx='2' fill='{p['accent']}'/>"
+        "</svg>"
+    )
 
 
 def bignum_html(label: str, value: str, context: str = "") -> str:
@@ -29,12 +47,18 @@ def bignum_html(label: str, value: str, context: str = "") -> str:
 
 
 def hero_html(hero, chat_type: str, chat_id) -> str:
-    """Render the hero block from HeroData. Used at the top of the page."""
+    """Render the hero block from HeroData. Used at the top of the page.
+
+    The raw chat type is humanized (personal_chat → «Личный чат») and the
+    technical chat ID is dropped from the visible meta — kept only as a hover
+    title for debugging.
+    """
     return (
         f'<div class="tla-hero">'
         f'<h1 class="tla-hero-title">{hero.title}</h1>'
         f'<p class="tla-hero-prose">{hero.prose_html}</p>'
-        f'<div class="tla-hero-meta">{hero.meta}  ·  {chat_type}  ·  ID {chat_id}</div>'
+        f'<div class="tla-hero-meta" title="ID {chat_id}">'
+        f"{hero.meta}  ·  {i18n.chat_type_label(chat_type)}</div>"
         f"</div>"
     )
 
@@ -76,7 +100,7 @@ def calendar_heatmap_fig(df: pd.DataFrame, binary: bool = False) -> go.Figure | 
     cal["week"] = cal["date"].dt.isocalendar().week
 
     years = sorted(cal["year"].unique())
-    weekdays_lbl = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weekdays_lbl = i18n.weekday_short_labels()
     fig = make_subplots(
         rows=len(years),
         cols=1,
@@ -115,8 +139,11 @@ def calendar_heatmap_fig(df: pd.DataFrame, binary: bool = False) -> go.Figure | 
             row=idx,
             col=1,
         )
+    title = i18n.t("Календарь")
+    if binary:
+        title = f"{title} · {i18n.t('писали/нет')}"
     fig.update_layout(
-        title="Calendar heatmap" + (" (binary)" if binary else ""),
+        title=title,
         template="telanalysis",
         height=180 * len(years) + 40,
         margin=dict(l=0, r=0, t=60, b=0),
@@ -128,6 +155,7 @@ def calendar_heatmap_fig(df: pd.DataFrame, binary: bool = False) -> go.Figure | 
 
 __all__ = [
     "fmt_int",
+    "logo_svg",
     "bignum_html",
     "hero_html",
     "highlights_grid_html",

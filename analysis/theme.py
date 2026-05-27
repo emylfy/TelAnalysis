@@ -189,6 +189,7 @@ CSS = f"""
     border-radius: 10px;
     background: var(--tla-card);
     border: 1px solid var(--tla-border);
+    border-left: 2px solid rgba(255, 107, 107, 0.45);
     transition: background 0.15s ease;
 }}
 .tla-hl-card:hover {{
@@ -216,14 +217,121 @@ CSS = f"""
     margin-top: 0.15rem;
 }}
 
-/* Tabs: sticky on scroll */
-div[data-baseweb="tab-list"] {{
-    position: sticky;
-    top: 2.875rem;
-    z-index: 99;
-    background: var(--tla-bg);
-    backdrop-filter: blur(10px);
+/* Sidebar brand + chat-context header (replaces stock st.success boxes) */
+.tla-brand {{
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.25rem 0 0.5rem 0;
 }}
+.tla-brand-name {{
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--tla-bright);
+}}
+.tla-chat-head {{
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    background: var(--tla-card);
+    border: 1px solid var(--tla-border);
+}}
+.tla-chat-head-name {{
+    font-weight: 600;
+    color: var(--tla-bright);
+    font-size: 0.95rem;
+    line-height: 1.25;
+    word-break: break-word;
+}}
+.tla-chat-pill {{
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--tla-dim);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--tla-border);
+    border-radius: 999px;
+    padding: 0.1rem 0.55rem;
+}}
+
+/* Top context bar — sticky; replaces the left sidebar entirely.
+   Sticky must sit on the stLayoutWrapper (its containing block is the tall main
+   column); the inner .st-key-tla_topbar's own parent is only bar-height, so
+   position:sticky there has nowhere to stick. */
+[data-testid="stLayoutWrapper"]:has(> .st-key-tla_topbar) {{
+    position: sticky;
+    top: 0;
+    z-index: 101;
+    background: var(--tla-bg);
+    border-bottom: 1px solid var(--tla-border);
+    margin-bottom: 0.75rem;
+}}
+.st-key-tla_topbar {{ padding: 0.35rem 0 0.4rem 0; }}
+.st-key-tla_topbar .tla-brand {{ margin: 0; }}
+section[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {{
+    display: none !important;
+}}
+
+/* Top-bar controls — "quiet/ghost" family: faint surface, hairline border,
+   light hover. Modern toolbar feel vs heavy filled boxes. */
+.st-key-tla_topbar div[data-baseweb="select"] > div,
+.st-key-tla_topbar [data-testid="stDateInput"] div[data-baseweb="input"] {{
+    min-height: 40px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.07);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}}
+.st-key-tla_topbar div[data-baseweb="select"]:hover > div,
+.st-key-tla_topbar [data-testid="stDateInput"] div[data-baseweb="input"]:hover {{
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}}
+/* Reset = ghost icon button (no border/fill until hover). */
+.st-key-tla_topbar [data-testid="stButton"] button {{
+    height: 40px;
+    border-radius: 9px;
+    background: transparent;
+    border: none;
+    color: var(--tla-dim);
+    transition: background 0.15s ease, color 0.15s ease;
+}}
+.st-key-tla_topbar [data-testid="stButton"] button:hover {{
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--tla-bright);
+}}
+/* RU/EN segmented toggle — quiet container, accent only on the active segment. */
+.st-key-tla_topbar div[role="radiogroup"] {{
+    flex-direction: row;
+    flex-wrap: nowrap;
+    width: fit-content;
+    gap: 0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 9px;
+    padding: 3px;
+    align-items: center;
+}}
+.st-key-tla_topbar div[role="radiogroup"] > label p {{ white-space: nowrap; font-size: 0.85rem; }}
+.st-key-tla_topbar div[role="radiogroup"] > label {{
+    margin: 0;
+    padding: 0.25rem 0.7rem;
+    border-radius: 7px;
+    transition: background 0.15s ease;
+}}
+.st-key-tla_topbar div[role="radiogroup"] > label > div:first-child {{
+    display: none;
+}}
+.st-key-tla_topbar div[role="radiogroup"] > label:has(input:checked) {{
+    background: var(--tla-accent);
+}}
+.st-key-tla_topbar div[role="radiogroup"] > label:has(input:checked) p {{
+    color: #ffffff;
+}}
+
+/* Tabs sit in normal flow (the context bar above is the sticky element). */
 button[data-baseweb="tab"] {{
     font-size: 0.95rem;
     padding: 0.5rem 0.75rem;
@@ -232,6 +340,61 @@ button[data-baseweb="tab"] {{
 /* Lift selectbox / popover portals above the sticky tab bar (z-index: 99). */
 div[data-baseweb="popover"] {{
     z-index: 1000 !important;
+}}
+
+/* --- st.metric → match the card system ---
+   The top KPI row uses custom .tla-bignum cards; the ~45 st.metric calls
+   inside tabs were stock Streamlit, so the body looked "cheaper" than the
+   header. Styling the metric here unifies all three number components
+   (.tla-bignum / .tla-hl-card / st.metric) without touching any call site —
+   keeping st.metric's help-tooltip and delta. Value is one step smaller than
+   the hero KPI (1.5 vs 1.75rem) so the visual hierarchy reads top-down. */
+[data-testid="stMetric"] {{
+    background: var(--tla-card);
+    border: 1px solid var(--tla-border);
+    border-radius: 10px;
+    padding: 0.7rem 0.95rem;
+    transition: background 0.15s ease;
+    height: 100%;
+}}
+[data-testid="stMetric"]:hover {{ background: var(--tla-card-hover); }}
+[data-testid="stMetricLabel"] {{
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--tla-dim);
+}}
+[data-testid="stMetricValue"] {{
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--tla-bright);
+    font-variant-numeric: tabular-nums;
+}}
+
+/* --- Type scale + vertical rhythm for section headers ---
+   Sections are rendered as raw `### …` / st.subheader (default Streamlit h2/h3),
+   untethered from the hero/card type scale. Pin a consistent size/weight and a
+   top margin so sections read as deliberate dividers with even spacing, not
+   markdown. Hero (.tla-hero-title) and sidebar use h1, so h2/h3/h4 is safe. */
+.stApp h2, .stApp h3, .stApp h4 {{
+    color: var(--tla-bright);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}}
+.stApp h3 {{ font-size: 1.25rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.4rem; }}
+.stApp h4 {{ font-size: 1.05rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.3rem; }}
+
+/* --- Content max-width ---
+   layout="wide" stretches line charts into an unreadable ribbon on large
+   monitors. Cap and centre the main column; the network graph (fixed-size
+   iframe) is unaffected. */
+.stMainBlockContainer, [data-testid="stMainBlockContainer"], .block-container {{
+    max-width: 1320px;
+    margin-left: auto;
+    margin-right: auto;
 }}
 </style>
 """

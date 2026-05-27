@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 
+from ui import i18n
+
 
 @dataclass
 class LatencyStats:
@@ -143,7 +145,7 @@ def compute(messages: list[dict], cap_hours: int = 24) -> LatencyStats:
 def humanize_seconds(s: float) -> str:
     s = int(s)
     if s < 60:
-        return f"{s}s"
+        return f"{s}{i18n.dur_unit('s')}"
     if s < 3600:
-        return f"{s // 60}m {s % 60}s"
-    return f"{s // 3600}h {(s % 3600) // 60}m"
+        return f"{s // 60}{i18n.dur_unit('m')} {s % 60}{i18n.dur_unit('s')}"
+    return f"{s // 3600}{i18n.dur_unit('h')} {(s % 3600) // 60}{i18n.dur_unit('m')}"

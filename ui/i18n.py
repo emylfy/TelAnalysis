@@ -38,8 +38,25 @@ EN: dict[str, str] = {
     "Объединено: {n} чатов, {m} сообщений всего": "Merged: {n} chats, {m} messages total",
     "Чат": "Chat",
     "ID чата": "Chat ID",
-    # empty state
-    "JSON-экспорт telegram — в сайдбаре слева.\n\n**Один чат** — `Настройки → Экспорт переписки`.\n\n**Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`. Появится выбор чата.\n\nHTML-экспорт тоже принимается (путь к папке или `messages.html`), но JSON точнее.": "Telegram JSON export — in the sidebar on the left.\n\n**Single chat** — `Settings → Export Chat History`.\n\n**Full archive** — `Settings → Advanced → Export Telegram Data`. A chat picker will appear.\n\nHTML exports are also accepted (path to the folder or `messages.html`), but JSON is more accurate.",
+    # empty state / onboarding
+    "Локальная аналитика Telegram-переписок — данные не покидают устройство": "Local Telegram chat analytics — your data never leaves your machine",
+    "Перетаскивание экспорта сюда или выбор файла": "Drop your export here or pick a file",
+    "Открыть демо": "Open Demo",
+    "Демо · групповой чат": "Demo · group chat",
+    "Заметное": "Highlights",
+    "Архив": "Archive",
+    "Все чаты": "All chats",
+    "Демо · личный чат": "Demo · personal chat",
+    "Групповой чат": "Group chat",
+    "Личный чат": "Personal chat",
+    "Посмотреть на демо-данных:": "Try it on demo data:",
+    "Нет своего экспорта? Посмотреть демо": "No export of your own? Try the demo",
+    "Путь к файлу или папке экспорта": "Path to the export file or folder",
+    "Путь — без лимита по размеру, быстрее для больших архивов.": "Path mode has no size limit and is faster for big archives.",
+    "Как получить экспорт?": "How to get the export?",
+    "До 200 МБ · JSON / HTML": "Up to 200 MB · JSON / HTML",
+    "Выбрать файл": "Choose a file",
+    "В **Telegram Desktop**:\n\n- **Один чат** — `Настройки → Экспорт переписки`\n- **Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`\n\nВ окне экспорта нужно выбрать формат **JSON**. HTML тоже работает (папка или `messages.html`), но менее точен.": "In **Telegram Desktop**:\n\n- **Single chat** — `Settings → Export Chat History`\n- **Full account** — `Settings → Advanced → Export Telegram Data`\n\nIn the export dialog choose **JSON**. HTML also works (folder or `messages.html`), but it's less accurate.",
     "HTML-экспорт: текст и время разобраны точно, но идентификаторы участников восстановлены по имени. В группах вкладки «Сеть» и «По участникам» менее точны (тёзки/переименования сольются). Для полного анализа экспортируй в формате JSON.": "HTML export: text and timestamps are parsed exactly, but participant identities are reconstructed from display names. In groups the Network and Per-User tabs are less accurate (namesakes/renames collapse together). Export as JSON for full analysis.",
     # period filter
     "Период · вся история": "Period · Full History",
@@ -72,7 +89,7 @@ EN: dict[str, str] = {
     "250k сообщений": "250k messages",
     "500k сообщений": "500k messages",
     "1 млн сообщений": "1M messages",
-    "Этот таб переделывается. Скоро здесь будет story-timeline по эпохам — пока смотри Обзор и По участникам.": "This tab is being rebuilt. A story-timeline by epochs is coming — for now use Overview and Per User.",
+    "Этот таб переделывается. Скоро здесь будет story-timeline по эпохам — пока доступны Обзор и По участникам.": "This tab is being rebuilt. A story-timeline by epochs is coming — for now use Overview and Per User.",
     # tabs
     "Обзор": "Overview",
     "Сеть": "Network",
@@ -86,18 +103,17 @@ EN: dict[str, str] = {
     "О чём говорят": "What About",
     "Кто кому": "Who To Whom",
     # Overview — captions / sub-elements
-    "Для drill-down по клику нужен `streamlit-plotly-events`.": "Install `streamlit-plotly-events` to drill into a day by clicking the chart.",
     "Выбран день: {d}": "Selected Day: {d}",
     "очистить": "Clear",
     "Топ эмоджи дня: {top}": "Top Emojis Of The Day: {top}",
     "пример: «{s}…»": "example: «{s}…»",
     "Когда совпадают активности": "When Activities Overlap",
     "оба активны": "Both Active",
-    "Пик совместной активности — около {h}:00. Бары нормализованы пер-юзер — справедливо при разной активности.": "Peak shared activity around {h}:00. Bars normalized per user — fair when activity differs.",
+    "Пик совместной активности — около {h}:00. Бары нормализованы по пользователям — справедливо при разной активности.": "Peak shared activity around {h}:00. Bars normalized per user — fair when activity differs.",
     "Разговоров": "Conversations",
     "Граница разговора (минут паузы)": "Conversation Boundary (Min Pause)",
     "Если пауза между сообщениями больше — это уже новый разговор.": "If the pause between messages is longer than this — it's a new conversation.",
-    "Сообщ./разговор (avg)": "Msgs/Conversation (Avg)",
+    "Сообщ./разговор (среднее)": "Msgs/conversation (avg)",
     "медиана {m}": "median {m}",
     "Самый долгий": "Longest",
     "Все эмоджи · {a} в {b} сообщ.": "All Emojis · {a} in {b} msgs",
@@ -110,17 +126,19 @@ EN: dict[str, str] = {
     "Узлов": "Nodes",
     "Связей": "Edges",
     "Граф скрыт: участников всего {n} — бар-чарт выше уже рассказывает всю историю.": "Graph hidden: only {n} participants — the bar chart above tells the whole story.",
-    "Drawing interactive graph…": "Drawing interactive graph…",
+    "Построение интерактивного графа…": "Drawing interactive graph…",
     "Граф ответов": "Reply Graph",
-    "Drag nodes · scroll to zoom · hover for details. Edges merged by reply count, thickness ~ frequency. Colours = communities (Louvain modularity).": "Drag nodes · scroll to zoom · hover for details. Edges merged by reply count, thickness ~ frequency. Colours = communities (Louvain modularity).",
-    "Graph too large to render interactively ({n} nodes). Use the CSVs below in Gephi.": "Graph too large to render interactively ({n} nodes). Use the CSVs below in Gephi.",
-    "Download CSVs (Gephi-compatible)": "Download CSVs (Gephi-Compatible)",
-    "Who messages, who replies": "Who Messages, Who Replies",
-    "No participants found in this chat (only service events?).": "No participants found in this chat (only service events?).",
+    "Перетаскивание узлов · колесо — зум · наведение для деталей. Рёбра объединены по числу ответов, толщина ~ частоте. Цвета — сообщества (Louvain modularity).": "Drag nodes · scroll to zoom · hover for details. Edges merged by reply count, thickness ~ frequency. Colours = communities (Louvain modularity).",
+    "Граф слишком большой для интерактивного рендера ({n} узлов). CSV для Gephi — ниже.": "Graph too large to render interactively ({n} nodes). Use the CSVs below in Gephi.",
+    "Скачать CSV (для Gephi)": "Download CSVs (Gephi-compatible)",
+    "Узлы (CSV)": "Nodes (CSV)",
+    "Связи (CSV)": "Edges (CSV)",
+    "Кто пишет, кто отвечает": "Who messages, who replies",
+    "В этом чате нет участников (только сервисные события?).": "No participants found in this chat (only service events?).",
     # tabs — Words
     "Топ слов": "Top Words",
     "Сколько слов показывать в облаках и таблицах": "How many words to show in clouds and tables",
-    "Проанализировано юзеров": "Users Analysed",
+    "Проанализировано пользователей": "Users Analysed",
     "Email-ов": "Emails",
     "Телефонов": "Phones",
     "Топ {n} слов по чату": "Top {n} Words Across The Chat",
@@ -145,7 +163,7 @@ EN: dict[str, str] = {
     "триграммы (3 слова)": "trigrams (3 words)",
     "Сколько крайних показывать": "How many extremes to show",
     "Сколько": "How many",
-    "TTR = уникальные / всего токенов (после фильтра стоп-слов). Выше = разнообразнее словарь. TTR зависит от длины — короткие выборки получают выше; корректно сравнивать юзеров с похожим количеством токенов.": "TTR = unique / total tokens (after stop-word filter). Higher = more diverse vocabulary. TTR is length-sensitive — shorter samples score higher; compare users with similar token counts.",
+    "TTR = уникальные / всего токенов (после фильтра стоп-слов). Выше = разнообразнее словарь. TTR зависит от длины — короткие выборки получают выше; корректно сравнивать пользователей с похожим количеством токенов.": "TTR = unique / total tokens (after stop-word filter). Higher = more diverse vocabulary. TTR is length-sensitive — shorter samples score higher; compare users with similar token counts.",
     "Участник": "Participant",
     "Облако слов — {name}": "Wordcloud — {name}",
     "Средний сентимент: {s} ⚠ не учитывает сарказм/шутки/слэнг": "Average Sentiment: {s} ⚠ doesn't account for sarcasm/jokes/slang",
@@ -213,7 +231,7 @@ EN: dict[str, str] = {
     "{n} из {t} сообщений — пересылки откуда-то ещё.": "{n} of {t} messages — forwarded from elsewhere.",
     "Топ источников:": "Top Sources:",
     "Самые длинные монологи": "Longest Monologues",
-    "Подряд N+ сообщений от одного юзера без ответа другого. Высокий N — кто-то рассказывал длинную историю или выговаривался.": "N+ consecutive messages from one user with no reply in between. High N = someone told a long story or vented.",
+    "Подряд N+ сообщений от одного пользователя без ответа другого. Высокий N — кто-то рассказывал длинную историю или выговаривался.": "N+ consecutive messages from one user with no reply in between. High N = someone told a long story or vented.",
     "Мат": "Profanity",
     "Совпадение по корням (хуй, пизд, ебат, бляд...) с word boundary. Может ловить и редкие нейтральные слова.": "Match by Russian profanity roots with word boundary. May catch occasional neutral words.",
     "Q&A медиана": "Q&A Median",
@@ -283,7 +301,7 @@ EN: dict[str, str] = {
     "Скорость ответа": "Reply Latency",
     "Эмоджи не найдены.": "No emojis found.",
     "У этого участника нет ответов.": "No replies recorded for this user.",
-    "Медиана {m} · p90 {p} · {n}": "Median {m} · p90 {p} · {n}",
+    "Обычно за {m} · 90% быстрее {p} · {n}": "Usually {m} · 90% within {p} · {n}",
     "Всего токенов": "Total Tokens",
     "Уникальных токенов": "Unique Tokens",
     "TTR (разнообразие)": "TTR (Diversity)",
@@ -312,8 +330,9 @@ EN: dict[str, str] = {
     "**Топ-5 позитивных моментов**": "**Top 5 Positive Moments**",
     "**Топ-5 негативных моментов**": "**Top 5 Negative Moments**",
     # data — empty / errors
-    "No messages in selected range.": "No messages in selected range.",
-    "No dated messages.": "No dated messages.",
+    "Нет сообщений в выбранном периоде.": "No messages in selected range.",
+    "Нет сообщений с датами.": "No dated messages.",
+    "👆 Клик по точке на графике раскрывает день.": "👆 Click a point on the chart to drill into that day.",
     # hero prose templates
     "За {days} здесь написали {messages} — это в среднем {avg} в день.": "Over {days} here wrote {messages} — that's {avg} a day on average.",
     "Самый шумный день — {date}, {messages} за сутки.": "Loudest day — {date}, {messages} in 24 hours.",
@@ -344,7 +363,23 @@ EN: dict[str, str] = {
     "Медиана ответа": "Median Reply",
     "p90 ответа": "p90 Reply",
     "Всего ответов": "Total Replies",
-    "{n} ответов (>{h}ч) не учтены в медиане/p90 — это {p}% всех пар.": "{n} replies (>{h}h) excluded from median/p90 — that's {p}% of all pairs.",
+    "Обычно отвечают за": "Usually reply within",
+    "90% ответов — быстрее": "90% of replies — faster than",
+    "Пар вопрос-ответ": "Question→reply pairs",
+    "Ответы на вопросы (на сообщения с «?»)": "Replies to questions (messages with '?')",
+    "Половина ответов — быстрее": "Half of replies — faster than",
+    "Ответов учтено": "Replies counted",
+    "Вопросов с ответом": "Questions with a reply",
+    "Сколько ответов вошло в расчёт времени выше. Ответы дольше суток в расчёт не входят.": "How many replies feed the times above. Replies slower than a day are excluded.",
+    "Сколько вопросов получили ответ и вошли в расчёт времени выше.": "How many questions got a reply and feed the times above.",
+    "Половина ответов на вопросы — быстрее этого значения. По сравнению с ответами на все сообщения: {d}.": "Half of replies to questions are faster than this. Versus replies to all messages: {d}.",
+    "Половина быстрее {m} · 90% быстрее {p} · {n}": "Half within {m} · 90% within {p} · {n}",
+    "Серединное время ответа: половина ответов быстрее этого значения, половина — медленнее. Медиана, а не среднее, чтобы редкие очень поздние ответы не искажали цифру.": "Middle reply time: half of all replies are faster than this, half slower. Median, not average, so a few very late replies don't skew the number.",
+    "90-й перцентиль: 90% ответов укладываются в это время, и только самые медленные 10% — дольше. Это «почти худший» случай, а не среднее.": "90th percentile: 90% of replies land within this time; only the slowest 10% take longer. The near-worst case, not the average.",
+    "Сколько пар «сообщение → ответ» учтено в медиане и p90.": "How many 'message → reply' pairs feed the median and p90.",
+    "90-й перцентиль времени ответа на сообщения с вопросом («?»): 90% таких ответов быстрее этого значения.": "90th-percentile reply time for messages with a question ('?'): 90% of such replies are faster than this.",
+    "Сколько пар «вопрос → ответ» (сообщения с «?») учтено.": "How many 'question → reply' pairs (messages with '?') were counted.",
+    "{n} ответов (>{h}ч) не вошли в расчёт — это {p}% всех пар.": "{n} replies (>{h}h) excluded from the stats — that's {p}% of all pairs.",
     "между сообщениями": "between messages",
     # media kind labels (RU keys for translation)
     "Текст": "Text",
@@ -364,8 +399,26 @@ EN: dict[str, str] = {
 }
 
 
+import contextvars
+
+# Per-request language override for non-Streamlit callers (the FastAPI backend
+# sets this from a ?lang= param). contextvars keep it correct under async /
+# threadpool concurrency. Streamlit path is unaffected (override stays None).
+_lang_override: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "tla_lang_override", default=None
+)
+
+
+def set_lang(lang: str | None) -> None:
+    """Force the active language for the current context (FastAPI request)."""
+    _lang_override.set(lang)
+
+
 def get_lang() -> str:
-    """Active language. Falls back to 'ru' outside Streamlit (tests)."""
+    """Active language. Override (API) > Streamlit session > 'ru' fallback."""
+    override = _lang_override.get()
+    if override in ("ru", "en"):
+        return override
     if _st is None:
         return "ru"
     try:
@@ -539,6 +592,43 @@ def hour_to_human(h: int) -> str:
     if h < 18:
         return t("{h}:00 дня").format(h=h)
     return t("{h}:00 вечера").format(h=h)
+
+
+# duration-unit suffixes, lang-aware
+
+
+def dur_unit(kind: str) -> str:
+    """Short duration-unit suffix for humanized times. kind ∈ {'s','m','h','d'}.
+
+    Single Russian letters mirror the English layout exactly
+    ("9h 25m" → "9ч 25м"), so the compact metric-card formatting stays
+    identical across languages.
+    """
+    ru = {"s": "с", "m": "м", "h": "ч", "d": "д"}
+    en = {"s": "s", "m": "m", "h": "h", "d": "d"}
+    return (ru if get_lang() == "ru" else en).get(kind, kind)
+
+
+# chat-type → human label, lang-aware
+
+_CHAT_TYPE: dict[str, tuple[str, str]] = {
+    "personal_chat": ("Личный чат", "Personal chat"),
+    "private_group": ("Группа", "Group"),
+    "private_supergroup": ("Группа", "Group"),
+    "public_supergroup": ("Группа", "Group"),
+    "private_channel": ("Канал", "Channel"),
+    "public_channel": ("Канал", "Channel"),
+    "saved_messages": ("Избранное", "Saved Messages"),
+    "bot_chat": ("Бот", "Bot"),
+    "multichat": ("Объединённый", "Combined"),
+}
+
+
+def chat_type_label(chat_type: str) -> str:
+    """Human-readable chat type, e.g. 'personal_chat' → «Личный чат» / 'Personal chat'.
+    Unknown types fall back to the raw string."""
+    ru, en = _CHAT_TYPE.get(chat_type, (chat_type, chat_type))
+    return ru if get_lang() == "ru" else en
 
 
 __all__ = [

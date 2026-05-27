@@ -2,7 +2,6 @@
 streamlit==1.57.0
 plotly==6.7.0
 pyvis==0.3.2
-streamlit-plotly-events==0.0.6  # click-event capture from plotly charts (drill-downs)
 
 # Data processing + analytics
 pandas==3.0.2
