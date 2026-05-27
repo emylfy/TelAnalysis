@@ -41,6 +41,7 @@ from analysis import render as render_mod
 from analysis import sessions as sessions_mod
 from analysis import speaking as speaking_mod
 from analysis import stickers as stickers_mod
+from analysis import theme
 from analysis import timing as timing_mod
 from analysis import words as words_mod
 from ui import i18n
@@ -240,7 +241,7 @@ def wordcloud(path: str = _P, chat: str | None = _C, from_: str | None = _F, to:
 
     _, msgs = _resolve(path, chat, from_, to)
     res = words_mod.analyze(msgs, most_com=200)
-    png = render_mod.wordcloud_png(res.chat_top_words)
+    png = render_mod.wordcloud_png(res.chat_top_words, colors=theme.COLORWAY)
     if not png:
         raise HTTPException(status_code=404, detail="Not enough text for a wordcloud")
     return Response(content=png, media_type="image/png")

@@ -49,6 +49,42 @@ const ru = {
   // tables
   user: "Участник",
   count: "Сообщений",
+  // words tab
+  topWords: "Топ слов",
+  wordcloud: "Облако слов",
+  phrases: "Повторяющиеся фразы",
+  bigrams: "Пары слов",
+  trigrams: "Тройки слов",
+  vocabulary: "Богатство словаря",
+  vocabHint: "MTLD — мера разнообразия лексики: чем выше, тем реже повторяются слова.",
+  contacts: "Контакты в переписке",
+  emailsN: "E-mail адресов",
+  phonesN: "Телефонов",
+  sentimentNote: "Средний тон переписки",
+  sentimentOff: "Анализ тональности выключен.",
+  totalTokens: "Слов всего",
+  uniqueTokens: "Уникальных",
+  mtld: "MTLD",
+  // network tab
+  networkDesc: "Кто кому отвечает. Размер кружка — сколько человек написал, толщина линии — сколько раз отвечали друг другу. Можно тянуть узлы и приближать колесом.",
+  interactions: "Кто кому отвечает",
+  msgsSent: "Сообщений",
+  repliesSent: "Ответов отправил",
+  repliesReceived: "Ответов получил",
+  // per-user tab
+  pickUser: "Участник",
+  avgWords: "Слов в сообщении",
+  questionShare: "С вопросом",
+  exclShare: "С восклицанием",
+  capsShare: "КАПСОМ",
+  replyShare: "Цитирует в ответ",
+  timeOfDay: "Когда пишет",
+  msgLength: "Длина сообщений",
+  characteristicPhrases: "Характерные фразы",
+  tod_night: "Ночь",
+  tod_morning: "Утро",
+  tod_day: "День",
+  tod_evening: "Вечер",
   // types
   type_personal_chat: "Личный чат",
   type_private_group: "Группа",
@@ -98,6 +134,39 @@ const en: typeof ru = {
   noData: "No data for this chat.",
   user: "User",
   count: "Messages",
+  topWords: "Top words",
+  wordcloud: "Word cloud",
+  phrases: "Repeated phrases",
+  bigrams: "Word pairs",
+  trigrams: "Word triples",
+  vocabulary: "Vocabulary richness",
+  vocabHint: "MTLD measures lexical diversity — higher means words repeat less often.",
+  contacts: "Contacts mentioned",
+  emailsN: "E-mail addresses",
+  phonesN: "Phone numbers",
+  sentimentNote: "Average tone",
+  sentimentOff: "Sentiment analysis is off.",
+  totalTokens: "Words total",
+  uniqueTokens: "Unique",
+  mtld: "MTLD",
+  networkDesc: "Who replies to whom. Bubble size = messages sent, line width = replies exchanged. Drag nodes and scroll to zoom.",
+  interactions: "Reply interactions",
+  msgsSent: "Messages",
+  repliesSent: "Replies sent",
+  repliesReceived: "Replies received",
+  pickUser: "Participant",
+  avgWords: "Words per message",
+  questionShare: "With a question",
+  exclShare: "With an exclamation",
+  capsShare: "IN CAPS",
+  replyShare: "Quotes in reply",
+  timeOfDay: "When they write",
+  msgLength: "Message length",
+  characteristicPhrases: "Characteristic phrases",
+  tod_night: "Night",
+  tod_morning: "Morning",
+  tod_day: "Day",
+  tod_evening: "Evening",
   type_personal_chat: "Personal chat",
   type_private_group: "Group",
   type_private_supergroup: "Group",
@@ -137,6 +206,11 @@ const KIND_EN: Record<string, string> = {
 }
 export function mediaKindLabel(code: string): string {
   return (isRu() ? KIND_RU : KIND_EN)[code] ?? code
+}
+
+export function timeBucketLabel(code: string): string {
+  const v = i18n.t(`tod_${code}`)
+  return v === `tod_${code}` ? code : v
 }
 
 export function weekdayShort(): string[] {

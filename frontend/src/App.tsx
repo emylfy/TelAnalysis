@@ -8,6 +8,9 @@ import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Overview } from "@/Overview"
+import { Words } from "@/Words"
+import { Network } from "@/Network"
+import { PerUser } from "@/PerUser"
 
 const DEMO_PATH = "demo/personal_demo.json"
 
@@ -125,10 +128,6 @@ function HighlightsRow({ items }: { items: Highlight[] }) {
   )
 }
 
-function Placeholder({ label }: { label: string }) {
-  return <div className="py-16 text-center text-sm text-muted-foreground">{label} — в разработке…</div>
-}
-
 export default function App() {
   const { t } = useTranslation()
   const [lang, setLang] = useState<"ru" | "en">("ru")
@@ -174,13 +173,13 @@ export default function App() {
             <Overview path={path} sel={{ chat: sel, lang }} />
           </TabsContent>
           <TabsContent value="network">
-            <Placeholder label={t("tab_network")} />
+            <Network path={path} sel={{ chat: sel, lang }} />
           </TabsContent>
           <TabsContent value="words">
-            <Placeholder label={t("tab_words")} />
+            <Words path={path} sel={{ chat: sel, lang }} />
           </TabsContent>
           <TabsContent value="peruser">
-            <Placeholder label={t("tab_peruser")} />
+            <PerUser path={path} sel={{ chat: sel, lang }} />
           </TabsContent>
         </Tabs>
       </main>
