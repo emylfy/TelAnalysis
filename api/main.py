@@ -131,6 +131,22 @@ def to_jsonable(obj: Any) -> Any:
     return obj
 
 
+def _only_user(msgs: list, user: str | None) -> list:
+    """Filter to one sender's messages (by from_id). Compared as strings since
+    query params arrive as strings while raw from_id may be int."""
+    if not user:
+        return msgs
+    return [m for m in msgs if isinstance(m, dict) and str(m.get("from_id")) == str(user)]
+
+
+@lru_cache(maxsize=8)
+def _words_result(path: str, mtime: float, chat: str | None, from_d: str | None, to_d: str | None, most_com: int):
+    """Cached WordsResult — sentiment inference is expensive, so /words,
+    /sentiment and /distinguishing share one computation per (chat, period)."""
+    _, msgs = _messages(path, mtime, chat, from_d, to_d)
+    return words_mod.analyze(msgs, most_com=most_com)
+
+
 # common query params
 _P = Query(..., description="Absolute path to result.json / export folder")
 _C = Query(None, description="Chat id, or '__combine__' for the whole archive")
@@ -175,15 +191,27 @@ def kpis(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str 
 
 
 @app.get("/api/per-day")
-def per_day(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T):
+def per_day(
+    path: str = _P,
+    chat: str | None = _C,
+    from_: str | None = _F,
+    to: str | None = _T,
+    user: str | None = Query(None),
+):
     _, msgs = _resolve(path, chat, from_, to)
-    return {"per_day": overview.messages_per_day(msgs)}
+    return {"per_day": overview.messages_per_day(_only_user(msgs, user))}
 
 
 @app.get("/api/hour-weekday")
-def hour_weekday(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T):
+def hour_weekday(
+    path: str = _P,
+    chat: str | None = _C,
+    from_: str | None = _F,
+    to: str | None = _T,
+    user: str | None = Query(None),
+):
     _, msgs = _resolve(path, chat, from_, to)
-    return {"grid": overview.hour_weekday_heatmap(msgs)}
+    return {"grid": overview.hour_weekday_heatmap(_only_user(msgs, user))}
 
 
 @app.get("/api/participants")
@@ -418,8 +446,66 @@ def words(
     to: str | None = _T,
     top: int = Query(30),
 ):
-    _, msgs = _resolve(path, chat, from_, to)
-    return _words_summary(words_mod.analyze(msgs, most_com=top))
+    res = _words_result(path, _mtime(path), chat, from_, to, top)
+    return _words_summary(res)
+
+
+@app.get("/api/sentiment")
+def sentiment(
+    path: str = _P,
+    chat: str | None = _C,
+    from_: str | None = _F,
+    to: str | None = _T,
+    top: int = Query(10),
+):
+    """Sentiment over time / by hour / by weekday + extreme messages.
+    Reuses the cached WordsResult (the sentiment model runs there)."""
+    res = _words_result(path, _mtime(path), chat, from_, to, 30)
+    if not res.sentiment_available:
+        return {"available": False}
+    extremes: list[tuple[str, float, str]] = []
+    for u in res.users.values():
+        for txt, s in u.messages:
+            if isinstance(s, float) and txt and abs(s) > 0.05:
+                extremes.append((txt, s, u.name))
+    pos = sorted(extremes, key=lambda r: -r[1])[:top]
+    neg = sorted(extremes, key=lambda r: r[1])[:top]
+    return {
+        "available": True,
+        "avg": res.chat_avg_sentiment,
+        "sarcasm_marked": res.sarcasm_marked,
+        "weekly": words_mod.sentiment_period_series(res.dated_scores, "week"),
+        "per_user_weekly": words_mod.sentiment_period_series(res.dated_scores, "week", per_user=True),
+        "by_hour": words_mod.sentiment_by_hour(res.dated_scores),
+        "by_weekday": words_mod.sentiment_by_weekday(res.dated_scores),
+        "user_names": {u.user_id: u.name for u in res.users.values()},
+        "positive": pos,
+        "negative": neg,
+    }
+
+
+@app.get("/api/distinguishing")
+def distinguishing(
+    path: str = _P,
+    chat: str | None = _C,
+    from_: str | None = _F,
+    to: str | None = _T,
+    top: int = Query(15),
+):
+    """Log-odds distinctive words for a 2-person chat (each side's lexicon)."""
+    res = _words_result(path, _mtime(path), chat, from_, to, 30)
+    users = list(res.users.values())
+    if len(users) != 2:
+        return {"available": False}
+    a, b = users
+    a_words, b_words = words_mod.distinguishing_words(a._tokens, b._tokens, top_n=top)
+    return {
+        "available": True,
+        "a_name": a.name,
+        "b_name": b.name,
+        "a": a_words,
+        "b": b_words,
+    }
 
 
 @app.get("/api/channel")
