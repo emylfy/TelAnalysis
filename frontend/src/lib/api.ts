@@ -121,6 +121,7 @@ export interface SpeakingStyle {
   exclamation_ratio: number
   caps_ratio: number
   reply_count: number
+  first_msg_minutes: number[]
   time_of_day: Record<string, number>
   length_buckets: Record<string, number>
 }
@@ -280,7 +281,8 @@ export const api = {
   speaking: (path: string, s?: Sel) => get<Record<string, SpeakingStyle>>("speaking", p(path, s)),
   perUserPhrases: (path: string, s?: Sel, n = 2, top = 15) =>
     get<Record<string, [string, number][]>>("per-user-phrases", { ...p(path, s), n, top }),
-  sentiment: (path: string, s?: Sel, top = 10) => get<SentimentResult>("sentiment", { ...p(path, s), top }),
+  sentiment: (path: string, s?: Sel, top = 10, user?: string) =>
+    get<SentimentResult>("sentiment", { ...p(path, s), top, user }),
   distinguishing: (path: string, s?: Sel, top = 15) =>
     get<Distinguishing>("distinguishing", { ...p(path, s), top }),
   reciprocity: (path: string, s?: Sel) => get<Reciprocity>("reciprocity", p(path, s)),

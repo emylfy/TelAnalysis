@@ -15,7 +15,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function ExtremeList({ title, rows, tone }: { title: string; rows: [string, number, string][]; tone: "pos" | "neg" }) {
+export function ExtremeList({ title, rows, tone }: { title: string; rows: [string, number, string][]; tone: "pos" | "neg" }) {
   const color = tone === "pos" ? "text-[#5AD8A6]" : "text-[#E86452]"
   return (
     <div className="space-y-2">

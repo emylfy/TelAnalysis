@@ -457,14 +457,18 @@ def sentiment(
     from_: str | None = _F,
     to: str | None = _T,
     top: int = Query(10),
+    user: str | None = Query(None),
 ):
     """Sentiment over time / by hour / by weekday + extreme messages.
-    Reuses the cached WordsResult (the sentiment model runs there)."""
+    Reuses the cached WordsResult (the sentiment model runs there).
+    With ?user=, the extreme messages are restricted to that participant."""
     res = _words_result(path, _mtime(path), chat, from_, to, 30)
     if not res.sentiment_available:
         return {"available": False}
     extremes: list[tuple[str, float, str]] = []
     for u in res.users.values():
+        if user and str(u.user_id) != str(user):
+            continue
         for txt, s in u.messages:
             if isinstance(s, float) and txt and abs(s) > 0.05:
                 extremes.append((txt, s, u.name))
