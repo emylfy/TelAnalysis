@@ -147,7 +147,13 @@ def chats(path: str = _P):
     return {
         "source": data.get("_source", "json"),
         "chats": [
-            {"id": str(c.id), "name": c.name, "type": c.type, "count": len(c.messages)}
+            {
+                "id": str(c.id),
+                "name": c.name,
+                "type": c.type,
+                "count": len(c.messages),
+                "sections": sorted(loader.sections_for_type(c.type)),
+            }
             for c in cs
         ],
     }
@@ -439,7 +445,8 @@ def channel_wordcloud(
     to: str | None = _T,
 ):
     _, msgs = _resolve(path, chat, from_, to)
-    png = channel_mod.analyze(msgs, most_com=200).wordcloud_png
+    res = channel_mod.analyze(msgs, most_com=200)
+    png = render_mod.wordcloud_png(res.top_words, colors=theme.COLORWAY)
     if not png:
         raise HTTPException(status_code=404, detail="Not enough text for a wordcloud")
     return Response(content=png, media_type="image/png")

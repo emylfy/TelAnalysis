@@ -20,6 +20,12 @@ export interface Chat {
   name: string
   type: string
   count: number
+  sections: string[]
+}
+export interface ChannelResult {
+  top_words: [string, number][]
+  token_count: number
+  has_wordcloud: boolean
 }
 export interface Kpis {
   total_messages: number
@@ -150,16 +156,17 @@ export const api = {
   phrases: (path: string, s?: Sel, n = 2, top = 30) =>
     get<{ phrases: [string, number][] }>("phrases", { ...p(path, s), n, top }),
   graph: (path: string, s?: Sel) => get<GraphResult>("graph", p(path, s)),
+  channel: (path: string, s?: Sel) => get<ChannelResult>("channel", p(path, s)),
   speaking: (path: string, s?: Sel) => get<Record<string, SpeakingStyle>>("speaking", p(path, s)),
   perUserPhrases: (path: string, s?: Sel, n = 2, top = 15) =>
     get<Record<string, [string, number][]>>("per-user-phrases", { ...p(path, s), n, top }),
 }
 
 /** Wordcloud is an image endpoint — build the URL for an <img src>. */
-export function wordcloudUrl(path: string, chat?: string): string {
+export function wordcloudUrl(path: string, chat?: string, channel = false): string {
   const qs = new URLSearchParams({ path })
   if (chat) qs.set("chat", chat)
-  return `${BASE}/wordcloud?${qs.toString()}`
+  return `${BASE}/${channel ? "channel/wordcloud" : "wordcloud"}?${qs.toString()}`
 }
 
 export type { Sel }
