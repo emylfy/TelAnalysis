@@ -13,6 +13,7 @@ Usage:
 
 from __future__ import annotations
 
+import contextvars
 from datetime import date as _date
 
 try:
@@ -398,8 +399,6 @@ EN: dict[str, str] = {
     "Другое": "Other",
 }
 
-
-import contextvars
 
 # Per-request language override for non-Streamlit callers (the FastAPI backend
 # sets this from a ?lang= param). contextvars keep it correct under async /

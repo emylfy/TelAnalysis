@@ -37,7 +37,7 @@ from analysis import forwards as forwards_mod
 from analysis import graph as graph_mod
 from analysis import highlights as highlights_mod
 from analysis import latency as latency_mod
-from analysis import loader, overview
+from analysis import loader, overview, theme
 from analysis import mat as mat_mod
 from analysis import media as media_mod
 from analysis import monologues as monologues_mod
@@ -47,7 +47,6 @@ from analysis import render as render_mod
 from analysis import sessions as sessions_mod
 from analysis import speaking as speaking_mod
 from analysis import stickers as stickers_mod
-from analysis import theme
 from analysis import timing as timing_mod
 from analysis import words as words_mod
 from ui import i18n
