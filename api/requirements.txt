@@ -2,3 +2,4 @@
 # Analysis deps live in the root requirements.txt; this app imports analysis/.
 fastapi>=0.136
 uvicorn[standard]>=0.47
+python-multipart>=0.0.20  # required by FastAPI's UploadFile / File()

@@ -1,6 +1,8 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { Loader2, Upload } from "lucide-react"
 
+import { uploadFile } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -32,11 +34,34 @@ export function Onboarding({
 }) {
   const { t } = useTranslation()
   const [path, setPath] = useState("")
+  const [uploading, setUploading] = useState(false)
+  const [uploadErr, setUploadErr] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  const submit = () => {
+  const submitPath = () => {
     const p = path.trim()
     if (p) onLoad(p)
   }
+
+  const pickFile = () => fileRef.current?.click()
+
+  const onFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = "" // allow re-picking the same file
+    if (!file) return
+    setUploading(true)
+    setUploadErr(false)
+    try {
+      const { path: p } = await uploadFile(file)
+      onLoad(p)
+    } catch {
+      setUploadErr(true)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const busy = uploading
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
@@ -65,26 +90,48 @@ export function Onboarding({
 
         <p className="mt-6 text-sm leading-relaxed text-muted-foreground">{t("onboardDesc")}</p>
 
-        <div className="mt-4 flex gap-2">
+        {/* primary action: pick a file from disk */}
+        <Button onClick={pickFile} disabled={busy} className="mt-4 w-full gap-2" size="lg">
+          {busy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+          {busy ? t("uploading") : t("pickFile")}
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json,.html,application/json,text/html"
+          className="hidden"
+          onChange={onFileChosen}
+        />
+        <p className="mt-2 text-xs text-muted-foreground">{t("uploadHint")}</p>
+        {uploadErr && <p className="mt-2 text-sm text-destructive">{t("uploadError")}</p>}
+
+        <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
+          <div className="h-px flex-1 bg-border" />
+          {t("orDivider")}
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        {/* fallback: type a path (useful for export folders or large archives) */}
+        <div className="flex gap-2">
           <Input
             value={path}
             onChange={(e) => setPath(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
+            onKeyDown={(e) => e.key === "Enter" && submitPath()}
             placeholder={t("pathPlaceholder")}
             aria-invalid={error || undefined}
-            autoFocus
+            disabled={busy}
           />
-          <Button onClick={submit} disabled={!path.trim()}>
+          <Button onClick={submitPath} disabled={!path.trim() || busy} variant="secondary">
             {t("load")}
           </Button>
         </div>
         {error && <p className="mt-2 text-sm text-destructive">{t("loadError")}</p>}
 
         <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-5">
-          <Button variant="secondary" size="sm" onClick={() => onLoad(DEMO_PERSONAL)}>
+          <Button variant="secondary" size="sm" onClick={() => onLoad(DEMO_PERSONAL)} disabled={busy}>
             {t("demoPersonal")}
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => onLoad(DEMO_GROUP)}>
+          <Button variant="secondary" size="sm" onClick={() => onLoad(DEMO_GROUP)} disabled={busy}>
             {t("demoGroup")}
           </Button>
         </div>

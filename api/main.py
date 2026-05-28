@@ -16,12 +16,16 @@ Run:
 from __future__ import annotations
 
 import os
+import re
+import shutil
+import tempfile
+import time
 from dataclasses import asdict, is_dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Response
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -542,6 +546,30 @@ def channel_wordcloud(
     if not png:
         raise HTTPException(status_code=404, detail="Not enough text for a wordcloud")
     return Response(content=png, media_type="image/png")
+
+
+_UPLOAD_DIR = Path(tempfile.gettempdir()) / "telanalysis_uploads"
+
+
+@app.post("/api/upload")
+async def upload(file: UploadFile = File(...)):
+    """Accept a result.json (or messages.html) upload and return its local path.
+
+    The browser File API hides the original filesystem path for privacy, so we
+    save a copy under the OS temp dir and hand back that absolute path — the
+    same path-based endpoints (/chats, /kpis, …) take it from there. The bytes
+    stay on the user's machine: uvicorn binds to 127.0.0.1.
+    """
+    raw = file.filename or "result.json"
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.basename(raw)).strip("_") or "result.json"
+    if not safe.lower().endswith((".json", ".html")):
+        safe += ".json"
+    _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    # Prefix with a timestamp so re-uploads of "result.json" don't collide.
+    target = _UPLOAD_DIR / f"{int(time.time() * 1000)}-{safe}"
+    with target.open("wb") as out:
+        shutil.copyfileobj(file.file, out)
+    return {"path": str(target.resolve()), "size": target.stat().st_size}
 
 
 @app.get("/api/health")

@@ -295,6 +295,17 @@ export const api = {
   anniversaries: (path: string, s?: Sel) => get<Anniversaries>("anniversaries", p(path, s)),
 }
 
+/** Upload a local file (the browser hides its filesystem path for privacy);
+ *  the backend saves a copy under the OS temp dir and returns its abs path,
+ *  which all other path-based endpoints can then use. */
+export async function uploadFile(file: File): Promise<{ path: string; size: number }> {
+  const fd = new FormData()
+  fd.append("file", file)
+  const res = await fetch(`${BASE}/upload`, { method: "POST", body: fd })
+  if (!res.ok) throw new Error(`upload → ${res.status}`)
+  return res.json()
+}
+
 /** Wordcloud is an image endpoint — build the URL for an <img src>. */
 export function wordcloudUrl(path: string, chat?: string, channel = false): string {
   const qs = new URLSearchParams({ path })
