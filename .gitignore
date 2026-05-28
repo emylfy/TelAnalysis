@@ -37,3 +37,4 @@ nltk_data/
 .playwright-mcp/
 # Top-level screenshots/ from ad-hoc dev sessions. docs/screenshots/ is tracked.
 /screenshots/
+frontend/.vite/
