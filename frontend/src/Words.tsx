@@ -6,7 +6,8 @@ import { api, wordcloudUrl, type Sel } from "@/lib/api"
 import { fmtInt } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { BarsH } from "@/components/charts"
-import { TabLoading } from "@/components/loading"
+import { TabError, TabLoading } from "@/components/loading"
+import { Collapsible } from "@/components/collapsible"
 import { SentimentBlock } from "@/Sentiment"
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
@@ -41,6 +42,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
 
   const w = words.data
   if (words.isLoading) return <TabLoading />
+  if (words.isError) return <TabError onRetry={words.refetch} />
   if (!w) return null
 
   return (
@@ -60,6 +62,11 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
           <Card className="border-border bg-card p-3">
             <BarsH data={w.chat_top_words.slice(0, 25)} color="var(--chart-1)" />
           </Card>
+          {w.chat_top_words.length > 25 && (
+            <Collapsible label={t("showAll", { n: w.chat_top_words.length })}>
+              <PairsTable rows={w.chat_top_words} />
+            </Collapsible>
+          )}
         </Section>
       )}
 
@@ -78,9 +85,16 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
           ))}
         </div>
         {phrases.data && phrases.data.phrases.length > 0 ? (
-          <Card className="border-border bg-card p-3">
-            <BarsH data={phrases.data.phrases.slice(0, 20)} color="var(--chart-4)" />
-          </Card>
+          <>
+            <Card className="border-border bg-card p-3">
+              <BarsH data={phrases.data.phrases.slice(0, 20)} color="var(--chart-4)" />
+            </Card>
+            {phrases.data.phrases.length > 20 && (
+              <Collapsible label={t("showAll", { n: phrases.data.phrases.length })}>
+                <PairsTable rows={phrases.data.phrases} />
+              </Collapsible>
+            )}
+          </>
         ) : (
           <div className="text-sm text-muted-foreground">{t("noData")}</div>
         )}
@@ -124,5 +138,23 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
 
       <SentimentBlock path={path} sel={sel} />
     </div>
+  )
+}
+
+/** Simple [string, number] table — used by the "Show all" disclosures. */
+function PairsTable({ rows }: { rows: [string, number][] }) {
+  return (
+    <Card className="max-h-96 overflow-auto border-border bg-card">
+      <table className="w-full text-sm">
+        <tbody>
+          {rows.map(([w, c], i) => (
+            <tr key={i} className="border-b border-border/60 last:border-0">
+              <td className="px-4 py-1.5">{w}</td>
+              <td className="px-4 py-1.5 text-right tabular-nums text-muted-foreground">{fmtInt(c)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
   )
 }

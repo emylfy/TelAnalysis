@@ -42,7 +42,17 @@ export function SentimentBlock({ path, sel }: { path: string; sel: Sel }) {
 
   const d = q.data
   if (!d) return null
-  if (!d.available) return <p className="text-sm text-muted-foreground">{t("sentimentOff")}</p>
+  if (!d.available)
+    return (
+      <Card className="border-border bg-card p-5">
+        <div className="text-sm font-semibold text-foreground">{t("sentimentOffTitle")}</div>
+        <p className="mt-2 text-sm text-muted-foreground">{t("sentimentOffBody")}</p>
+        <pre className="mt-3 overflow-x-auto rounded-md bg-muted px-3 py-2 text-xs text-foreground">
+          pip install -r requirements-sentiment.txt
+        </pre>
+        <p className="mt-3 text-xs text-muted-foreground">{t("sentimentOffNote")}</p>
+      </Card>
+    )
 
   const wd = weekdayShort()
   const weeklySeries = d.weekly?.length

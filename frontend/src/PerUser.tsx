@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 
 import { api, type Sel } from "@/lib/api"
-import { dayWord, fmtInt, timeBucketLabel } from "@/lib/i18n"
+import { dayWord, fmtInt, personaForLength, personaForTimeOfDay, timeBucketLabel } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Bars, BarsH, Box, HourWeekday, Lines, Radar } from "@/components/charts"
-import { TabLoading } from "@/components/loading"
+import { TabError, TabLoading } from "@/components/loading"
 import { ExtremeList } from "@/Sentiment"
 
 const TIME_ORDER = ["night", "morning", "day", "evening"]
@@ -63,19 +63,21 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
   const styles = speaking.data
   const [uid, setUid] = useState<string | undefined>(undefined)
   const ordered = styles ? Object.values(styles).sort((a, b) => b.msg_count - a.msg_count) : []
-  useEffect(() => {
-    if (ordered.length && (!uid || !styles?.[uid])) setUid(ordered[0].user_id)
-  }, [styles]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Active user is derived, not stored in an effect: fall back to the most
+  // active participant until one is picked, and after a chat switch where the
+  // previously-selected uid no longer exists.
+  const activeUid = (uid && styles?.[uid]?.user_id) || ordered[0]?.user_id
 
   // per-user queries (refetch on user change)
-  const pdU = useQuery({ queryKey: ["pdU", ...k, uid], queryFn: () => api.perDay(path, sel, uid), enabled: on && !!uid })
-  const hwU = useQuery({ queryKey: ["hwU", ...k, uid], queryFn: () => api.hourWeekday(path, sel, uid), enabled: on && !!uid })
-  const streakQ = useQuery({ queryKey: ["streak", ...k, uid], queryFn: () => api.streaks(path, sel, uid), enabled: on && !!uid })
-  const sentU = useQuery({ queryKey: ["sentU", ...k, uid], queryFn: () => api.sentiment(path, sel, 8, uid), enabled: on && !!uid })
+  const pdU = useQuery({ queryKey: ["pdU", ...k, activeUid], queryFn: () => api.perDay(path, sel, activeUid), enabled: on && !!activeUid })
+  const hwU = useQuery({ queryKey: ["hwU", ...k, activeUid], queryFn: () => api.hourWeekday(path, sel, activeUid), enabled: on && !!activeUid })
+  const streakQ = useQuery({ queryKey: ["streak", ...k, activeUid], queryFn: () => api.streaks(path, sel, activeUid), enabled: on && !!activeUid })
+  const sentU = useQuery({ queryKey: ["sentU", ...k, activeUid], queryFn: () => api.sentiment(path, sel, 8, activeUid), enabled: on && !!activeUid })
 
   if (speaking.isLoading) return <TabLoading />
+  if (speaking.isError) return <TabError onRetry={speaking.refetch} />
   if (!styles || !ordered.length) return null
-  const s = (uid && styles[uid]) || ordered[0]
+  const s = (activeUid && styles[activeUid]) || ordered[0]
   const id = s.user_id
   const total = ordered.reduce((a, u) => a + u.msg_count, 0)
   const twoUsers = ordered.length === 2
@@ -136,7 +138,15 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       <div className="flex items-center gap-3">
         <span className="text-sm text-muted-foreground">{t("pickUser")}</span>
         <Select value={id} onValueChange={(v) => v && setUid(v)}>
-          <SelectTrigger className="w-[280px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[280px]">
+            {/* base-ui Select.Value shows the raw value by default — map to name */}
+            <SelectValue>
+              {(v: string) => {
+                const u = ordered.find((x) => x.user_id === v)
+                return u ? `${u.name} · ${fmtInt(u.msg_count)}` : v
+              }}
+            </SelectValue>
+          </SelectTrigger>
           <SelectContent>
             {ordered.map((u) => (
               <SelectItem key={u.user_id} value={u.user_id}>{u.name} · {fmtInt(u.msg_count)}</SelectItem>
@@ -148,9 +158,13 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label={t("messages")} value={fmtInt(s.msg_count)} />
         <Stat label={t("shareOfChat")} value={pct(total ? s.msg_count / total : 0)} />
+        <Stat
+          label={t("msgLengthMedian")}
+          value={`${fmtInt(s.median_chars)} ${t("charsShort")}`}
+          sub={`avg ${s.avg_chars.toFixed(0)} · max ${fmtInt(s.longest_chars)}`}
+        />
         <Stat label={t("avgWords")} value={s.avg_words.toFixed(1)} />
         <Stat label={t("questionShare")} value={pct(s.question_ratio)} />
-        <Stat label={t("capsShare")} value={pct(s.caps_ratio)} />
         <Stat label={t("replyShare")} value={pct(s.msg_count ? s.reply_count / s.msg_count : 0)} />
       </div>
 
@@ -170,6 +184,17 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
               <Card className="border-border bg-card p-3 lg:col-span-2"><Box groups={wakeGroups} asTime /></Card>
             )}
           </div>
+          {(() => {
+            const others = ordered
+              .filter((u) => u.user_id !== id && (u.first_msg_minutes?.length ?? 0) > 0)
+              .map((u) => ({ name: u.name, hhmm: hhmm(median(u.first_msg_minutes)) }))
+            if (!others.length) return null
+            return (
+              <p className="text-xs text-muted-foreground">
+                {t("wakeupOthers")} {others.map((o) => `${o.name} — ${o.hhmm}`).join(", ")}
+              </p>
+            )
+          })()}
         </section>
       )}
 
@@ -194,12 +219,14 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         {tod.some((b) => b[1] > 0) && (
           <section className="space-y-3">
             <H3>{t("timeOfDay")}</H3>
+            <p className="-mt-2 text-sm text-muted-foreground">{personaForTimeOfDay(s.time_of_day)}</p>
             <Card className="border-border bg-card p-3"><Bars data={tod} height={240} color="var(--chart-2)" /></Card>
           </section>
         )}
         {len.some((b) => b[1] > 0) && (
           <section className="space-y-3">
             <H3>{t("msgLength")}</H3>
+            <p className="-mt-2 text-sm text-muted-foreground">{personaForLength(s.length_buckets)}</p>
             <Card className="border-border bg-card p-3"><Bars data={len} height={240} color="var(--chart-3)" /></Card>
           </section>
         )}
@@ -214,6 +241,22 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
             <Stat label={t("within30")} value={pct(dir.within_30m)} />
             <Stat label={t("within60")} value={pct(dir.within_60m)} />
           </div>
+          {(() => {
+            const other = recip?.a_to_b === dir ? recip?.b_to_a : recip?.a_to_b
+            if (!other) return null
+            const delta = (dir.within_5m - other.within_5m) * 100
+            return (
+              <p className="text-xs text-muted-foreground">
+                {t("reciprocityReverse", {
+                  a: other.initiator_name,
+                  b: other.responder_name,
+                  m: `${Math.round(other.median_seconds / 60)}m`,
+                  p: (other.within_5m * 100).toFixed(1),
+                  d: (delta >= 0 ? "+" : "") + delta.toFixed(1),
+                })}
+              </p>
+            )
+          })()}
         </section>
       )}
 
@@ -255,6 +298,11 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
             <Stat label={t("initiations")} value={fmtInt(initRow.initiations)} />
             <Stat label={t("initiatorShare")} value={pct(initRow.share)} />
           </div>
+          {initQ.data && initQ.data.total_initiations < 30 && (
+            <p className="text-xs text-muted-foreground">
+              {t("initiatorsLowN", { n: initQ.data.total_initiations })}
+            </p>
+          )}
         </section>
       )}
 

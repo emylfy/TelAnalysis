@@ -22,11 +22,8 @@ const ru = {
   whenHours: "В какие часы",
   whatAbout: "О чём говорят",
   whoToWhom: "Кто кому",
-  messageTypes: "Типы сообщений",
   topDomains: "Топ доменов",
   longestMonologues: "Самые длинные монологи",
-  allEmoji: "Все эмоджи",
-  calendar: "Календарь",
   // latency
   halfFaster: "Половина ответов — быстрее",
   p90Faster: "90% ответов — быстрее",
@@ -39,7 +36,6 @@ const ru = {
   longestConv: "Самый долгий",
   convLength: "Длина разговоров",
   longestConvs: "Самые долгие разговоры",
-  duration: "Длительность",
   // latency caveats
   droppedCap: "{{n}} ответов дольше {{h}} ч не учтены",
   qaHint: "Сообщения с вопросом («?») и ответы на них — отвечают ли на вопросы быстрее обычного.",
@@ -80,6 +76,8 @@ const ru = {
   loading: "Загрузка…",
   // empty
   noData: "Нет данных для этого чата.",
+  tabError: "Не удалось загрузить данные.",
+  retry: "Повторить",
   // tables
   user: "Участник",
   count: "Сообщений",
@@ -94,8 +92,6 @@ const ru = {
   contacts: "Контакты в переписке",
   emailsN: "E-mail адресов",
   phonesN: "Телефонов",
-  sentimentNote: "Средний тон переписки",
-  sentimentOff: "Анализ тональности выключен (см. requirements-sentiment.txt).",
   sentiment: "Тональность",
   sentimentAvg: "Средний тон",
   sentimentHint: "Шкала −1…+1 (негатив…позитив). Модель не понимает сарказм и шутки — читай со скепсисом.",
@@ -124,8 +120,6 @@ const ru = {
   pickUser: "Участник",
   avgWords: "Слов в сообщении",
   questionShare: "С вопросом",
-  exclShare: "С восклицанием",
-  capsShare: "КАПСОМ",
   replyShare: "Цитирует в ответ",
   timeOfDay: "Когда пишет",
   msgLength: "Длина сообщений",
@@ -160,8 +154,6 @@ const ru = {
   initiatorShare: "Доля инициатив",
   forwards: "Форварды (репосты)",
   forwardShare: "Доля форвардов",
-  topSources: "Топ источников",
-  replySpeed: "Скорость ответа",
   latencyHist: "Распределение скорости ответа",
   emojisOfUser: "Эмодзи",
   stickersOfUser: "Стикеры (эмодзи)",
@@ -188,6 +180,61 @@ const ru = {
   type_bot_chat: "Бот",
   type_saved_messages: "Избранное",
   type_multichat: "Объединённый",
+  // onboarding help
+  helpExport: "Как получить экспорт?",
+  helpExportContentMd:
+    "В **Telegram Desktop**:\n\n" +
+    "- **Один чат** — `Настройки → Экспорт переписки`\n" +
+    "- **Весь аккаунт** — `Настройки → Продвинутые настройки → Экспорт данных Telegram`\n\n" +
+    "В окне экспорта выбери формат **JSON**. HTML тоже работает (папка или `messages.html`), но менее точен.",
+  // sentiment-off info
+  sentimentOffTitle: "Анализ тональности выключен",
+  sentimentOffBody:
+    "Нужны опциональные зависимости для RU/EN-оценок. Установи и перезапусти сервер:",
+  sentimentOffNote:
+    "Это ~1 ГБ (torch + transformers) и ~50 МБ модели при первом запуске. Модель не различает сарказм и шутки — вспомогательная метрика.",
+  // PerUser char metrics
+  msgLengthMedian: "Длина (медиана)",
+  charsShort: "симв.",
+  // PerUser captions
+  wakeupOthers: "у других:",
+  initiatorsLowN: "⚠ всего инициаций {{n}} — выборка маленькая, процент может быть случайным.",
+  reciprocityReverse:
+    "В обратную сторону ({{a}} → {{b}}): медиана {{m}}, за 5 мин {{p}}%. Разница 5-мин ответа: {{d}} pp.",
+  // anniversaries milestone
+  annivCrossed: "{{label}} с {{date}}",
+  // calendar toggle
+  calendarMode: "Режим",
+  calendarCount: "по количеству",
+  calendarBinary: "писали / нет",
+  calendarActiveDays: "Активных дней: {{a}} из {{t}} ({{p}}%)",
+  // heatmap caplets
+  capPeakHour: "пик активности — {{h}}:00",
+  capNightShare: "ночью ({{from}}–{{to}}) — {{p}}% сообщений",
+  // overlap chart
+  overlapTitle: "Когда совпадают активности",
+  overlapHint:
+    "Бары нормализованы по пользователям — справедливо при разной активности. Пик совместной активности — около {{h}}:00.",
+  overlapBoth: "оба активны",
+  // accordion
+  showAll: "Показать все ({{n}})",
+  hideAll: "Скрыть",
+  // channel
+  channelTopCount: "Уникальных слов",
+  // period presets
+  preset7: "7 дн",
+  preset30: "30 дн",
+  preset90: "90 дн",
+  presetAll: "Всё",
+  // persona dictionaries (time_of_day + length_buckets)
+  persona_night: "🌙 ночная сова",
+  persona_morning: "🌅 жаворонок",
+  persona_day: "☀️ дневной",
+  persona_evening: "🌆 вечерний",
+  lenpersona_short: "📝 односложно",
+  lenpersona_med: "💬 коротко",
+  lenpersona_long: "📄 подробно",
+  lenpersona_xl: "📜 эссе",
 }
 
 const en: typeof ru = {
@@ -206,11 +253,8 @@ const en: typeof ru = {
   whenHours: "When (by hour)",
   whatAbout: "What about",
   whoToWhom: "Who replies to whom",
-  messageTypes: "Message types",
   topDomains: "Top domains",
   longestMonologues: "Longest monologues",
-  allEmoji: "All emoji",
-  calendar: "Calendar",
   halfFaster: "Half of replies — faster than",
   p90Faster: "90% of replies — faster than",
   repliesCounted: "Replies counted",
@@ -221,7 +265,6 @@ const en: typeof ru = {
   longestConv: "Longest",
   convLength: "Conversation length",
   longestConvs: "Longest conversations",
-  duration: "Duration",
   droppedCap: "{{n}} replies slower than {{h}}h excluded",
   qaHint: "Messages with a question (“?”) and the replies to them — whether questions get answered faster than usual.",
   qaFaster: "{{m}} min faster than usual",
@@ -256,6 +299,8 @@ const en: typeof ru = {
   changeSource: "Change file",
   loading: "Loading…",
   noData: "No data for this chat.",
+  tabError: "Couldn't load this data.",
+  retry: "Retry",
   user: "User",
   count: "Messages",
   topWords: "Top words",
@@ -268,8 +313,6 @@ const en: typeof ru = {
   contacts: "Contacts mentioned",
   emailsN: "E-mail addresses",
   phonesN: "Phone numbers",
-  sentimentNote: "Average tone",
-  sentimentOff: "Sentiment analysis is off (see requirements-sentiment.txt).",
   sentiment: "Sentiment",
   sentimentAvg: "Average tone",
   sentimentHint: "Scale −1…+1 (negative…positive). The model misses sarcasm and jokes — read with scepticism.",
@@ -296,8 +339,6 @@ const en: typeof ru = {
   pickUser: "Participant",
   avgWords: "Words per message",
   questionShare: "With a question",
-  exclShare: "With an exclamation",
-  capsShare: "IN CAPS",
   replyShare: "Quotes in reply",
   timeOfDay: "When they write",
   msgLength: "Message length",
@@ -332,8 +373,6 @@ const en: typeof ru = {
   initiatorShare: "Initiation share",
   forwards: "Forwards (reposts)",
   forwardShare: "Forward share",
-  topSources: "Top sources",
-  replySpeed: "Reply speed",
   latencyHist: "Reply-speed distribution",
   emojisOfUser: "Emoji",
   stickersOfUser: "Stickers (emoji)",
@@ -358,6 +397,49 @@ const en: typeof ru = {
   type_bot_chat: "Bot",
   type_saved_messages: "Saved Messages",
   type_multichat: "Combined",
+  helpExport: "How do I get the export?",
+  helpExportContentMd:
+    "In **Telegram Desktop**:\n\n" +
+    "- **A single chat** — `Settings → Export chat history`\n" +
+    "- **The whole account** — `Settings → Advanced → Export Telegram data`\n\n" +
+    "In the export dialog choose **JSON**. HTML also works (a folder or `messages.html`), but is less accurate.",
+  sentimentOffTitle: "Sentiment analysis is off",
+  sentimentOffBody:
+    "RU/EN sentiment needs optional dependencies. Install and restart the server:",
+  sentimentOffNote:
+    "It adds ~1 GB (torch + transformers) plus ~50 MB for the model on first run. The model misses sarcasm and jokes — it's a helper metric, not a diagnosis.",
+  msgLengthMedian: "Length (median)",
+  charsShort: "chars",
+  wakeupOthers: "others:",
+  initiatorsLowN: "⚠ only {{n}} initiations total — sample is small, the share may be noise.",
+  reciprocityReverse:
+    "Reverse direction ({{a}} → {{b}}): median {{m}}, within 5 min {{p}}%. 5-min reply gap: {{d}} pp.",
+  annivCrossed: "{{label}} since {{date}}",
+  calendarMode: "Mode",
+  calendarCount: "by count",
+  calendarBinary: "wrote / didn't",
+  calendarActiveDays: "Active days: {{a}} of {{t}} ({{p}}%)",
+  capPeakHour: "peak hour — {{h}}:00",
+  capNightShare: "at night ({{from}}–{{to}}) — {{p}}% of messages",
+  overlapTitle: "When you overlap",
+  overlapHint:
+    "Bars normalised per user — fair when activity differs. Peak shared activity around {{h}}:00.",
+  overlapBoth: "both active",
+  showAll: "Show all ({{n}})",
+  hideAll: "Hide",
+  channelTopCount: "Unique words",
+  preset7: "7d",
+  preset30: "30d",
+  preset90: "90d",
+  presetAll: "All",
+  persona_night: "🌙 night owl",
+  persona_morning: "🌅 early bird",
+  persona_day: "☀️ daytime",
+  persona_evening: "🌆 evening",
+  lenpersona_short: "📝 one-liner",
+  lenpersona_med: "💬 short",
+  lenpersona_long: "📄 elaborate",
+  lenpersona_xl: "📜 essayist",
 }
 
 i18n.use(initReactI18next).init({
@@ -404,6 +486,39 @@ export function dayWord(n: number): string {
 export function timeBucketLabel(code: string): string {
   const v = i18n.t(`tod_${code}`)
   return v === `tod_${code}` ? code : v
+}
+
+/** Persona label for the dominant time_of_day bucket (mirrors SpeakingStyle.persona). */
+export function personaForTimeOfDay(buckets: Record<string, number>): string {
+  let dom: string | null = null
+  let best = -1
+  for (const [k, v] of Object.entries(buckets)) {
+    if (v > best) {
+      best = v
+      dom = k
+    }
+  }
+  if (!dom) return "—"
+  return i18n.t(`persona_${dom}`)
+}
+
+/** Persona label for the dominant length bucket (mirrors SpeakingStyle.length_persona). */
+export function personaForLength(buckets: Record<string, number>): string {
+  let dom: string | null = null
+  let best = -1
+  for (const [k, v] of Object.entries(buckets)) {
+    if (v > best) {
+      best = v
+      dom = k
+    }
+  }
+  const map: Record<string, string> = {
+    "<30": "lenpersona_short",
+    "30-100": "lenpersona_med",
+    "100-300": "lenpersona_long",
+    "300+": "lenpersona_xl",
+  }
+  return dom && map[dom] ? i18n.t(map[dom]) : "—"
 }
 
 export function weekdayShort(): string[] {

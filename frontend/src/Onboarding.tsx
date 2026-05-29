@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Loader2, Upload } from "lucide-react"
+import { ChevronDown, Loader2, Upload } from "lucide-react"
 
 import { uploadFile } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ export function Onboarding({
   const [path, setPath] = useState("")
   const [uploading, setUploading] = useState(false)
   const [uploadErr, setUploadErr] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const submitPath = () => {
@@ -135,7 +136,83 @@ export function Onboarding({
             {t("demoGroup")}
           </Button>
         </div>
+
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setHelpOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronDown className={`size-3.5 transition-transform ${helpOpen ? "rotate-180" : ""}`} />
+            {t("helpExport")}
+          </button>
+          {helpOpen && <HelpExportContent text={t("helpExportContentMd")} />}
+        </div>
       </Card>
+    </div>
+  )
+}
+
+/** Tiny markdown subset (bold, inline code, bullet lists) for the export-help
+ *  card — enough for the static blurb without pulling in a markdown library. */
+function HelpExportContent({ text }: { text: string }) {
+  const paragraphs = text.split(/\n\n+/)
+  const renderInline = (s: string): React.ReactNode[] => {
+    const out: React.ReactNode[] = []
+    let i = 0
+    let key = 0
+    while (i < s.length) {
+      const codeStart = s.indexOf("`", i)
+      const boldStart = s.indexOf("**", i)
+      const next = [codeStart, boldStart].filter((n) => n >= 0).sort((a, b) => a - b)[0]
+      if (next === undefined) {
+        out.push(s.slice(i))
+        break
+      }
+      if (next > i) out.push(s.slice(i, next))
+      if (next === codeStart) {
+        const end = s.indexOf("`", next + 1)
+        if (end < 0) {
+          out.push(s.slice(next))
+          break
+        }
+        out.push(
+          <code key={key++} className="rounded bg-muted px-1.5 py-0.5 text-[0.85em] text-foreground">
+            {s.slice(next + 1, end)}
+          </code>,
+        )
+        i = end + 1
+      } else {
+        const end = s.indexOf("**", next + 2)
+        if (end < 0) {
+          out.push(s.slice(next))
+          break
+        }
+        out.push(
+          <strong key={key++} className="font-semibold text-foreground">
+            {s.slice(next + 2, end)}
+          </strong>,
+        )
+        i = end + 2
+      }
+    }
+    return out
+  }
+  return (
+    <div className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
+      {paragraphs.map((para, pi) => {
+        const lines = para.split("\n")
+        if (lines.every((l) => l.startsWith("- "))) {
+          return (
+            <ul key={pi} className="ml-4 list-disc space-y-1">
+              {lines.map((l, li) => (
+                <li key={li}>{renderInline(l.slice(2))}</li>
+              ))}
+            </ul>
+          )
+        }
+        return <p key={pi}>{renderInline(para)}</p>
+      })}
     </div>
   )
 }

@@ -264,6 +264,8 @@ export const api = {
     get<{ per_day: [string, number][] }>("per-day", { ...p(path, s), user }),
   hourWeekday: (path: string, s?: Sel, user?: string) =>
     get<{ grid: number[][] }>("hour-weekday", { ...p(path, s), user }),
+  hourByUser: (path: string, s?: Sel) =>
+    get<{ users: { user_id: string; name: string; hours: number[] }[] }>("hour-by-user", p(path, s)),
   participants: (path: string, s?: Sel) =>
     get<{ participants: [string, string, number][] }>("participants", p(path, s)),
   media: (path: string, s?: Sel) => get<MediaStats>("media", p(path, s)),

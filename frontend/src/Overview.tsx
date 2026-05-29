@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { api, type LatencyStats, type SessionsStats, type Sel } from "@/lib/api"
 import { fmtInt, humanizeDuration } from "@/lib/i18n"
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
-import { Bars, Calendar, HourWeekday, MediaPie } from "@/components/charts"
-import { TabLoading } from "@/components/loading"
+import { AreaTimeline, Bars, Calendar, HourOverlap, HourWeekday, MediaPie } from "@/components/charts"
+import { TabError, TabLoading } from "@/components/loading"
 import { Hint } from "@/components/hint"
+import { Collapsible } from "@/components/collapsible"
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -28,27 +29,6 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
       <div className="text-2xl font-semibold tabular-nums">{value}</div>
       {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
     </Card>
-  )
-}
-
-function Timeline({ data }: { data: [string, number][] }) {
-  const rows = data.map(([date, messages]) => ({ date, messages }))
-  return (
-    <ResponsiveContainer width="100%" height={280}>
-      <AreaChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="tl" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.25} />
-            <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.02} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
-        <XAxis dataKey="date" tick={{ fill: "#9ca3af", fontSize: 11 }} minTickGap={48} stroke="rgba(255,255,255,0.08)" />
-        <YAxis tick={{ fill: "#9ca3af", fontSize: 11 }} width={36} stroke="rgba(255,255,255,0.08)" />
-        <Tooltip contentStyle={{ background: "#14161d", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#e5e7eb" }} />
-        <Area type="monotone" dataKey="messages" stroke="var(--chart-1)" strokeWidth={1.5} fill="url(#tl)" />
-      </AreaChart>
-    </ResponsiveContainer>
   )
 }
 
@@ -136,9 +116,11 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
   const { t } = useTranslation()
   const k = [path, sel.chat, sel.from, sel.to]
   const on = !!sel.chat
+  const [calMode, setCalMode] = useState<"count" | "binary">("count")
 
   const pd = useQuery({ queryKey: ["pd", ...k], queryFn: () => api.perDay(path, sel), enabled: on })
   const hw = useQuery({ queryKey: ["hw", ...k], queryFn: () => api.hourWeekday(path, sel), enabled: on })
+  const hbu = useQuery({ queryKey: ["hbu", ...k], queryFn: () => api.hourByUser(path, sel), enabled: on })
   const media = useQuery({ queryKey: ["media", ...k], queryFn: () => api.media(path, sel), enabled: on })
   const emojis = useQuery({ queryKey: ["emojis", ...k], queryFn: () => api.emojis(path, sel), enabled: on })
   const lat = useQuery({ queryKey: ["lat", ...k], queryFn: () => api.latency(path, sel), enabled: on })
@@ -146,28 +128,115 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
   const mono = useQuery({ queryKey: ["mono", ...k], queryFn: () => api.monologues(path, sel), enabled: on })
 
   if (pd.isLoading) return <TabLoading />
+  if (pd.isError) return <TabError onRetry={pd.refetch} />
 
   return (
     <div className="space-y-8 pt-2">
       <Section title={t("howOften")}>
-        {pd.data && <Card className="border-border bg-card p-3"><Timeline data={pd.data.per_day} /></Card>}
+        {pd.data && <Card className="border-border bg-card p-3"><AreaTimeline data={pd.data.per_day} /></Card>}
         {pd.data && pd.data.per_day.length > 0 && (
-          <Card className="border-border bg-card p-3"><Calendar perDay={pd.data.per_day} /></Card>
+          <>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{t("calendarMode")}:</span>
+              <div className="flex items-center rounded-md border border-border bg-card p-0.5">
+                {(["count", "binary"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setCalMode(m)}
+                    className={`rounded px-2 py-0.5 text-xs transition-colors ${
+                      calMode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m === "count" ? t("calendarCount") : t("calendarBinary")}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Card className="border-border bg-card p-3"><Calendar perDay={pd.data.per_day} binary={calMode === "binary"} /></Card>
+            {calMode === "binary" && (() => {
+              const active = pd.data.per_day.filter(([, v]) => v > 0).length
+              const total = pd.data.per_day.length
+              return (
+                <p className="text-xs text-muted-foreground">
+                  {t("calendarActiveDays", { a: active, t: total, p: ((active * 100) / total).toFixed(1) })}
+                </p>
+              )
+            })()}
+          </>
         )}
       </Section>
 
       {hw.data && hw.data.grid.some((r) => r.some((v) => v > 0)) && (
         <Section title={t("whenHours")}>
           <Card className="border-border bg-card p-3"><HourWeekday grid={hw.data.grid} /></Card>
+          {(() => {
+            // Surface two insights right under the heatmap. Both are derived from
+            // the same grid the chart uses, so no extra fetch.
+            const sumH = Array(24).fill(0) as number[]
+            let nightTotal = 0
+            let grandTotal = 0
+            for (const row of hw.data.grid) {
+              row.forEach((v, h) => {
+                sumH[h] += v
+                grandTotal += v
+                if (h < 6) nightTotal += v
+              })
+            }
+            const peakH = sumH.indexOf(Math.max(...sumH))
+            const nightP = grandTotal ? ((nightTotal * 100) / grandTotal).toFixed(0) : "0"
+            return (
+              <p className="text-xs text-muted-foreground">
+                {t("capPeakHour", { h: String(peakH).padStart(2, "0") })} · {t("capNightShare", { from: "00", to: "06", p: nightP })}
+              </p>
+            )
+          })()}
+          {hbu.data && hbu.data.users.length === 2 && (() => {
+            const [a, b] = hbu.data.users
+            const totA = a.hours.reduce((s, v) => s + v, 0) || 1
+            const totB = b.hours.reduce((s, v) => s + v, 0) || 1
+            let bestH = 0
+            let bestV = -1
+            for (let h = 0; h < 24; h++) {
+              const v = Math.min(a.hours[h] / totA, b.hours[h] / totB)
+              if (v > bestV) { bestV = v; bestH = h }
+            }
+            return (
+              <>
+                <h3 className="pt-2 text-base font-semibold tracking-tight">{t("overlapTitle")}</h3>
+                <Card className="border-border bg-card p-3">
+                  <HourOverlap a={a} b={b} overlapLabel={t("overlapBoth")} />
+                </Card>
+                <p className="text-xs text-muted-foreground">{t("overlapHint", { h: String(bestH).padStart(2, "0") })}</p>
+              </>
+            )
+          })()}
           {sess.data && <SessionsBlock s={sess.data} />}
         </Section>
       )}
 
       <Section title={t("whatAbout")}>
         {emojis.data && emojis.data.chat_top.length > 0 && (
-          <Card className="border-border bg-card p-3">
-            <Bars data={emojis.data.chat_top.slice(0, 20)} color="#9270CA" />
-          </Card>
+          <>
+            <Card className="border-border bg-card p-3">
+              <Bars data={emojis.data.chat_top.slice(0, 20)} color="#9270CA" />
+            </Card>
+            {emojis.data.chat_top.length > 20 && (
+              <Collapsible label={t("showAll", { n: emojis.data.chat_top.length })}>
+                <Card className="max-h-96 overflow-auto border-border bg-card">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {emojis.data.chat_top.map(([e, c], i) => (
+                        <tr key={i} className="border-b border-border/60 last:border-0">
+                          <td className="px-4 py-1.5 text-lg">{e}</td>
+                          <td className="px-4 py-1.5 text-right tabular-nums text-muted-foreground">{fmtInt(c)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Card>
+              </Collapsible>
+            )}
+          </>
         )}
         {media.data && Object.keys(media.data.by_kind).length > 0 && (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">

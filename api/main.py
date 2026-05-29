@@ -92,7 +92,15 @@ def _mtime(path: str) -> float:
 
 @lru_cache(maxsize=4)
 def _load(path: str, mtime: float) -> dict:
-    return loader.load_export(path)
+    # A malformed / non-export file (e.g. a random text file) makes the loader
+    # raise — turn that into a clean 400 instead of a 500 with a traceback.
+    # lru_cache never caches a raised exception, so a fixed file still loads.
+    try:
+        return loader.load_export(path)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not parse export: {exc}") from exc
 
 
 @lru_cache(maxsize=4)
@@ -160,11 +168,29 @@ _T = Query(None, alias="to")
 # --- endpoints ---
 
 
+# Chat-type ordering for the picker: personal → groups → channels → bots →
+# saved → unknown. Mirrors the Streamlit picker (app.py _TYPE_RANK).
+_TYPE_RANK = {
+    "personal_chat": 0,
+    "private_group": 1,
+    "private_supergroup": 1,
+    "public_supergroup": 1,
+    "private_channel": 2,
+    "public_channel": 2,
+    "bot_chat": 3,
+    "saved_messages": 4,
+}
+
+
 @app.get("/api/chats")
 def chats(path: str = _P):
     mtime = _mtime(path)
     data = _load(path, mtime)
     cs = _chats(path, mtime)
+    # Sort by (type rank, name) — the rank groups personals together, then
+    # groups, channels, bots; alphabetical within each cluster keeps the list
+    # predictable while search still matches by name.
+    ordered = sorted(cs, key=lambda c: (_TYPE_RANK.get(c.type, 9), c.name.lower()))
     return {
         "source": data.get("_source", "json"),
         "chats": [
@@ -175,7 +201,7 @@ def chats(path: str = _P):
                 "count": len(c.messages),
                 "sections": sorted(loader.sections_for_type(c.type)),
             }
-            for c in cs
+            for c in ordered
         ],
     }
 
@@ -221,6 +247,21 @@ def hour_weekday(
 def participants(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T):
     _, msgs = _resolve(path, chat, from_, to)
     return {"participants": overview.participants_table(msgs)}
+
+
+@app.get("/api/hour-by-user")
+def hour_by_user(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T):
+    """Per-user hour-of-day distribution (24-int list). Used by the 2-user
+    "when do we overlap" chart in Overview — one shot instead of N hour-weekday
+    calls."""
+    _, msgs = _resolve(path, chat, from_, to)
+    dist = overview.hour_distribution_per_user(msgs)
+    return {
+        "users": [
+            {"user_id": str(uid), "name": name, "hours": hours}
+            for uid, (name, hours) in dist.items()
+        ]
+    }
 
 
 @app.get("/api/media")
@@ -550,6 +591,20 @@ def channel_wordcloud(
 _UPLOAD_DIR = Path(tempfile.gettempdir()) / "telanalysis_uploads"
 
 
+def _prune_uploads(max_age_seconds: int = 86_400) -> None:
+    """Drop upload copies older than max_age so the temp dir doesn't grow
+    without bound across sessions. Best-effort: ignores files we can't remove."""
+    if not _UPLOAD_DIR.is_dir():
+        return
+    cutoff = time.time() - max_age_seconds
+    for f in _UPLOAD_DIR.iterdir():
+        try:
+            if f.is_file() and f.stat().st_mtime < cutoff:
+                f.unlink()
+        except OSError:
+            pass
+
+
 @app.post("/api/upload")
 async def upload(file: UploadFile = File(...)):
     """Accept a result.json (or messages.html) upload and return its local path.
@@ -564,6 +619,7 @@ async def upload(file: UploadFile = File(...)):
     if not safe.lower().endswith((".json", ".html")):
         safe += ".json"
     _UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    _prune_uploads()
     # Prefix with a timestamp so re-uploads of "result.json" don't collide.
     target = _UPLOAD_DIR / f"{int(time.time() * 1000)}-{safe}"
     with target.open("wb") as out:
