@@ -118,7 +118,9 @@ def combined_chat(chats: list[Chat]) -> Chat:
 # Telegram chat type → which dashboard sections make sense.
 # Keep this conservative: missing keys default to "show everything".
 _DASHBOARD_BY_TYPE = {
-    "personal_chat": {"overview", "graph", "words", "perusers", "highlights"},
+    # 1-on-1 chat: the reply graph is always 2 nodes / 1 edge (meaningless),
+    # and reply reciprocity already lives in the per-user tab — so no "graph".
+    "personal_chat": {"overview", "words", "perusers", "highlights"},
     "private_group": {"overview", "graph", "words", "perusers", "highlights"},
     "private_supergroup": {"overview", "graph", "words", "perusers", "highlights"},
     "public_supergroup": {"overview", "graph", "words", "perusers", "highlights"},

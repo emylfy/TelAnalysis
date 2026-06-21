@@ -84,8 +84,10 @@ def test_combined_chat_concatenates_messages():
 
 def test_sections_for_personal_chat():
     sections = loader.sections_for_type("personal_chat")
-    assert "graph" in sections
+    # 1-on-1: no network graph (trivial 2-node), but core tabs stay.
+    assert "graph" not in sections
     assert "channel" not in sections
+    assert {"overview", "words", "perusers", "highlights"} <= sections
 
 
 def test_sections_for_channel():

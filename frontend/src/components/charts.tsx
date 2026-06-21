@@ -17,12 +17,23 @@ const base = {
   tooltip: { ...TOOLTIP },
 }
 
+/** ECharts can't read CSS custom properties — handing canvas `fillStyle =
+ *  "var(--chart-2)"` is invalid, and it breaks the hover/emphasis colour
+ *  computation so the element flashes transparent on mouseover. Resolve any
+ *  `var(--token)` to its computed hex before it reaches ECharts; hex/rgb
+ *  strings pass through untouched. */
+function resolveColor(c: string): string {
+  if (typeof document === "undefined" || !c.startsWith("var(")) return c
+  const name = c.slice(4, -1).trim() // "var(--chart-2)" -> "--chart-2"
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || c
+}
+
 function Chart({ option, height = 280 }: { option: object; height?: number }) {
   return (
     <ReactECharts
       option={option}
       style={{ height, width: "100%" }}
-      opts={{ renderer: "svg" }}
+      opts={{ renderer: "canvas" }}
       notMerge
     />
   )
@@ -161,7 +172,7 @@ export function Bars({
           splitLine: { lineStyle: { color: GRID } },
           axisLabel: { color: TICK },
         },
-        series: [{ type: "bar", data: data.map((d) => d[1]), itemStyle: { color, borderRadius: [3, 3, 0, 0] } }],
+        series: [{ type: "bar", data: data.map((d) => d[1]), itemStyle: { color: resolveColor(color), borderRadius: [3, 3, 0, 0] } }],
       }}
     />
   )
@@ -311,7 +322,7 @@ export function Network({
   const pair = new Map<string, number>()
   for (const [s, t] of edges) {
     if (s === t || !keep.has(s) || !keep.has(t)) continue
-    const key = s < t ? `${s} ${t}` : `${t} ${s}`
+    const key = s < t ? `${s}\u0000${t}` : `${t}\u0000${s}`
     pair.set(key, (pair.get(key) ?? 0) + 1)
   }
   const maxE = Math.max(1, ...pair.values())
@@ -329,7 +340,7 @@ export function Network({
     label: { show: kept.length <= 30 },
   }))
   const links = [...pair.entries()].map(([key, w]) => {
-    const [source, target] = key.split(" ")
+    const [source, target] = key.split("\u0000")
     return { source, target, lineStyle: { width: 1 + 5 * (w / maxE), opacity: 0.5 } }
   })
 
@@ -524,7 +535,7 @@ export function BarsH({
           {
             type: "bar",
             data: rows.map((d) => d[1]),
-            itemStyle: { color, borderRadius: [0, 3, 3, 0] },
+            itemStyle: { color: resolveColor(color), borderRadius: [0, 3, 3, 0] },
             label: { show: true, position: "right", color: TICK, fontSize: 11 },
           },
         ],

@@ -65,7 +65,7 @@ export function Onboarding({
   const busy = uploading
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+    <div className="relative flex min-h-dvh items-center justify-center bg-background px-6 text-foreground">
       <div className="absolute right-6 top-6 flex items-center rounded-lg border border-border bg-card p-0.5">
         {(["ru", "en"] as const).map((l) => (
           <button

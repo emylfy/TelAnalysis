@@ -128,5 +128,8 @@
     }
   html {
     @apply font-sans;
+    /* Reserve scrollbar space so centred layouts never shift when a
+       scrollbar appears/disappears (notably in Firefox/Zen). */
+    scrollbar-gutter: stable;
     }
 }
