@@ -8,10 +8,10 @@
 
 [![CI](https://github.com/emylfy/TelAnalysis/actions/workflows/ci.yml/badge.svg)](https://github.com/emylfy/TelAnalysis/actions/workflows/ci.yml)
 ![Python 3.11–3.14](https://img.shields.io/badge/python-3.11--3.14-blue.svg)
-![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green.svg)
-![Built with Streamlit](https://img.shields.io/badge/built%20with-Streamlit-FF4B4B.svg)
+![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
+![Built with React + FastAPI](https://img.shields.io/badge/built%20with-React%20%2B%20FastAPI-61DAFB.svg)
 
-> Streamlit dashboard for analysing Telegram chat exports — runs entirely on your machine. Drop in `result.json`, get heatmaps, network graphs, word clouds, reply latency, sentiment arcs, and per-user breakdowns.
+> Local web app for analysing Telegram chat exports — runs entirely on your machine. Drop in `result.json`, get heatmaps, network graphs, word clouds, reply latency, sentiment arcs, and per-user breakdowns. A React SPA served same-origin by a FastAPI backend; your data never leaves your device.
 
 <p align="center">
   <img src="docs/screenshots/group-01-overview.png" alt="Overview tab — KPIs, hero, daily timeline, peak hours" width="900">
@@ -25,16 +25,16 @@ Reads a Telegram Desktop export (single chat or full archive) and renders an int
 
 Both export shapes are supported:
 - **Single chat** — `Settings → Export Chat History`
-- **Full archive** — `Settings → Advanced → Export Telegram Data` → a chat picker appears in the sidebar
+- **Full archive** — `Settings → Advanced → Export Telegram Data` → a chat picker appears once the export is loaded
 
-UI ships in **RU / EN** (toggle in the sidebar). Chat content is left untouched — wordclouds and message previews show whatever language the messages are in.
+UI ships in **RU / EN** (toggle in the header). Chat content is left untouched — wordclouds and message previews show whatever language the messages are in.
 
 ## Features
 
 | Tab | What you get |
 | --- | --- |
-| **Overview** | KPI cards (messages, participants, days active, media, voice time), Plotly area chart of daily activity, calendar heatmap (year × week × day, with binary "did we talk today" toggle), hour × weekday heatmap, top emojis, reply latency distribution, Q&A latency split |
-| **Network** | Interactive force-directed pyvis graph (drag / zoom / hover, edge thickness by interaction count, node colour by Louvain community), reply-chain depth metrics, "who replies to whom" matrix. Falls back to a bar chart for small chats. Edges/nodes export to CSV for Gephi |
+| **Overview** | KPI cards (messages, participants, days active, media, voice time), area chart of daily activity, calendar heatmap (year × week × day, with binary "did we talk today" toggle), hour × weekday heatmap, top emojis, reply latency distribution, Q&A latency split |
+| **Network** | Interactive force-directed graph (drag / zoom / hover, edge thickness by interaction count, node colour by Louvain community), reply-chain depth metrics, "who replies to whom" matrix. Falls back to a bar chart for small chats. Edges/nodes export to CSV for Gephi |
 | **Words** | Wordcloud + top words bar chart + virtualised table, n-gram phrase extraction (bigrams/trigrams), russian-profanity tracker per user (`hits / 100 msgs`), unique-vocabulary index, email + phone extraction |
 | **Channel** | Broadcast-style wordcloud and frequency analysis for channels |
 | **Per-user** | Per-user daily timeline, hour × weekday heatmap, top emojis, sticker-emoji preferences, reply latency, top words with wordcloud, speaking-style radar (avg message length, question rate, emoji rate, reply rate), longest monologues, forwards source breakdown |
@@ -60,11 +60,11 @@ Everything runs locally. The dashboard does not send your chat data anywhere —
 - NLTK downloads its `stopwords` + `punkt_tab` corpora (~10 MB).
 - *Optional only:* if you install `requirements-sentiment.txt`, HuggingFace downloads the `rubert-tiny2-russian-sentiment` model (~50 MB) the first time you open a tab that needs it.
 
-After that first launch the app works fully offline. `.streamlit/config.toml` ships with the Deploy button hidden and Streamlit telemetry disabled.
+After that first launch the app works fully offline. There is no telemetry, no analytics, and no remote API calls.
 
 ## Install
 
-Requires **Python 3.11+** (`pandas 3.x` and `streamlit 1.57+` no longer support older versions). Tested in CI on 3.11, 3.12, 3.13 and 3.14.
+Requires **Python 3.11+**. Tested in CI on 3.11, 3.12, 3.13 and 3.14. The frontend build needs **Node.js 20+** (one-time, see [Run](#run)).
 
 ### macOS
 
@@ -79,7 +79,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Apple Silicon (M1/M2/M3) works out of the box — `torch`, `pandas`, `wordcloud` all ship arm64 wheels, nothing to compile.
+Apple Silicon (M1/M2/M3) works out of the box — `torch`, `wordcloud` and friends all ship arm64 wheels, nothing to compile.
 
 ### Linux (Ubuntu / Debian)
 
@@ -144,26 +144,23 @@ In Command Prompt instead: `.\.venv\Scripts\activate.bat`. The Microsoft Store b
 
 ## Run
 
-TelAnalysis ships **two front-ends over the same Python analysis engine**. The
-modern React UI is the recommended way to run it; the Streamlit app remains
-available and identical in analytics.
-
-### Modern UI — React + FastAPI (recommended)
-
-A single local server serves a fast React SPA and the analysis API
-same-origin — your export is read locally and never leaves the machine.
-Requires **Node.js 20+** (for a one-time frontend build) on top of the Python
-setup above.
+A single local server (FastAPI + uvicorn) serves the React SPA and the
+analysis API same-origin — your export is read locally and never leaves the
+machine. The launcher builds the frontend on first run, which needs
+**Node.js 20+**:
 
 ```bash
-source .venv/bin/activate            # Python deps from Install above
-pip install -r api/requirements.txt  # FastAPI + uvicorn
-./run.sh                             # builds the SPA on first launch, then serves it
+source .venv/bin/activate   # Python deps from Install above
+./run.sh                    # builds the SPA on first launch, then serves it
 ```
 
 Open <http://127.0.0.1:8000>. On the landing screen paste a path to your
 `result.json` (or open a bundled demo). Pass a port (`./run.sh 9000`) or force
-a fresh build (`./run.sh --rebuild`).
+a fresh frontend build (`./run.sh --rebuild`).
+
+> **Docker:** `docker compose up --build`, then open <http://127.0.0.1:8000>.
+> The build bundles the SPA; mount the folder holding your export so a path you
+> paste in the UI resolves inside the container.
 
 For frontend work with hot-reload, run the two dev servers separately — Vite
 proxies `/api` to the backend:
@@ -173,32 +170,18 @@ proxies `/api` to the backend:
 cd frontend && npm install && npm run dev             # terminal 2 — http://localhost:5173
 ```
 
-### Classic UI — Streamlit
-
-```bash
-source .venv/bin/activate   # if not already active
-streamlit run app.py
-```
-
-Open <http://localhost:8501>. In the sidebar the **Source** radio offers two modes:
-
-- **Upload** (default) — drag `result.json` (or a `messages.html`) into the dropzone or click to pick. Best under ~65 MB.
-- **File Path** — paste an absolute or repo-relative path (e.g. `demo/group_demo.json`, or a path to an export folder / `messages.html`). Significantly faster for big archives — skips the base64-over-WebSocket roundtrip.
-
-After loading, the file is summarised in a collapsed pill at the top of the sidebar; expand it to swap to a different file. The data never leaves your machine — see [Privacy](#privacy).
-
 NLTK data (`stopwords`, `punkt_tab`) downloads automatically on the first word-analysis run. If `nltk.download()` errors out on macOS with an SSL cert problem, run `/Applications/Python\ 3.x/Install\ Certificates.command` once — applies only to the python.org installer, not the Homebrew build.
 
 ### Try it without your own data
 
-There's a generator for two synthetic exports — a 7-person studio chat and a 1-on-1 — purely for previewing the dashboard:
+There's a generator for two synthetic exports — a 7-person studio chat and a 1-on-1 — purely for previewing the app:
 
 ```bash
 python3 tools/gen_demo_data.py   # writes demo/group_demo.json + demo/personal_demo.json
-streamlit run app.py
+./run.sh
 ```
 
-In the sidebar switch the **Source** radio to **File Path** and paste:
+On the landing screen choose a bundled demo, or paste a path:
 ```
 demo/group_demo.json       # 7-person studio chat, ~70k messages
 demo/personal_demo.json    # 1-on-1, ~18k messages
@@ -214,7 +197,7 @@ Russian / English sentiment via `rubert-tiny2-russian-sentiment` (~1 GB on disk,
 pip install -r requirements-sentiment.txt
 ```
 
-Restart Streamlit after install. The model is not sarcasm-aware and does not understand slang or jokes — read the numbers with healthy scepticism.
+Restart the app after install. The model is not sarcasm-aware and does not understand slang or jokes — read the numbers with healthy scepticism.
 
 ## Tests & lint
 
@@ -228,17 +211,16 @@ CI runs the same on every push and PR (`.github/workflows/ci.yml`).
 
 ## Credits
 
-Built on top of [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)). Thanks for the original project and the Telegram-export parsing logic.
+Inspired by [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)) — thanks for the original idea and for showing how to parse the Telegram export format. This project is an independent rewrite: it shares no UI or architecture with the original (React SPA + FastAPI here vs. server-rendered templates there) and goes well beyond it in analytics.
 
-What this fork changes:
-- Rewrote the UI from pywebio to Streamlit (virtualised tables — no longer hangs on tens-of-thousands-of-messages chats)
-- Replaced the matplotlib network with an interactive pyvis graph + community detection
-- Added activity heatmaps (hour × weekday, calendar), emoji analytics, reply latency
-- Added a Per-user tab
-- Wordcloud now runs on group chats, not just channels
-- Cleaned up dead code; fixed bugs in `remove_emojis` (destroyed English text and truncated after the first emoji), removed a `ThreadPoolExecutor` race that did nothing useful under the GIL
-- Added: reply-chain depth, conversation-length distribution, longest monologues, russian-profanity tracker, sticker-emoji preferences, forwards-ratio, Q&A latency split, sentiment by hour/weekday, binary calendar heatmap, longest-streak detection, anniversaries
+Highlights of what this version adds:
+- A React SPA served same-origin by a FastAPI backend, over a modular pure-Python analysis engine
+- Interactive force-directed reply graph with Louvain community colouring; activity heatmaps (hour × weekday, calendar)
+- Per-user tab (speaking-style radar, reply latency, monologues, sticker-emoji preferences, forwards ratio)
+- Russian/English sentiment (`rubert-tiny2`), MTLD lexical diversity, n-gram phrases, russian-profanity tracker
+- Reply-chain depth, conversation sessions, Q&A latency split, streaks, anniversaries, "Spotify Wrapped" highlights
+- HTML + JSON export support, full-archive (multi-chat) handling, RU/EN UI, tests and CI
 
 ## License
 
-GPL-3.0 (inherited from the original). See [`LICENSE`](LICENSE).
+MIT — see [`LICENSE`](LICENSE). TelAnalysis is an independent work; the upstream project that inspired it does not ship an OSI-approved license, so this project does not derive its terms from it.

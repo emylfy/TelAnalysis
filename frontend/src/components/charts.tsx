@@ -295,10 +295,12 @@ export function DivergingBars({
 export function Network({
   nodes,
   edges,
+  communities,
   maxNodes = 60,
 }: {
   nodes: [string, string, number][]
   edges: [string, string, string][]
+  communities?: Record<string, number>
   maxNodes?: number
 }) {
   const kept = [...nodes].sort((a, b) => b[2] - a[2]).slice(0, maxNodes)
@@ -314,11 +316,16 @@ export function Network({
   }
   const maxE = Math.max(1, ...pair.values())
 
+  // Colour by Louvain community when the backend supplies one (clusters read
+  // as groups); otherwise fall back to a per-node hue.
+  const hasComm = !!communities && Object.keys(communities).length > 0
   const data = kept.map((n, i) => ({
     id: n[0],
     name: n[1],
     symbolSize: 12 + 38 * Math.sqrt(n[2] / maxW),
-    itemStyle: { color: NET_COLORS[i % NET_COLORS.length] },
+    itemStyle: {
+      color: NET_COLORS[(hasComm ? (communities![n[0]] ?? 0) : i) % NET_COLORS.length],
+    },
     label: { show: kept.length <= 30 },
   }))
   const links = [...pair.entries()].map(([key, w]) => {

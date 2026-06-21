@@ -1,15 +1,17 @@
-# Core analysis stack — Streamlit dashboard
-streamlit==1.57.0
-plotly==6.7.0
-pyvis==0.3.2
+# Python dependencies for TelAnalysis (React SPA + FastAPI backend).
+# The frontend is built separately with npm (see run.sh / README).
+
+# Web backend
+fastapi>=0.136
+uvicorn[standard]>=0.47
+python-multipart>=0.0.20   # required by FastAPI's UploadFile / File()
 
 # Data processing + analytics
-pandas==3.0.2
-networkx==3.6.1
+networkx==3.6.1            # reply-graph community detection (Louvain)
 nltk==3.9.4
 jmespath==1.1.0
 
-# Charts / visualisation
+# Wordcloud rendering
 matplotlib==3.10.9
 wordcloud==1.9.6
 

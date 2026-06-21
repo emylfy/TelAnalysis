@@ -1,0 +1,28 @@
+# Build context trimming — keep the image small and the build fast.
+.git
+.github
+.venv
+venv
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+
+# Frontend deps / build artifacts (rebuilt inside the image)
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Large / local-only data
+demo/*.json
+asset
+nltk_data
+docs/screenshots
+
+# Editor / OS junk
+.vscode
+.idea
+.DS_Store
+
+# Tests aren't needed at runtime
+tests

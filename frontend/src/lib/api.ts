@@ -135,6 +135,7 @@ export interface InteractionRow {
 export interface GraphResult {
   nodes: [string, string, number][]
   edges: [string, string, string][]
+  communities: Record<string, number>
   summary: InteractionRow[]
 }
 export interface ChainStats {

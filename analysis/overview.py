@@ -1,7 +1,7 @@
 """KPIs and timeline data for the Overview tab.
 
 All functions take a list of message dicts (Telegram export shape) and
-return primitive structures that Streamlit can render directly. No UI.
+return primitive structures the API serialises to JSON. No UI.
 """
 
 from __future__ import annotations

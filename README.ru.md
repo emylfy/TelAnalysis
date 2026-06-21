@@ -8,10 +8,10 @@
 
 [![CI](https://github.com/emylfy/TelAnalysis/actions/workflows/ci.yml/badge.svg)](https://github.com/emylfy/TelAnalysis/actions/workflows/ci.yml)
 ![Python 3.11–3.14](https://img.shields.io/badge/python-3.11--3.14-blue.svg)
-![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green.svg)
-![Built with Streamlit](https://img.shields.io/badge/built%20with-Streamlit-FF4B4B.svg)
+![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
+![Built with React + FastAPI](https://img.shields.io/badge/built%20with-React%20%2B%20FastAPI-61DAFB.svg)
 
-> Streamlit-дашборд для анализа Telegram-чатов из локального экспорта — работает полностью на твоей машине. Кидаешь `result.json`, получаешь heatmap-ы, граф связей, wordcloud, reply latency, sentiment-арки и разбивки по участникам.
+> Локальное веб-приложение для анализа Telegram-чатов из экспорта — работает полностью на твоей машине. Кидаешь `result.json`, получаешь heatmap-ы, граф связей, wordcloud, reply latency, sentiment-арки и разбивки по участникам. React-SPA, которую same-origin раздаёт FastAPI-бэкенд; данные не покидают устройство.
 
 <p align="center">
   <img src="docs/screenshots/group-01-overview.png" alt="Вкладка Overview — KPI, hero-блок, дневная активность, пиковые часы" width="900">
@@ -25,16 +25,16 @@
 
 Поддерживаются оба формата экспорта:
 - **Один чат** — `Настройки → Экспорт переписки`
-- **Весь архив** — `Настройки → Продвинутые настройки → Экспорт данных Telegram` → в сайдбаре появится селектор чатов
+- **Весь архив** — `Настройки → Продвинутые настройки → Экспорт данных Telegram` → после загрузки появится селектор чатов
 
-UI на **RU / EN** (переключатель в сайдбаре). Содержимое чата не трогается — wordcloud-ы и превью сообщений показывают исходный язык.
+UI на **RU / EN** (переключатель в шапке). Содержимое чата не трогается — wordcloud-ы и превью сообщений показывают исходный язык.
 
 ## Фичи
 
 | Таб | Что в нём |
 | --- | --- |
-| **Overview** | KPI-карточки (сообщения, участники, days active, медиа, минуты голосовых), Plotly area-chart активности по дням, calendar heatmap (год × неделя × день, с переключателем «по количеству / писали-нет»), hour × weekday heatmap, топ эмодзи, распределение reply latency, отдельная Q&A latency |
-| **Network** | Интерактивный force-directed pyvis-граф (drag / zoom / hover, толщина рёбер по частоте, цвет — Louvain communities), глубина reply-цепочек, матрица «кто кому отвечает». Для маленьких чатов — bar chart. Edges/nodes экспортируются в CSV для Gephi |
+| **Overview** | KPI-карточки (сообщения, участники, days active, медиа, минуты голосовых), area-chart активности по дням, calendar heatmap (год × неделя × день, с переключателем «по количеству / писали-нет»), hour × weekday heatmap, топ эмодзи, распределение reply latency, отдельная Q&A latency |
+| **Network** | Интерактивный force-directed граф (drag / zoom / hover, толщина рёбер по частоте, цвет — Louvain communities), глубина reply-цепочек, матрица «кто кому отвечает». Для маленьких чатов — bar chart. Edges/nodes экспортируются в CSV для Gephi |
 | **Words** | Wordcloud + топ слов + виртуализованная таблица, биграммы/триграммы, трекер мата по юзеру (`попаданий / 100 сообщений`), индекс уникального лексикона, извлечение email-ов и телефонов |
 | **Channel** | Broadcast-wordcloud и частотный анализ для каналов |
 | **Per-user** | Дневная timeline юзера, его hour × weekday heatmap, топ эмодзи, любимые sticker-эмодзи, reply latency, топ слов с wordcloud, radar «манера речи» (длина сообщений, доля вопросов, доля эмодзи, доля реплаев), самые длинные монологи, источники форвардов |
@@ -60,11 +60,11 @@ UI на **RU / EN** (переключатель в сайдбаре). Содер
 - NLTK скачивает корпуса `stopwords` + `punkt_tab` (~10 МБ).
 - *Опционально:* если ставишь `requirements-sentiment.txt`, HuggingFace при первом обращении подтянет модель `rubert-tiny2-russian-sentiment` (~50 МБ).
 
-После этого приложение работает полностью оффлайн. В `.streamlit/config.toml` отключены Deploy-кнопка и телеметрия Streamlit.
+После этого приложение работает полностью оффлайн. Никакой телеметрии, аналитики или вызовов внешних API.
 
 ## Установка
 
-Требуется **Python 3.11+** (зависимости `pandas 3.x` и `streamlit 1.57+` старее не поддерживают). В CI проверяется на 3.11, 3.12, 3.13 и 3.14.
+Требуется **Python 3.11+**. В CI проверяется на 3.11, 3.12, 3.13 и 3.14. Для сборки фронтенда нужен **Node.js 20+** (один раз, см. [Запуск](#запуск)).
 
 ### macOS
 
@@ -79,7 +79,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Apple Silicon (M1/M2/M3): всё работает из коробки — у `torch`, `pandas`, `wordcloud` есть готовые arm64-wheel'ы, ничего собирать не надо.
+Apple Silicon (M1/M2/M3): всё работает из коробки — у `torch`, `wordcloud` и прочих есть готовые arm64-wheel'ы, ничего собирать не надо.
 
 ### Linux (Ubuntu / Debian)
 
@@ -144,30 +144,43 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
 ## Запуск
 
+Один локальный сервер (FastAPI + uvicorn) раздаёт React-SPA и API анализа
+same-origin — экспорт читается локально и не покидает машину. Лаунчер собирает
+фронтенд при первом запуске, для этого нужен **Node.js 20+**:
+
 ```bash
 source .venv/bin/activate   # если ещё не активирован
-streamlit run app.py
+./run.sh                    # при первом запуске собирает SPA, потом раздаёт
 ```
 
-Открой <http://localhost:8501>. В сайдбаре переключатель **Источник** даёт два режима:
+Открой <http://127.0.0.1:8000>. На стартовом экране вставь путь к своему
+`result.json` (или открой демо). Можно передать порт (`./run.sh 9000`) или
+форсировать пересборку фронта (`./run.sh --rebuild`).
 
-- **Загрузить** (по умолчанию) — перетащи `result.json` (или `messages.html`) в дропзону или кликни и выбери файл. Подходит для экспортов до ~65 МБ.
-- **Путь к файлу** — вставь абсолютный или относительный путь (например `demo/group_demo.json`, либо путь к папке экспорта / `messages.html`). Заметно быстрее для больших архивов — нет base64-туда-обратно через WebSocket.
+> **Docker:** `docker compose up --build`, затем открой <http://127.0.0.1:8000>.
+> Образ уже собирает SPA; примонтируй папку со своим экспортом, чтобы путь,
+> вставленный в UI, резолвился внутри контейнера.
 
-После загрузки имя файла свернётся в плашку наверху сайдбара; раскрой её — там кнопка `Загрузить другой файл`. Данные не уходят с твоей машины — см. [Приватность](#приватность).
+Для разработки фронта с hot-reload запусти два dev-сервера отдельно — Vite
+проксирует `/api` на бэкенд:
+
+```bash
+.venv/bin/uvicorn api.main:app --reload --port 8000   # терминал 1 — API
+cd frontend && npm install && npm run dev             # терминал 2 — http://localhost:5173
+```
 
 NLTK-данные (`stopwords`, `punkt_tab`) скачаются автоматически при первом запуске анализа слов. Если на macOS первый `nltk.download()` падает с SSL-ошибкой, прогони один раз `/Applications/Python\ 3.x/Install\ Certificates.command` — относится только к python.org installer-у, не к brew-сборке.
 
 ### Попробовать без своих данных
 
-Есть генератор двух синтетических экспортов — групповой чат из 7 человек и личный диалог — чисто чтобы посмотреть дашборд:
+Есть генератор двух синтетических экспортов — групповой чат из 7 человек и личный диалог — чисто чтобы посмотреть приложение:
 
 ```bash
 python3 tools/gen_demo_data.py   # создаёт demo/group_demo.json + demo/personal_demo.json
-streamlit run app.py
+./run.sh
 ```
 
-В сайдбаре переключи **Источник** на **Путь к файлу** и вставь:
+На стартовом экране открой демо или вставь путь:
 ```
 demo/group_demo.json       # групповой чат, ~70k сообщений
 demo/personal_demo.json    # 1-на-1, ~18k сообщений
@@ -183,7 +196,7 @@ demo/personal_demo.json    # 1-на-1, ~18k сообщений
 pip install -r requirements-sentiment.txt
 ```
 
-Перезапусти Streamlit после установки. Модель не понимает сарказм, шутки и слэнг — числа читай со скепсисом.
+Перезапусти приложение после установки. Модель не понимает сарказм, шутки и слэнг — числа читай со скепсисом.
 
 ## Тесты и линт
 
@@ -197,17 +210,16 @@ CI гоняет то же самое на каждый push и PR (`.github/work
 
 ## Источник
 
-Проект построен на основе [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)). Спасибо за оригинальный проект и логику разбора Telegram-экспорта.
+Вдохновлено проектом [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)) — спасибо за исходную идею и за то, как разбирать формат экспорта Telegram. Это независимый рерайт: общего UI и архитектуры с оригиналом нет (здесь React-SPA + FastAPI против серверных шаблонов там), а по аналитике он ушёл далеко вперёд.
 
-Что изменилось в этом форке:
-- Переписан UI с pywebio на Streamlit (виртуализованные таблицы — больше не зависает на чатах в десятки тысяч сообщений)
-- Заменён matplotlib-граф на интерактивный pyvis + community detection
-- Добавлены heatmap-ы активности (hour × weekday, calendar), emoji-аналитика, reply latency
-- Добавлен Per-user tab
-- Wordcloud теперь и в чатах, не только в каналах
-- Чистка модулей: убран мёртвый код, исправлены баги в `remove_emojis` (уничтожал английский текст и обрезал после первой эмодзи), убрана гонка `ThreadPoolExecutor` где она ничего не давала из-за GIL
-- Добавлены: глубина reply-цепочек, распределение длин разговоров, самые длинные монологи, трекер мата, sticker-эмодзи по юзерам, forwards-ratio, Q&A latency, sentiment по часам и дням, binary calendar heatmap, longest streak, юбилеи
+Чем эта версия отличается:
+- React-SPA, которую same-origin раздаёт FastAPI-бэкенд, поверх модульного чистого Python-движка анализа
+- Интерактивный force-directed граф ответов с раскраской по Louvain-сообществам; heatmap-ы активности (hour × weekday, calendar)
+- Вкладка Per-user (radar манеры речи, reply latency, монологи, sticker-эмодзи, forwards-ratio)
+- Русский/английский sentiment (`rubert-tiny2`), MTLD-лексикон, n-граммы фраз, трекер мата
+- Глубина reply-цепочек, сессии разговоров, Q&A latency, стрики, юбилеи, highlights в стиле «Spotify Wrapped»
+- Поддержка HTML + JSON экспорта, полный архив (много чатов), RU/EN UI, тесты и CI
 
 ## Лицензия
 
-GPL-3.0 (унаследована из оригинала). См. [`LICENSE`](LICENSE).
+MIT — см. [`LICENSE`](LICENSE). TelAnalysis — независимая работа; проект, который её вдохновил, не публикуется под OSI-лицензией, поэтому условия из него не наследуются.

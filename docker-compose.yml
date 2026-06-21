@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    # Mount the folder that holds your Telegram export read-only, then paste a
+    # path *inside the container* on the landing screen, e.g. /data/result.json.
+    # volumes:
+    #   - /path/to/your/export:/data:ro
+    restart: unless-stopped

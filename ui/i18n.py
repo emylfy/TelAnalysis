@@ -1,13 +1,12 @@
 """Lightweight i18n. RU is canonical (used as keys), EN derived from dict.
 
-Default lang is "ru". When Streamlit isn't available (tests, CLI),
-get_lang() falls back to "ru" so pure-function tests stay green.
+Default lang is "ru". The active language is selected per request via a
+contextvar (set by the FastAPI `?lang=` dependency); outside a request
+(tests, CLI) it falls back to "ru" so pure-function tests stay green.
 
 Usage:
     from ui.i18n import t, plural, n_days, format_day, weekday_name
 
-    st.caption(t("анализ переписок telegram"))
-    st.metric(t("Сообщений"), kpis.total_messages)
     f"написали {n_messages(74189)} за {n_days(750)}"
 """
 
@@ -15,12 +14,6 @@ from __future__ import annotations
 
 import contextvars
 from datetime import date as _date
-
-try:
-    import streamlit as _st
-except ImportError:
-    _st = None
-
 
 EN: dict[str, str] = {
     # sidebar / chrome
@@ -205,7 +198,7 @@ EN: dict[str, str] = {
     "All {n} message fragments": "All {n} message fragments",
     "Found contacts: {e} emails, {p} phones": "Found Contacts: {e} emails, {p} phones",
     # Words tab — sentiment hint
-    "Сентимент-анализ **отключён** — требуются опциональные зависимости для RU/EN-оценок:\n\n```\npip install -r requirements-sentiment.txt\n```\n\nДобавит ~1GB (torch + transformers) плюс 50MB модель при первом запуске. После установки нужен рестарт Streamlit. Модель не различает сарказм, шутки и слэнг — вспомогательная метрика, не диагностика.": "Sentiment analysis is **disabled** — optional deps required for RU/EN sentiment scores:\n\n```\npip install -r requirements-sentiment.txt\n```\n\nAdds ~1GB (torch + transformers) plus a 50MB model on first use. Restart Streamlit afterwards. Model doesn't catch sarcasm, jokes or slang — supplementary metric, not diagnosis.",
+    "Сентимент-анализ **отключён** — требуются опциональные зависимости для RU/EN-оценок:\n\n```\npip install -r requirements-sentiment.txt\n```\n\nДобавит ~1GB (torch + transformers) плюс 50MB модель при первом запуске. После установки нужен перезапуск приложения. Модель не различает сарказм, шутки и слэнг — вспомогательная метрика, не диагностика.": "Sentiment analysis is **disabled** — optional deps required for RU/EN sentiment scores:\n\n```\npip install -r requirements-sentiment.txt\n```\n\nAdds ~1GB (torch + transformers) plus a 50MB model on first use. Restart the app afterwards. Model doesn't catch sarcasm, jokes or slang — supplementary metric, not diagnosis.",
     " · {n} fragments halved by sarcasm-emoji heuristic (🙃🤡🙄💀…)": " · {n} fragments halved by sarcasm-emoji heuristic (🙃🤡🙄💀…)",
     "⚠ Sentiment не различает сарказм, шутки и слэнг. Подходит для тренда, не для абсолютных значений.": "⚠ Sentiment doesn't catch sarcasm, jokes or slang. Use for trends, not absolute values.",
     # tabs — Channel
@@ -400,9 +393,8 @@ EN: dict[str, str] = {
 }
 
 
-# Per-request language override for non-Streamlit callers (the FastAPI backend
-# sets this from a ?lang= param). contextvars keep it correct under async /
-# threadpool concurrency. Streamlit path is unaffected (override stays None).
+# Per-request language override: the FastAPI backend sets this from a ?lang=
+# param. contextvars keep it correct under async / threadpool concurrency.
 _lang_override: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "tla_lang_override", default=None
 )
@@ -414,16 +406,11 @@ def set_lang(lang: str | None) -> None:
 
 
 def get_lang() -> str:
-    """Active language. Override (API) > Streamlit session > 'ru' fallback."""
+    """Active language. Per-request override (API) wins, else 'ru' fallback."""
     override = _lang_override.get()
     if override in ("ru", "en"):
         return override
-    if _st is None:
-        return "ru"
-    try:
-        return _st.session_state.get("lang", "ru")
-    except Exception:
-        return "ru"
+    return "ru"
 
 
 def t(s: str) -> str:

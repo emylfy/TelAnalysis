@@ -109,31 +109,26 @@ def interaction_summary(messages: list[dict]) -> list[dict]:
     return rows
 
 
-def render_pyvis_html(graph: GraphData, height: str = "700px") -> str | None:
-    """Render the reply graph as an interactive vis.js HTML.
+def detect_communities(graph: GraphData) -> dict[str, int]:
+    """Assign each node a community index via Louvain/greedy modularity.
 
-    Drag, zoom, hover tooltips. Edge thickness ~ frequency.
-    Node size ~ message count. Communities coloured via Louvain modularity
-    (falls back to a single colour if networkx-community is unavailable).
-    Returns the HTML string or None for empty/oversized graphs.
+    The reply graph is treated as undirected and parallel edges are collapsed
+    into a single weighted edge per pair (self-loops dropped). Returns a
+    ``{node_id: community_index}`` mapping the SPA uses to colour nodes.
+    Best-effort: returns ``{}`` for empty/oversized graphs or if community
+    detection is unavailable.
     """
-    if not graph.nodes:
-        return None
+    GRAPH_MAX_NODES = 800
+    if not graph.nodes or len(graph.nodes) > GRAPH_MAX_NODES:
+        return {}
 
-    GRAPH_PYVIS_MAX_NODES = 800
-    if len(graph.nodes) > GRAPH_PYVIS_MAX_NODES:
-        return None
+    try:
+        import networkx as nx
+        from networkx.algorithms.community import greedy_modularity_communities
+    except Exception:
+        return {}
 
-    import networkx as nx
-    from pyvis.network import Network
-
-    G = nx.Graph()  # undirected for community detection; pyvis edges set arrow
-
-    id_to_label = {nid: label for nid, label, _ in graph.nodes}
-    weights = {nid: w for nid, _, w in graph.nodes}
-
-    for nid, label, w in graph.nodes:
-        G.add_node(nid, label=label or nid, weight=int(w))
+    node_ids = {nid for nid, _, _ in graph.nodes}
 
     # Aggregate parallel edges into a single weighted edge per (s,t) pair.
     edge_w: dict[tuple[str, str], int] = {}
@@ -142,91 +137,19 @@ def render_pyvis_html(graph: GraphData, height: str = "700px") -> str | None:
             continue  # self-loop drowns out interesting structure
         key = tuple(sorted((s, t)))
         edge_w[key] = edge_w.get(key, 0) + 1
+
+    G = nx.Graph()
+    for nid in node_ids:
+        G.add_node(nid)
     for (s, t), w in edge_w.items():
-        if s in id_to_label and t in id_to_label:
+        if s in node_ids and t in node_ids:
             G.add_edge(s, t, weight=w)
 
-    # Community detection (best-effort; missing in older networkx)
     communities: dict[str, int] = {}
     try:
-        from networkx.algorithms.community import greedy_modularity_communities
-
         for idx, comm in enumerate(greedy_modularity_communities(G)):
             for n in comm:
-                communities[n] = idx
+                communities[str(n)] = idx
     except Exception:
-        pass
-
-    # Reuse the shared colorway so community colours match the rest of the
-    # dashboard, then extend with extra distinct hues for graphs with many
-    # communities.
-    from analysis import theme as theme_mod
-
-    palette = list(theme_mod.COLORWAY) + [
-        "#6DC8EC",
-        "#945FB9",
-        "#FF9845",
-        "#1E9493",
-        "#FF99C3",
-        "#9D9D9D",
-    ]
-
-    net = Network(
-        height=height,
-        width="100%",
-        bgcolor=theme_mod.PALETTE["bg"],
-        font_color=theme_mod.PALETTE["neutral_bright"],
-        directed=False,
-        notebook=False,
-        cdn_resources="remote",
-    )
-    net.barnes_hut(
-        gravity=-8000, central_gravity=0.3, spring_length=120, spring_strength=0.04
-    )
-
-    max_w = max((w for w in weights.values()), default=1)
-    for nid in G.nodes:
-        w = weights.get(nid, 1)
-        size = 10 + 35 * (w / max_w) ** 0.5
-        comm = communities.get(nid, 0)
-        color = palette[comm % len(palette)]
-        label = id_to_label.get(nid, nid)
-        net.add_node(
-            nid,
-            label=label,
-            value=w,
-            title=f"<b>{label}</b><br>messages: {w:,}",
-            color=color,
-            size=size,
-        )
-
-    max_edge_w = max(edge_w.values(), default=1)
-    for (s, t), w in edge_w.items():
-        if s not in G.nodes or t not in G.nodes:
-            continue
-        thickness = 1 + 6 * (w / max_edge_w)
-        net.add_edge(s, t, value=w, width=thickness, title=f"{w} interactions")
-
-    # toggle physics, smooth edges
-    net.set_options(
-        """
-        {
-          "physics": {
-            "enabled": true,
-            "stabilization": {"iterations": 200, "fit": true}
-          },
-          "edges": {
-            "smooth": {"type": "continuous"},
-            "color": {"opacity": 0.5},
-            "scaling": {"min": 1, "max": 8}
-          },
-          "interaction": {
-            "hover": true,
-            "tooltipDelay": 100,
-            "navigationButtons": true
-          }
-        }
-        """
-    )
-
-    return net.generate_html(notebook=False)
+        return {}
+    return communities

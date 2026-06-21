@@ -6,8 +6,8 @@
 # Install with:
 #   pip install -r requirements-sentiment.txt
 #
-# After install, restart Streamlit. The "Sentiment Score" column and chat-wide
-# averages will populate automatically.
+# After install, restart the app. The sentiment scores and chat-wide averages
+# will populate automatically.
 
 transformers==5.8.0
 torch==2.11.0

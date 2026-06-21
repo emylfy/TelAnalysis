@@ -1,13 +1,12 @@
 """FastAPI backend for TelAnalysis.
 
-Wraps the existing pure-Python analysis (`analysis/*`) as JSON endpoints — the
-endpoint set mirrors the old Streamlit cache wrappers in `ui/cache.py`. The
-React SPA (frontend/) talks to these locally; the export file is read from a
-local path and never leaves the machine (privacy preserved).
+Wraps the pure-Python analysis (`analysis/*`) as JSON endpoints. The React SPA
+(frontend/) talks to these locally; the export file is read from a local path
+and never leaves the machine (privacy preserved).
 
-Caching mirrors Streamlit's `@st.cache_data`: keyed by (path, mtime, chat,
-from, to) via functools.lru_cache. The heavy sentiment model (if installed)
-loads lazily on first use, once per process.
+Results are cached with `functools.lru_cache` keyed by (path, mtime, chat,
+from, to), so re-querying the same file/range is instant. The heavy sentiment
+model (if installed) loads lazily on first use, once per process.
 
 Run:
     .venv/bin/uvicorn api.main:app --reload --port 8000
@@ -122,7 +121,7 @@ def _pick_chat(path: str, mtime: float, chat_id: str | None):
 
 @lru_cache(maxsize=16)
 def _messages(path: str, mtime: float, chat_id: str | None, from_d: str | None, to_d: str | None):
-    """Filtered message list for (chat, date range) — cached like Streamlit."""
+    """Filtered message list for (chat, date range) — cached by (path, mtime, …)."""
     chat = _pick_chat(path, mtime, chat_id)
     msgs = chat.messages
     if from_d and to_d:
@@ -169,7 +168,7 @@ _T = Query(None, alias="to")
 
 
 # Chat-type ordering for the picker: personal → groups → channels → bots →
-# saved → unknown. Mirrors the Streamlit picker (app.py _TYPE_RANK).
+# saved → unknown.
 _TYPE_RANK = {
     "personal_chat": 0,
     "private_group": 1,
@@ -334,6 +333,7 @@ def graph(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str
     return {
         "nodes": g.nodes,
         "edges": g.edges,
+        "communities": graph_mod.detect_communities(g),
         "summary": graph_mod.interaction_summary(msgs),
     }
 

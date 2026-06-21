@@ -1,5 +1,5 @@
-# Project tooling config. This is NOT a packaging manifest — TelAnalysis is a
-# Streamlit app, not a PyPI package. No [project] / [build-system] sections.
+# Project tooling config. This is NOT a packaging manifest — TelAnalysis is an
+# application, not a PyPI package. No [project] / [build-system] sections.
 
 [tool.ruff]
 line-length = 100
@@ -11,10 +11,10 @@ select = ["E", "F", "W", "I", "UP", "B"]
 ignore = [
     "E501",  # line-length handled by formatter; soft for prose-heavy docstrings
     "B007",  # unused loop variable — common in tuple unpacking
-    "B008",  # function calls in default args — common in streamlit cache decorators
+    "B008",  # function calls in default args — FastAPI Depends()/Query() defaults
     "B023",  # function-uses-loop-variable — used intentionally in this codebase
     "B905",  # zip without strict= — pre-3.10 compat
-    "E731",  # lambda-assignment — used for streamlit hash funcs
+    "E731",  # lambda-assignment — used for small inline helpers
 ]
 
 [tool.ruff.lint.per-file-ignores]

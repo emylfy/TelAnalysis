@@ -1,73 +1,42 @@
-# React + TypeScript + Vite
+# TelAnalysis — frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite SPA for [TelAnalysis](../README.md). It renders the
+dashboard (Overview, Network, Words, Channel, Per-User, Sentiment) by calling
+the FastAPI backend under `/api`. Charts use ECharts; styling is Tailwind +
+shadcn-style primitives; data fetching is React Query; i18n is i18next (RU/EN).
 
-Currently, two official plugins are available:
+## Normal use
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+You don't run this directly — from the repo root, `./run.sh` builds this SPA
+and serves it same-origin with the API on <http://127.0.0.1:8000>.
 
-## React Compiler
+## Frontend development (hot reload)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Run the API and the Vite dev server in two terminals; Vite proxies `/api` to
+the backend:
 
-## Expanding the ESLint configuration
+```bash
+# repo root — terminal 1
+.venv/bin/uvicorn api.main:app --reload --port 8000
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# frontend/ — terminal 2
+npm install
+npm run dev          # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Scripts
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Command           | What it does                                  |
+| ----------------- | --------------------------------------------- |
+| `npm run dev`     | Vite dev server with HMR (proxies `/api`)     |
+| `npm run build`   | `tsc -b` typecheck + production build to `dist/` |
+| `npm run lint`    | ESLint over the source                        |
+| `npm run preview` | Serve the built `dist/` locally               |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Layout
+
+- `src/*.tsx` — one component per tab (`Overview`, `Network`, `Words`, …)
+- `src/components/charts.tsx` — ECharts wrappers (timelines, heatmaps, graph, radar)
+- `src/components/ui/` — shared primitives (button, card, tabs, …)
+- `src/lib/api.ts` — typed client + response interfaces for every `/api` endpoint
+- `src/lib/i18n.ts` — language setup and locale-aware formatters
