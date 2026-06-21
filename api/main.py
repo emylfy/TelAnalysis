@@ -80,7 +80,7 @@ app.add_middleware(
 COMBINE = "__combine__"
 
 
-# --- resolution + caching (mirrors the old cache_key = path::mtime::chat::from::to) ---
+# resolution + caching (mirrors the old cache_key = path::mtime::chat::from::to)
 
 
 def _mtime(path: str) -> float:
@@ -164,7 +164,7 @@ _F = Query(None, alias="from")
 _T = Query(None, alias="to")
 
 
-# --- endpoints ---
+# endpoints
 
 
 # Chat-type ordering for the picker: personal → groups → channels → bots →
@@ -632,7 +632,7 @@ def health():
     return {"ok": True}
 
 
-# --- serve the built SPA (prod) ---
+# serve the built SPA (prod)
 # When `frontend/dist` exists, mount it at root so a single `uvicorn` serves
 # both the API (/api/*, registered above) and the React app same-origin. In
 # dev this directory is absent; the Vite dev server proxies /api → :8000.

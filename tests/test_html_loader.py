@@ -189,7 +189,7 @@ def test_multifile_natural_order():
     ]
 
 
-# --- load_export dispatcher -------------------------------------------------
+# load_export dispatcher
 
 
 def test_load_export_html_file(tmp_path: Path):

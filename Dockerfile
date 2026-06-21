@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# --- Stage 1: build the React SPA -------------------------------------------
+# Stage 1: build the React SPA
 FROM node:20-slim AS frontend
 WORKDIR /build/frontend
 # Install deps first for layer caching.
@@ -9,7 +9,7 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build          # emits /build/frontend/dist
 
-# --- Stage 2: Python runtime ------------------------------------------------
+# Stage 2: Python runtime
 FROM python:3.12-slim AS runtime
 
 # Russian sentiment (torch + transformers, ~1GB) is OFF by default to keep the

@@ -29,7 +29,7 @@ from datetime import datetime
 # reduced fidelity. JSON exports never carry it.
 SOURCE_HTML = "html"
 
-# --- block splitting -------------------------------------------------------
+# block splitting
 
 # Each message is a `<div class="message ..." id="messageN">`. The head regex
 # both locates block starts and pulls out the class + id.

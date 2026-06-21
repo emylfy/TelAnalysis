@@ -42,9 +42,7 @@ from pathlib import Path
 
 OUT_DIR = Path(__file__).resolve().parents[1] / "demo"
 
-# ---------------------------------------------------------------------------
 # Shared vocab pools
-# ---------------------------------------------------------------------------
 
 GREETINGS = [
     "hey",
@@ -434,10 +432,8 @@ STICKER_EMOJIS = [
     "💀", "🔥", "✨", "💯", "🎉", "🙃", "😎", "🤡", "🤖", "👾",
 ]
 
-# ---------------------------------------------------------------------------
 # 1-on-1 vocabulary — curated against the sentiment model so the arc reads.
 # AFFECTION/GOOD score strongly positive, LOW strongly negative, NEUTRAL ~0.
-# ---------------------------------------------------------------------------
 
 PERSONAL_AFFECTION = [
     "you're the best",
@@ -574,9 +570,7 @@ PERSONAL_AUDIO = [
     ("my new favorite track", ""),
 ]
 
-# ---------------------------------------------------------------------------
 # Pool registry — categories are referenced by name from persona mixes.
-# ---------------------------------------------------------------------------
 
 POOLS: dict[str, list[str]] = {
     "GREETINGS": GREETINGS,
@@ -611,9 +605,7 @@ _SHORT_CATS = {"ACKS", "AGREES", "DISAGREES", "GREETINGS", "MEMES", "LINKS", "P_
 # What a reply most often is: a short reaction to the parent message.
 REPLY_MIX = [("ACKS", 3.0), ("AGREES", 2.0), ("DISAGREES", 1.0), ("MEMES", 1.5), ("QUESTIONS", 1.0)]
 
-# ---------------------------------------------------------------------------
 # Group chat config — 7 distinct personas
-# ---------------------------------------------------------------------------
 
 # Each persona: id, name, weight (activity share), hour_center, hour_spread,
 # emoji rate, len weights for [1,2,3,4] sentences, reply rate, announce flag,
@@ -688,9 +680,7 @@ GROUP_END = date(2026, 5, 1)
 GROUP_NAME = "Demo Studio · team"
 GROUP_TYPE = "private_supergroup"
 
-# ---------------------------------------------------------------------------
 # 1-on-1 config
-# ---------------------------------------------------------------------------
 
 PERSONAL_ME_ID = "user2001"
 PERSONAL_ME_NAME = "You"
@@ -702,9 +692,7 @@ PERSONAL_END = date(2026, 5, 1)
 PERSONAL_NAME = "Demo Friend"
 PERSONAL_TYPE = "personal_chat"
 
-# ---------------------------------------------------------------------------
 # Generation helpers
-# ---------------------------------------------------------------------------
 
 
 def _hour_weight(hour: int, center: float, spread: float) -> float:
@@ -879,9 +867,7 @@ def _personal_mix(speaker_me: bool, phase: str) -> list[tuple]:
     return [(cat, w * bump.get(cat, 1.0)) for cat, w in mix]
 
 
-# ---------------------------------------------------------------------------
 # Generators
-# ---------------------------------------------------------------------------
 
 
 def gen_group_messages() -> list[dict]:
