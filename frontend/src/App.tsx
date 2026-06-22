@@ -12,6 +12,7 @@ import {
   Link2,
   Mic,
   MoonStar,
+  MoreVertical,
   Reply,
   Smile,
   Sparkles,
@@ -78,31 +79,81 @@ const TAB_DEFS = [
 ] as const
 
 function Logo() {
+  // A filled chat-message bubble (pointed tail, bottom-left) with three ascending
+  // bars knocked out of it — "analytics inside a message" in one mark. The bars
+  // are a real SVG mask (transparent holes), so they read correctly on any
+  // background and in both themes. Single brand colour (var(--primary)); the
+  // multi-colour palette stays reserved for the actual charts.
   return (
-    <svg width="26" height="26" viewBox="0 0 56 56" fill="none">
-      <rect width="56" height="56" rx="14" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)" />
-      <rect x="15" y="30" width="6" height="11" rx="2" fill="var(--chart-1)" />
-      <rect x="25" y="22" width="6" height="19" rx="2" fill="var(--chart-2)" />
-      <rect x="35" y="15" width="6" height="26" rx="2" fill="var(--primary)" />
+    <svg width="26" height="26" viewBox="0 0 56 56" fill="none" aria-hidden="true">
+      <mask id="tla-logo-bars">
+        <rect width="56" height="56" fill="white" />
+        <rect x="18" y="26" width="5" height="9" rx="1.5" fill="black" />
+        <rect x="25.5" y="21" width="5" height="14" rx="1.5" fill="black" />
+        <rect x="33" y="16" width="5" height="19" rx="1.5" fill="black" />
+      </mask>
+      <path
+        d="M14 8 H44 a8 8 0 0 1 8 8 V32 a8 8 0 0 1 -8 8 H22 l-10 9 l3 -9 h-1 a8 8 0 0 1 -8 -8 V16 a8 8 0 0 1 8 -8 Z"
+        fill="var(--primary)"
+        mask="url(#tla-logo-bars)"
+      />
     </svg>
   )
 }
 
-function LangToggle({ lang, onLang }: { lang: "ru" | "en"; onLang: (l: "ru" | "en") => void }) {
+/** Overflow menu for set-once chrome (language, change source) — folded out of
+ *  the main bar so the header keeps a clear primary/secondary hierarchy and
+ *  stops wrapping at mid widths. */
+function SettingsMenu({
+  lang,
+  onLang,
+  onChangeSource,
+}: {
+  lang: "ru" | "en"
+  onLang: (l: "ru" | "en") => void
+  onChangeSource: () => void
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
   return (
-    <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
-      {(["ru", "en"] as const).map((l) => (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        aria-label={t("settings")}
+        className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
+      >
+        <MoreVertical className="size-4" />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-52 gap-1 p-1.5">
+        <div className="px-2 pt-1 text-xs font-medium text-muted-foreground">{t("language")}</div>
+        <div className="flex items-center gap-1 px-1 pb-1">
+          {(["en", "ru"] as const).map((l) => (
+            <button
+              key={l}
+              onClick={() => onLang(l)}
+              className={cn(
+                "flex-1 rounded-md px-2 py-1 text-sm transition-colors",
+                lang === l
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              {l.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <div className="my-1 border-t border-border" />
         <button
-          key={l}
-          onClick={() => onLang(l)}
-          className={`rounded-md px-3 py-1 text-sm transition-colors ${
-            lang === l ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
+          onClick={() => {
+            setOpen(false)
+            onChangeSource()
+          }}
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
         >
-          {l.toUpperCase()}
+          <FolderOpen className="size-4 text-muted-foreground" />
+          {t("changeSource")}
         </button>
-      ))}
-    </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -149,78 +200,81 @@ function PeriodPicker({
     onApply(isoStart < (min ?? isoStart) ? min : isoStart, max)
   }
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="hidden items-center rounded-md border border-border bg-card p-0.5 sm:flex">
-        {([
-          { d: 7, k: "preset7" },
-          { d: 30, k: "preset30" },
-          { d: 90, k: "preset90" },
-          { d: null, k: "presetAll" },
-        ] as const).map((p) => (
-          <button
-            key={p.k}
-            onClick={() => applyPreset(p.d)}
-            className="rounded px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger className={cn(buttonVariants({ variant: "outline" }), "gap-2 font-normal")}>
+        <CalendarDays className="size-4 text-muted-foreground" />
+        <span className="tabular-nums">{label}</span>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-auto space-y-3">
+        {/* quick presets — folded in from the old inline bar so the period has a
+            single affordance instead of two competing ones in the header */}
+        <div className="flex items-center gap-1">
+          {([
+            { d: 7, k: "preset7" },
+            { d: 30, k: "preset30" },
+            { d: 90, k: "preset90" },
+            { d: null, k: "presetAll" },
+          ] as const).map((p) => (
+            <button
+              key={p.k}
+              onClick={() => {
+                applyPreset(p.d)
+                setOpen(false)
+              }}
+              className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {t(p.k)}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-end gap-2">
+          <label className="space-y-1 text-xs text-muted-foreground">
+            {t("fromDate")}
+            <input
+              type="date"
+              min={min}
+              max={tt || max}
+              value={f}
+              onChange={(e) => setF(e.target.value)}
+              className="block h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground [color-scheme:dark]"
+            />
+          </label>
+          <label className="space-y-1 text-xs text-muted-foreground">
+            {t("toDate")}
+            <input
+              type="date"
+              min={f || min}
+              max={max}
+              value={tt}
+              onChange={(e) => setTt(e.target.value)}
+              className="block h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground [color-scheme:dark]"
+            />
+          </label>
+        </div>
+        <div className="flex justify-between gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onApply(undefined, undefined)
+              setOpen(false)
+            }}
           >
-            {t(p.k)}
-          </button>
-        ))}
-      </div>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger className={cn(buttonVariants({ variant: "outline" }), "gap-2 font-normal")}>
-          <CalendarDays className="size-4 text-muted-foreground" />
-          <span className="tabular-nums">{label}</span>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-auto space-y-3">
-          <div className="flex items-end gap-2">
-            <label className="space-y-1 text-xs text-muted-foreground">
-              {t("fromDate")}
-              <input
-                type="date"
-                min={min}
-                max={tt || max}
-                value={f}
-                onChange={(e) => setF(e.target.value)}
-                className="block h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground [color-scheme:dark]"
-              />
-            </label>
-            <label className="space-y-1 text-xs text-muted-foreground">
-              {t("toDate")}
-              <input
-                type="date"
-                min={f || min}
-                max={max}
-                value={tt}
-                onChange={(e) => setTt(e.target.value)}
-                className="block h-9 rounded-md border border-input bg-transparent px-2 text-sm text-foreground [color-scheme:dark]"
-              />
-            </label>
-          </div>
-          <div className="flex justify-between gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                onApply(undefined, undefined)
-                setOpen(false)
-              }}
-            >
-              {t("reset")}
-            </Button>
-            <Button
-              size="sm"
-              disabled={!f || !tt}
-              onClick={() => {
-                onApply(f, tt)
-                setOpen(false)
-              }}
-            >
-              {t("apply")}
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+            {t("reset")}
+          </Button>
+          <Button
+            size="sm"
+            disabled={!f || !tt}
+            onClick={() => {
+              onApply(f, tt)
+              setOpen(false)
+            }}
+          >
+            {t("apply")}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -256,11 +310,21 @@ function TopBar(props: {
           aria-label="Home"
         >
           <Logo />
-          <span className="text-lg font-bold tracking-tight">TelAnalysis</span>
+          {/* select-none: the wordmark is identity (chrome), not selectable
+              content — Firefox/Zen otherwise lets it drag-highlight. Two-tone
+              ties the muted "Tel" prefix to the full-weight "Analysis". */}
+          <span className="select-none text-lg font-bold tracking-tight">
+            <span className="text-muted-foreground">Tel</span>Analysis
+          </span>
         </button>
-        <div className="ml-auto flex flex-wrap items-center gap-3">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {multi && (
-            <Button variant="outline" onClick={onToggleManager} title={t(manager ? "backToAnalytics" : "manageChats")}>
+            <Button
+              variant="outline"
+              onClick={onToggleManager}
+              aria-label={t(manager ? "backToAnalytics" : "manageChats")}
+              title={t(manager ? "backToAnalytics" : "manageChats")}
+            >
               {manager ? <BarChart3 className="size-4" /> : <FolderCog className="size-4" />}
               <span className="hidden sm:inline">{t(manager ? "backToAnalytics" : "manageChats")}</span>
             </Button>
@@ -268,7 +332,7 @@ function TopBar(props: {
           {/* analysis controls only matter in analytics view */}
           {!manager && multi && (
             <Select value={value} onValueChange={(v) => v && onChat(v)}>
-              <SelectTrigger className="w-[240px]">
+              <SelectTrigger className="w-[200px] sm:w-[240px]">
                 <SelectValue>
                   {/* base-ui's Value renders the raw `value` by default — we
                       need a render-prop to map id → name (otherwise the chat
@@ -294,10 +358,10 @@ function TopBar(props: {
             </Select>
           )}
           {!manager && <PeriodPicker bounds={bounds} from={from} to={to} onApply={onPeriod} />}
-          <Button variant="outline" size="icon" onClick={onChangeSource} title={t("changeSource")}>
-            <FolderOpen className="size-4" />
-          </Button>
-          <LangToggle lang={lang} onLang={onLang} />
+          {/* thin rule separates set-once chrome (language, source) from the
+              data-scope controls above — visual hierarchy, not just spacing */}
+          <div aria-hidden className="mx-0.5 hidden h-5 w-px bg-border sm:block" />
+          <SettingsMenu lang={lang} onLang={onLang} onChangeSource={onChangeSource} />
         </div>
       </div>
     </header>
@@ -443,7 +507,7 @@ function HeaderSkeleton() {
 export default function App() {
   const { t } = useTranslation()
   const initial = readUrlState()
-  const [lang, setLang] = useState<"ru" | "en">((initial.lang as "ru" | "en") ?? "ru")
+  const [lang, setLang] = useState<"ru" | "en">((initial.lang as "ru" | "en") ?? "en")
   const [path, setPath] = useState<string | null>(() => localStorage.getItem(LS_PATH))
   const [chat, setChat] = useState<string | undefined>(initial.chat)
   const [from, setFrom] = useState<string | undefined>(initial.from)
