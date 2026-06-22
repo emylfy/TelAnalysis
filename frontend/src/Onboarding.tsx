@@ -1,8 +1,8 @@
-import { useRef, useState } from "react"
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { ChevronDown, Loader2, Upload } from "lucide-react"
+import { ChevronDown, FolderOpen, Loader2 } from "lucide-react"
 
-import { uploadFile } from "@/lib/api"
+import { browse } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -56,35 +56,35 @@ export function Onboarding({
 }) {
   const { t } = useTranslation()
   const [path, setPath] = useState("")
-  const [uploading, setUploading] = useState(false)
-  const [uploadErr, setUploadErr] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [pickErr, setPickErr] = useState(false)
+  const [unavailable, setUnavailable] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const submitPath = () => {
     const p = normalizePath(path)
     if (p) onLoad(p)
   }
 
-  const pickFile = () => fileRef.current?.click()
-
-  const onFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = "" // allow re-picking the same file
-    if (!file) return
-    setUploading(true)
-    setUploadErr(false)
+  // Native OS file picker via the local server — returns the REAL path, so the
+  // adjacent media (chats/…) resolves and stickers/photos load. Browsers hide
+  // the path on <input type=file>, which is why the old upload route silently
+  // dropped the media folder.
+  const pickFile = async () => {
+    setBusy(true)
+    setPickErr(false)
+    setUnavailable(false)
     try {
-      const { path: p } = await uploadFile(file)
-      onLoad(p)
+      const r = await browse(t("pickPrompt"))
+      if (r.path) onLoad(r.path)
+      else if (r.unavailable) setUnavailable(true)
+      // r.cancelled → user backed out; do nothing
     } catch {
-      setUploadErr(true)
+      setPickErr(true)
     } finally {
-      setUploading(false)
+      setBusy(false)
     }
   }
-
-  const busy = uploading
 
   return (
     <div className="relative flex min-h-dvh items-center justify-center bg-background px-6 text-foreground">
@@ -113,20 +113,14 @@ export function Onboarding({
 
         <p className="mt-6 text-sm leading-relaxed text-muted-foreground">{t("onboardDesc")}</p>
 
-        {/* primary action: pick a file from disk */}
+        {/* primary action: native OS file picker (keeps media resolvable) */}
         <Button onClick={pickFile} disabled={busy} className="mt-4 w-full gap-2" size="lg">
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+          {busy ? <Loader2 className="size-4 animate-spin" /> : <FolderOpen className="size-4" />}
           {busy ? t("uploading") : t("pickFile")}
         </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".json,.html,application/json,text/html"
-          className="hidden"
-          onChange={onFileChosen}
-        />
         <p className="mt-2 text-xs text-muted-foreground">{t("uploadHint")}</p>
-        {uploadErr && <p className="mt-2 text-sm text-destructive">{t("uploadError")}</p>}
+        {pickErr && <p className="mt-2 text-sm text-destructive">{t("uploadError")}</p>}
+        {unavailable && <p className="mt-2 text-sm text-muted-foreground">{t("pickUnavailable")}</p>}
 
         <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
           <div className="h-px flex-1 bg-border" />

@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 
+import { Cloud, Type } from "lucide-react"
+
 import { api, wordcloudUrl, type Sel } from "@/lib/api"
 import { fmtInt } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { BarsH } from "@/components/charts"
 import { TabError, TabLoading } from "@/components/loading"
+import { Section } from "@/components/section"
 import { Collapsible } from "@/components/collapsible"
 
 export function Channel({ path, sel }: { path: string; sel: Sel }) {
@@ -32,11 +35,7 @@ export function Channel({ path, sel }: { path: string; sel: Sel }) {
       </div>
 
       {d.has_wordcloud && (
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight">{t("wordcloud")}</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">{t("wordcloudHint")}</p>
-          </div>
+        <Section title={t("wordcloud")} hint={t("wordcloudHint")} icon={Cloud}>
           <Card className="flex items-center justify-center border-border bg-card p-3">
             <img
               src={wordcloudUrl(path, sel.chat, true)}
@@ -44,15 +43,11 @@ export function Channel({ path, sel }: { path: string; sel: Sel }) {
               className="max-h-[420px] w-full rounded-md object-contain"
             />
           </Card>
-        </section>
+        </Section>
       )}
 
       {d.top_words.length > 0 && (
-        <section className="space-y-3">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight">{t("topWords")}</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">{t("topWordsHint")}</p>
-          </div>
+        <Section title={t("topWords")} hint={t("topWordsHint")} icon={Type}>
           <Card className="border-border bg-card p-3">
             <BarsH data={d.top_words.slice(0, 50)} color="var(--chart-1)" />
           </Card>
@@ -72,7 +67,7 @@ export function Channel({ path, sel }: { path: string; sel: Sel }) {
               </Card>
             </Collapsible>
           )}
-        </section>
+        </Section>
       )}
     </div>
   )

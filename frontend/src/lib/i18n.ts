@@ -21,7 +21,7 @@ const ru = {
   howOften: "Как часто пишут",
   whenHours: "В какие часы",
   whatAbout: "Эмодзи, медиа и ссылки",
-  whoToWhom: "Кто кому",
+  whoToWhom: "Скорость ответа",
   topDomains: "Топ доменов",
   longestMonologues: "Самые длинные монологи",
   // latency
@@ -65,10 +65,12 @@ const ru = {
   pathPlaceholder: "/путь/к/result.json",
   load: "Открыть",
   pickFile: "Выбрать файл…",
+  pickPrompt: "Выберите result.json из папки экспорта Telegram",
+  pickUnavailable: "Системный диалог недоступен на этой ОС — вставьте путь ниже.",
   orDivider: "или",
-  uploading: "Загружаю файл…",
-  uploadError: "Не удалось загрузить файл. Попробуй ещё раз или укажи путь вручную.",
-  uploadHint: "Файл копируется во временную папку на этом компьютере и никуда не уходит.",
+  uploading: "Открываю диалог…",
+  uploadError: "Не удалось открыть диалог выбора файла. Укажи путь вручную ниже.",
+  uploadHint: "Откроется системный диалог. Выбирай result.json прямо из папки экспорта — тогда подхватятся стикеры и медиа. Файл не копируется и никуда не уходит.",
   demoPersonal: "Демо: личный чат",
   demoGroup: "Демо: группа",
   loadError: "Не удалось загрузить. Проверь путь к файлу.",
@@ -238,6 +240,8 @@ const ru = {
   lenpersona_med: "💬 коротко",
   lenpersona_long: "📄 подробно",
   lenpersona_xl: "📜 эссе",
+  traitInitiator: "🚀 инициатор",
+  traitFastReplier: "⚡ быстро отвечает",
   // section hints — «что отсюда понять»
   howOftenHint: "Объём сообщений по дням и календарь активности по годам.",
   whenHoursHint: "Тепловая карта час × день недели: когда переписка живее всего.",
@@ -271,7 +275,7 @@ const ru = {
   copy: "Копировать",
   copied: "Скопировано",
   // onboarding
-  pathHint: "Путь к папке экспорта (или к result.json внутри неё) — тогда покажем и стикеры с медиа. Кнопка выше копирует только result.json, без картинок.",
+  pathHint: "Или вставь путь к папке экспорта (или к result.json внутри неё) вручную — тоже со стикерами и медиа. Принимается и file://.",
 }
 
 const en: typeof ru = {
@@ -289,7 +293,7 @@ const en: typeof ru = {
   howOften: "How often",
   whenHours: "When (by hour)",
   whatAbout: "Emoji, media & links",
-  whoToWhom: "Who replies to whom",
+  whoToWhom: "Reply speed",
   topDomains: "Top domains",
   longestMonologues: "Longest monologues",
   halfFaster: "Half of replies — faster than",
@@ -326,10 +330,12 @@ const en: typeof ru = {
   pathPlaceholder: "/path/to/result.json",
   load: "Open",
   pickFile: "Pick a file…",
+  pickPrompt: "Choose result.json from your Telegram export folder",
+  pickUnavailable: "The native picker isn't available on this OS — paste a path below.",
   orDivider: "or",
-  uploading: "Uploading file…",
-  uploadError: "File upload failed. Try again or paste a path manually.",
-  uploadHint: "The file is copied to a temp folder on this computer and never leaves it.",
+  uploading: "Opening dialog…",
+  uploadError: "Couldn't open the file dialog. Paste a path manually below.",
+  uploadHint: "Opens a native dialog. Pick result.json straight from the export folder so stickers and media resolve. The file isn't copied and never leaves your machine.",
   demoPersonal: "Demo: personal chat",
   demoGroup: "Demo: group",
   loadError: "Couldn't load. Check the file path.",
@@ -480,6 +486,8 @@ const en: typeof ru = {
   lenpersona_med: "💬 short",
   lenpersona_long: "📄 elaborate",
   lenpersona_xl: "📜 essayist",
+  traitInitiator: "🚀 initiator",
+  traitFastReplier: "⚡ fast replies",
   // section hints — "what you learn here"
   howOftenHint: "Message volume by day and a per-year activity calendar.",
   whenHoursHint: "An hour × weekday heatmap: when the chat is most alive.",
@@ -513,7 +521,7 @@ const en: typeof ru = {
   copy: "Copy",
   copied: "Copied",
   // onboarding
-  pathHint: "Path to the export folder (or the result.json inside it) — then stickers and media show too. The button above copies only result.json, without images.",
+  pathHint: "Or paste the path to the export folder (or the result.json inside it) by hand — stickers and media work here too. file:// is accepted.",
 }
 
 i18n.use(initReactI18next).init({

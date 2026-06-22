@@ -1,28 +1,18 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { Copy } from "lucide-react"
+import { AtSign, Cloud, Copy, Library, Quote, Type } from "lucide-react"
 
 import { api, wordcloudUrl, type Sel } from "@/lib/api"
 import { fmtInt } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BarsH } from "@/components/charts"
+import { RankTable } from "@/components/rank-table"
 import { TabError, TabLoading } from "@/components/loading"
+import { Section } from "@/components/section"
 import { Collapsible } from "@/components/collapsible"
 import { SentimentBlock } from "@/Sentiment"
-
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-        {hint && <p className="mt-0.5 text-sm text-muted-foreground">{hint}</p>}
-      </div>
-      {children}
-    </section>
-  )
-}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -49,7 +39,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
 
   return (
     <div className="space-y-8 pt-2">
-      <Section title={t("wordcloud")} hint={t("wordcloudHint")}>
+      <Section title={t("wordcloud")} hint={t("wordcloudHint")} icon={Cloud}>
         <Card className="flex min-h-[220px] items-center justify-center border-border bg-card p-3">
           <img
             src={wordcloudUrl(path, sel.chat)}
@@ -60,11 +50,9 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
       </Section>
 
       {w.chat_top_words.length > 0 && (
-        <Section title={t("topWords")} hint={t("topWordsHint")}>
-          <Card className="border-border bg-card p-3">
-            <BarsH data={w.chat_top_words.slice(0, 25)} color="var(--chart-1)" />
-          </Card>
-          {w.chat_top_words.length > 25 && (
+        <Section title={t("topWords")} hint={t("topWordsHint")} icon={Type}>
+          <RankTable color="var(--chart-1)" max={15} rows={w.chat_top_words.map(([word, c]) => ({ label: word, value: c }))} />
+          {w.chat_top_words.length > 15 && (
             <Collapsible label={t("showAll", { n: w.chat_top_words.length })}>
               <PairsTable rows={w.chat_top_words} />
             </Collapsible>
@@ -72,7 +60,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
         </Section>
       )}
 
-      <Section title={t("phrases")} hint={t("phrasesHint")}>
+      <Section title={t("phrases")} hint={t("phrasesHint")} icon={Quote}>
         <div className="flex items-center rounded-lg border border-border bg-card p-0.5 w-fit">
           {([2, 3] as const).map((v) => (
             <button
@@ -107,7 +95,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
       </Section>
 
       {w.users.length > 0 && (
-        <Section title={t("vocabulary")} hint={t("vocabHint")}>
+        <Section title={t("vocabulary")} hint={t("vocabHint")} icon={Library}>
           <Card className="overflow-hidden border-border bg-card">
             <table className="w-full text-sm">
               <thead>
@@ -134,7 +122,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
       )}
 
       {(w.emails.length > 0 || w.phones.length > 0) && (
-        <Section title={t("contacts")} hint={t("contactsHint")}>
+        <Section title={t("contacts")} hint={t("contactsHint")} icon={AtSign}>
           <div className="grid grid-cols-2 gap-3 sm:max-w-md">
             <Stat label={t("emailsN")} value={fmtInt(w.emails.length)} />
             <Stat label={t("phonesN")} value={fmtInt(w.phones.length)} />

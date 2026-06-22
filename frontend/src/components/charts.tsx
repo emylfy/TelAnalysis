@@ -1,32 +1,22 @@
 import ReactECharts from "echarts-for-react"
 
 import { fmtDateTick, fmtInt, mediaKindLabel, monthShort, weekdayShort } from "@/lib/i18n"
-
-const AXIS = "rgba(255,255,255,0.10)"
-const GRID = "rgba(255,255,255,0.06)"
-const TICK = "#9ca3af"
-const HEAT = ["#1F2937", "#3B5BDB", "#FF6B6B", "#FFE66D"]
-const TOOLTIP = {
-  backgroundColor: "#14161d",
-  borderColor: "rgba(255,255,255,0.1)",
-  textStyle: { color: "#e5e7eb" },
-}
-const base = {
-  backgroundColor: "transparent",
-  textStyle: { color: TICK, fontFamily: "inherit" },
-  tooltip: { ...TOOLTIP },
-}
-
-/** ECharts can't read CSS custom properties — handing canvas `fillStyle =
- *  "var(--chart-2)"` is invalid, and it breaks the hover/emphasis colour
- *  computation so the element flashes transparent on mouseover. Resolve any
- *  `var(--token)` to its computed hex before it reaches ECharts; hex/rgb
- *  strings pass through untouched. */
-function resolveColor(c: string): string {
-  if (typeof document === "undefined" || !c.startsWith("var(")) return c
-  const name = c.slice(4, -1).trim() // "var(--chart-2)" -> "--chart-2"
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || c
-}
+import {
+  base,
+  brand,
+  DATA,
+  heat,
+  ink,
+  neg,
+  personColor,
+  pos,
+  rankStyle,
+  resolveColor,
+  series as PALETTE,
+  tooltip as TOOLTIP,
+  valueAxis,
+  vFill,
+} from "@/lib/chart-theme"
 
 function Chart({ option, height = 280 }: { option: object; height?: number }) {
   return (
@@ -59,18 +49,18 @@ export function HourWeekday({ grid }: { grid: number[][] }) {
         xAxis: {
           type: "category",
           data: [...Array(24).keys()],
-          axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK, interval: 1 },
+          axisLine: { lineStyle: { color: ink.axis } },
+          axisLabel: { color: ink.tick, interval: 1 },
           splitArea: { show: false },
         },
         yAxis: {
           type: "category",
           data: wd,
           inverse: true,
-          axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK },
+          axisLine: { lineStyle: { color: ink.axis } },
+          axisLabel: { color: ink.tick },
         },
-        visualMap: { min: 0, max, show: false, inRange: { color: HEAT } },
+        visualMap: { min: 0, max, show: false, inRange: { color: [...heat] } },
         series: [{ type: "heatmap", data, itemStyle: { borderColor: "#0e1117", borderWidth: 1 } }],
       }}
     />
@@ -101,9 +91,14 @@ export function Calendar({
   const wd = weekdayShort()
   const dayNameMap = [wd[6], wd[0], wd[1], wd[2], wd[3], wd[4], wd[5]]
   const months = monthShort()
+  // Let the grid breathe: taller, near-square cells and the canvas sized to the
+  // content (7 weekday rows) so there's no dead space below — only deliberate
+  // top/bottom air. (Was 16px cells in a fixed 196px box → cramped + a big gap.)
+  const TOP = 36
+  const CELL = 24
   return (
     <Chart
-      height={196}
+      height={TOP + 7 * CELL + 28}
       option={{
         ...base,
         tooltip: {
@@ -113,17 +108,17 @@ export function Calendar({
             return `${Number(d)} ${months[Number(m) - 1]} · ${fmtInt(p.value[1])}`
           },
         },
-        visualMap: { min: 0, max, show: false, inRange: { color: HEAT } },
+        visualMap: { min: 0, max, show: false, inRange: { color: [...heat] } },
         calendar: {
           range: activeYear,
-          top: 28,
+          top: TOP,
           left: 44,
           right: 16,
-          cellSize: ["auto", 16],
+          cellSize: ["auto", CELL],
           splitLine: { show: false },
-          itemStyle: { color: "transparent", borderColor: GRID, borderWidth: 1 },
-          dayLabel: { color: TICK, firstDay: 1, nameMap: dayNameMap, margin: 6, fontSize: 11 },
-          monthLabel: { color: TICK, margin: 8, nameMap: months },
+          itemStyle: { color: "transparent", borderColor: ink.grid, borderWidth: 1 },
+          dayLabel: { color: ink.tick, firstDay: 1, nameMap: dayNameMap, margin: 8, fontSize: 11 },
+          monthLabel: { color: ink.tick, margin: 10, nameMap: months },
           yearLabel: { show: false },
         },
         series: {
@@ -141,7 +136,7 @@ export function HeatLegend({ less, more }: { less: string; more: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <span>{less}</span>
-      <span className="h-2 w-16 rounded-full" style={{ background: `linear-gradient(to right, ${HEAT.join(", ")})` }} />
+      <span className="h-2 w-16 rounded-full" style={{ background: `linear-gradient(to right, ${heat.join(", ")})` }} />
       <span>{more}</span>
     </div>
   )
@@ -151,24 +146,24 @@ export function MediaPie({ byKind }: { byKind: Record<string, number> }) {
   const data = Object.entries(byKind)
     .sort((a, b) => b[1] - a[1])
     .map(([k, v]) => ({ name: mediaKindLabel(k), value: v }))
-  const COLORS = ["#5B8FF9", "#5AD8A6", "#F6BD16", "#9270CA", "#5AD8F7", "#E86452", "#FF6B6B"]
   return (
     <Chart
       height={300}
       option={{
         ...base,
         tooltip: { ...TOOLTIP, trigger: "item", formatter: "{b}: {c} ({d}%)" },
-        legend: { type: "scroll", orient: "vertical", right: 0, top: "center", textStyle: { color: TICK } },
-        color: COLORS,
+        legend: { type: "scroll", orient: "vertical", right: 0, top: "center", textStyle: { color: ink.tick } },
+        color: [...PALETTE],
         series: [
           {
             type: "pie",
-            radius: ["38%", "68%"],
+            radius: ["42%", "70%"],
             center: ["38%", "50%"],
             // Slice labels + leader lines crowd and overlap on the left for the
             // long tail of media kinds — the legend already names every slice.
             label: { show: false },
             labelLine: { show: false },
+            itemStyle: { borderColor: "#14161d", borderWidth: 2 },
             data,
           },
         ],
@@ -180,31 +175,40 @@ export function MediaPie({ byKind }: { byKind: Record<string, number> }) {
 export function Bars({
   data,
   height = 280,
-  color = "#5B8FF9",
+  color,
+  accent = false,
 }: {
   data: [string, number][]
   height?: number
   color?: string
+  // colour the single tallest bar with the brand accent (focal point)
+  accent?: boolean
 }) {
+  const baseColor = color ? resolveColor(color) : DATA
+  const maxIdx = accent ? data.reduce((m, d, i, a) => (d[1] > a[m][1] ? i : m), 0) : -1
   return (
     <Chart
       height={height}
       option={{
         ...base,
+        tooltip: { ...TOOLTIP, trigger: "axis", axisPointer: { type: "shadow" } },
         grid: { left: 8, right: 8, top: 16, bottom: 24, containLabel: true },
         xAxis: {
           type: "category",
           data: data.map((d) => d[0]),
-          axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK, interval: 0, rotate: data.length > 12 ? 40 : 0 },
+          axisLine: { lineStyle: { color: ink.axis } },
+          axisLabel: { color: ink.tick, interval: 0, rotate: data.length > 12 ? 40 : 0 },
         },
-        yAxis: {
-          type: "value",
-          axisLine: { show: false },
-          splitLine: { lineStyle: { color: GRID } },
-          axisLabel: { color: TICK },
-        },
-        series: [{ type: "bar", data: data.map((d) => d[1]), itemStyle: { color: resolveColor(color), borderRadius: [3, 3, 0, 0] } }],
+        yAxis: valueAxis,
+        series: [
+          {
+            type: "bar",
+            data: data.map((d, i) => ({
+              value: d[1],
+              itemStyle: { color: i === maxIdx ? brand : baseColor, borderRadius: [3, 3, 0, 0] },
+            })),
+          },
+        ],
       }}
     />
   )
@@ -222,26 +226,20 @@ export function AreaTimeline({ data, height = 280 }: { data: [string, number][];
         xAxis: {
           type: "category",
           data: data.map((d) => d[0]),
-          axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK, hideOverlap: true, formatter: fmtDateTick },
+          boundaryGap: false,
+          axisLine: { lineStyle: { color: ink.axis } },
+          axisLabel: { color: ink.tick, hideOverlap: true, formatter: fmtDateTick },
         },
-        yAxis: { type: "value", axisLine: { show: false }, splitLine: { lineStyle: { color: GRID } }, axisLabel: { color: TICK } },
+        yAxis: valueAxis,
         series: [
           {
             type: "line",
             data: data.map((d) => d[1]),
-            smooth: true,
+            smooth: 0.3,
             showSymbol: false,
-            lineStyle: { color: "#5B8FF9", width: 1.5 },
-            areaStyle: {
-              color: {
-                type: "linear", x: 0, y: 0, x2: 0, y2: 1,
-                colorStops: [
-                  { offset: 0, color: "rgba(91,143,249,0.25)" },
-                  { offset: 1, color: "rgba(91,143,249,0.02)" },
-                ],
-              },
-            },
+            sampling: "lttb", // downsample the daily hairball to a clean stroke
+            lineStyle: { color: DATA, width: 2 },
+            areaStyle: { color: vFill("rgba(106,142,251,0.28)", "rgba(106,142,251,0.01)") },
           },
         ],
       }}
@@ -249,17 +247,13 @@ export function AreaTimeline({ data, height = 280 }: { data: [string, number][];
   )
 }
 
-const NET_COLORS = ["#5B8FF9", "#5AD8A6", "#F6BD16", "#9270CA", "#E86452", "#5AD8F7", "#FF6B6B", "#FFE66D"]
-const POS = "#5AD8A6"
-const NEG = "#E86452"
-
 /** Multi-series line over a shared category axis (e.g. sentiment over time). */
 export function Lines({
   series,
   height = 300,
   zeroLine = false,
 }: {
-  series: { name: string; data: [string, number][] }[]
+  series: { name: string; data: [string, number][]; color?: string }[]
   height?: number
   zeroLine?: boolean
 }) {
@@ -276,9 +270,10 @@ export function Lines({
       // Thin & slightly translucent when many series overlap (e.g. per-user
       // sentiment) so the spaghetti stays readable; legend toggles individuals.
       lineStyle: { width: series.length > 4 ? 1.2 : 2, opacity: series.length > 4 ? 0.85 : 1 },
-      itemStyle: { color: NET_COLORS[i % NET_COLORS.length] },
+      // per-person hue when supplied (consistent across the app), else palette order
+      itemStyle: { color: s.color ? resolveColor(s.color) : PALETTE[i % PALETTE.length] },
       ...(zeroLine && i === 0
-        ? { markLine: { silent: true, symbol: "none", lineStyle: { color: "rgba(255,255,255,0.25)", type: "dashed" }, data: [{ yAxis: 0 }] } }
+        ? { markLine: { silent: true, symbol: "none", lineStyle: { color: "rgba(255,255,255,0.22)", type: "dashed" }, data: [{ yAxis: 0 }] } }
         : {}),
     }
   })
@@ -288,15 +283,15 @@ export function Lines({
       option={{
         ...base,
         tooltip: { ...TOOLTIP, trigger: "axis" },
-        legend: series.length > 1 ? { top: 0, textStyle: { color: TICK } } : undefined,
+        legend: series.length > 1 ? { top: 0, textStyle: { color: ink.tick } } : undefined,
         grid: { left: 8, right: 12, top: series.length > 1 ? 32 : 12, bottom: 24, containLabel: true },
         xAxis: {
           type: "category",
           data: cats,
-          axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK, hideOverlap: true, formatter: fmtDateTick },
+          axisLine: { lineStyle: { color: ink.axis } },
+          axisLabel: { color: ink.tick, hideOverlap: true, formatter: fmtDateTick },
         },
-        yAxis: { type: "value", axisLine: { show: false }, splitLine: { lineStyle: { color: GRID } }, axisLabel: { color: TICK } },
+        yAxis: valueAxis,
         series: ech,
       }}
     />
@@ -316,18 +311,19 @@ export function DivergingBars({
       height={height}
       option={{
         ...base,
+        tooltip: { ...TOOLTIP, trigger: "axis", axisPointer: { type: "shadow" } },
         grid: { left: 8, right: 8, top: 12, bottom: 24, containLabel: true },
         xAxis: {
           type: "category",
           data: data.map((d) => d[0]),
-          axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK },
+          axisLine: { lineStyle: { color: ink.axis } },
+          axisLabel: { color: ink.tick },
         },
-        yAxis: { type: "value", axisLine: { show: false }, splitLine: { lineStyle: { color: GRID } }, axisLabel: { color: TICK } },
+        yAxis: valueAxis,
         series: [
           {
             type: "bar",
-            data: data.map((d) => ({ value: d[1], itemStyle: { color: d[1] >= 0 ? POS : NEG, borderRadius: d[1] >= 0 ? [3, 3, 0, 0] : [0, 0, 3, 3] } })),
+            data: data.map((d) => ({ value: d[1], itemStyle: { color: d[1] >= 0 ? pos : neg, borderRadius: d[1] >= 0 ? [3, 3, 0, 0] : [0, 0, 3, 3] } })),
           },
         ],
       }}
@@ -356,7 +352,7 @@ export function Network({
   const pair = new Map<string, number>()
   for (const [s, t] of edges) {
     if (s === t || !keep.has(s) || !keep.has(t)) continue
-    const key = s < t ? `${s}\u0000${t}` : `${t}\u0000${s}`
+    const key = s < t ? `${s} ${t}` : `${t} ${s}`
     pair.set(key, (pair.get(key) ?? 0) + 1)
   }
   const maxE = Math.max(1, ...pair.values())
@@ -367,15 +363,19 @@ export function Network({
   const data = kept.map((n, i) => ({
     id: n[0],
     name: n[1],
-    symbolSize: 12 + 38 * Math.sqrt(n[2] / maxW),
+    symbolSize: 14 + 42 * Math.sqrt(n[2] / maxW),
     itemStyle: {
-      color: NET_COLORS[(hasComm ? (communities![n[0]] ?? 0) : i) % NET_COLORS.length],
+      color: PALETTE[(hasComm ? (communities![n[0]] ?? 0) : i) % PALETTE.length],
+      borderColor: "rgba(255,255,255,0.14)",
+      borderWidth: 1,
+      shadowColor: "rgba(0,0,0,0.4)",
+      shadowBlur: 8,
     },
     label: { show: kept.length <= 30 },
   }))
   const links = [...pair.entries()].map(([key, w]) => {
-    const [source, target] = key.split("\u0000")
-    return { source, target, lineStyle: { width: 1 + 5 * (w / maxE), opacity: 0.5 } }
+    const [source, target] = key.split(" ")
+    return { source, target, lineStyle: { width: 1 + 5 * (w / maxE), opacity: 0.45 } }
   })
 
   // Small graphs (e.g. a 7-person group) cluster in the middle of a big canvas;
@@ -383,7 +383,7 @@ export function Network({
   const small = kept.length <= 12
   return (
     <Chart
-      height={small ? 400 : 520}
+      height={small ? 420 : 540}
       option={{
         ...base,
         tooltip: { ...TOOLTIP },
@@ -395,13 +395,13 @@ export function Network({
             draggable: true,
             data,
             links,
-            label: { color: "#e5e7eb", position: "right", fontSize: 11 },
-            emphasis: { focus: "adjacency", lineStyle: { width: 6 } },
-            lineStyle: { color: "rgba(255,255,255,0.25)", curveness: 0.05 },
+            label: { color: ink.label, position: "right", fontSize: 12, fontWeight: 500 },
+            emphasis: { focus: "adjacency", lineStyle: { width: 6 }, label: { fontSize: 13 } },
+            lineStyle: { color: "rgba(255,255,255,0.22)", curveness: 0.06 },
             force: {
-              repulsion: small ? 700 : 220,
-              edgeLength: small ? [90, 220] : [40, 140],
-              gravity: small ? 0.05 : 0.08,
+              repulsion: small ? 900 : 260,
+              edgeLength: small ? [110, 240] : [50, 150],
+              gravity: small ? 0.04 : 0.08,
             },
           },
         ],
@@ -417,24 +417,26 @@ export function Radar({
   height = 340,
 }: {
   indicators: { name: string; max: number }[]
-  series: { name: string; values: number[]; highlight?: boolean }[]
+  series: { name: string; values: number[]; highlight?: boolean; color?: string }[]
   height?: number
 }) {
+  const hue = (s: { color?: string }, i: number) => (s.color ? resolveColor(s.color) : PALETTE[i % PALETTE.length])
   return (
     <Chart
       height={height}
       option={{
         ...base,
         tooltip: { ...TOOLTIP },
-        legend: { bottom: 0, textStyle: { color: TICK }, type: "scroll" },
+        legend: { bottom: 0, textStyle: { color: ink.tick }, type: "scroll" },
         radar: {
           indicator: indicators,
-          axisName: { color: TICK },
-          splitLine: { lineStyle: { color: GRID } },
+          axisName: { color: ink.tick },
+          splitLine: { lineStyle: { color: ink.grid } },
           splitArea: { areaStyle: { color: ["transparent"] } },
-          axisLine: { lineStyle: { color: GRID } },
+          axisLine: { lineStyle: { color: ink.grid } },
         },
-        color: NET_COLORS,
+        // per-person hue when supplied, so a participant matches their colour elsewhere
+        color: series.map((s, i) => hue(s, i)),
         series: [
           {
             type: "radar",
@@ -443,7 +445,7 @@ export function Radar({
               value: s.values,
               symbol: "none",
               lineStyle: { width: s.highlight ? 2.5 : 1, opacity: s.highlight ? 1 : 0.4 },
-              areaStyle: s.highlight ? { color: NET_COLORS[i % NET_COLORS.length], opacity: 0.15 } : undefined,
+              areaStyle: s.highlight ? { color: hue(s, i), opacity: 0.15 } : undefined,
             })),
           },
         ],
@@ -482,16 +484,14 @@ export function Box({
         ...base,
         tooltip: { ...TOOLTIP, trigger: "item" },
         grid: { left: 8, right: 8, top: 12, bottom: 24, containLabel: true },
-        xAxis: { type: "category", data: cats, axisLine: { lineStyle: { color: AXIS } }, axisLabel: { color: TICK } },
+        xAxis: { type: "category", data: cats, axisLine: { lineStyle: { color: ink.axis } }, axisLabel: { color: ink.tick } },
         yAxis: {
-          type: "value",
+          ...valueAxis,
           min: asTime ? 0 : undefined,
           max: asTime ? 1440 : undefined,
-          axisLine: { show: false },
-          splitLine: { lineStyle: { color: GRID } },
-          axisLabel: { color: TICK, formatter: asTime ? (v: number) => hhmm(v) : undefined },
+          axisLabel: { color: ink.tick, formatter: asTime ? (v: number) => hhmm(v) : undefined },
         },
-        series: [{ type: "boxplot", data, itemStyle: { color: "rgba(91,143,249,0.25)", borderColor: "#5B8FF9" } }],
+        series: [{ type: "boxplot", data, itemStyle: { color: "rgba(106,142,251,0.22)", borderColor: DATA } }],
       }}
     />
   )
@@ -519,65 +519,73 @@ export function HourOverlap({
       option={{
         ...base,
         tooltip: { ...TOOLTIP, trigger: "axis" },
-        legend: { top: 0, textStyle: { color: TICK } },
+        legend: { top: 0, textStyle: { color: ink.tick } },
         grid: { left: 8, right: 8, top: 32, bottom: 24, containLabel: true },
         xAxis: {
           type: "category",
           data: [...Array(24).keys()],
-          axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK, interval: 1 },
+          axisLine: { lineStyle: { color: ink.axis } },
+          axisLabel: { color: ink.tick, interval: 1 },
         },
         yAxis: {
-          type: "value",
-          axisLine: { show: false },
-          splitLine: { lineStyle: { color: GRID } },
-          axisLabel: { color: TICK, formatter: (v: number) => `${Math.round(v * 100)}%` },
+          ...valueAxis,
+          axisLabel: { color: ink.tick, formatter: (v: number) => `${Math.round(v * 100)}%` },
         },
         series: [
-          { name: a.name, type: "bar", data: normA, itemStyle: { color: "#5B8FF9", opacity: 0.55 }, barGap: "-100%" },
-          { name: b.name, type: "bar", data: normB, itemStyle: { color: "#9270CA", opacity: 0.55 }, barGap: "-100%" },
-          { name: overlapLabel, type: "bar", data: ov, itemStyle: { color: "#5AD8A6" }, barGap: "-100%" },
+          // each person keeps their app-wide hue; the overlap is the shared green
+          { name: a.name, type: "bar", data: normA, itemStyle: { color: personColor(a.name), opacity: 0.5 }, barGap: "-100%" },
+          { name: b.name, type: "bar", data: normB, itemStyle: { color: personColor(b.name), opacity: 0.5 }, barGap: "-100%" },
+          { name: overlapLabel, type: "bar", data: ov, itemStyle: { color: pos }, barGap: "-100%" },
         ],
       }}
     />
   )
 }
 
-/** Horizontal bars — readable for long labels (phrases, words). Sorted desc, biggest on top. */
+/** Horizontal bars — readable for long labels (phrases, words). Sorted desc,
+ *  biggest on top. By default the leader takes the brand accent and the rest
+ *  fade in opacity down the ranking (`rank`), giving the field a deliberate
+ *  rhythm; pass `accent={false}` for a flat single-hue field. */
 export function BarsH({
   data,
   height,
-  color = "#5B8FF9",
+  color,
+  accent = true,
 }: {
   data: [string, number][]
   height?: number
   color?: string
+  accent?: boolean
 }) {
   const rows = [...data].sort((a, b) => a[1] - b[1]) // ECharts y-category draws bottom→top
+  const baseColor = color ? resolveColor(color) : DATA
+  const n = rows.length
   return (
     <Chart
       height={height ?? Math.max(160, rows.length * 26 + 32)}
       option={{
         ...base,
+        tooltip: { ...TOOLTIP, trigger: "axis", axisPointer: { type: "shadow" } },
         grid: { left: 8, right: 24, top: 8, bottom: 8, containLabel: true },
-        xAxis: {
-          type: "value",
-          axisLine: { show: false },
-          splitLine: { lineStyle: { color: GRID } },
-          axisLabel: { color: TICK },
-        },
+        xAxis: { ...valueAxis, axisLabel: { color: ink.tick } },
         yAxis: {
           type: "category",
           data: rows.map((d) => d[0]),
-          axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK },
+          axisLine: { lineStyle: { color: ink.axis } },
+          axisLabel: { color: ink.tick },
         },
         series: [
           {
             type: "bar",
-            data: rows.map((d) => d[1]),
-            itemStyle: { color: resolveColor(color), borderRadius: [0, 3, 3, 0] },
-            label: { show: true, position: "right", color: TICK, fontSize: 11 },
+            // rows are ascending, so rank from the top is (n-1 - i)
+            data: rows.map((d, i) => ({
+              value: d[1],
+              itemStyle: {
+                borderRadius: [0, 3, 3, 0],
+                ...(accent ? rankStyle(n - 1 - i, n, baseColor) : { color: baseColor }),
+              },
+            })),
+            label: { show: true, position: "right", color: ink.tick, fontSize: 11 },
           },
         ],
       }}

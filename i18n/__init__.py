@@ -437,7 +437,11 @@ def _plural_ru(n: int, one: str, few: str, many: str) -> str:
 
 
 def _fmt_int(n: int) -> str:
-    return f"{int(n):,}".replace(",", " ")
+    # Match the frontend's locale grouping: comma in English, space in Russian
+    # (mirrors JS toLocaleString) so backend-rendered numbers don't read as
+    # "48 366" inside an otherwise "48,366" English view.
+    s = f"{int(n):,}"
+    return s if get_lang() != "ru" else s.replace(",", " ")
 
 
 def n_days(n: int) -> str:

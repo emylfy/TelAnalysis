@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 
+import { Activity, Clock, MessageSquareText, Sparkles, Timer } from "lucide-react"
+
 import { api, type LatencyStats, type SessionsStats, type Sel } from "@/lib/api"
 import { fmtInt, humanizeDuration } from "@/lib/i18n"
 import { useState } from "react"
@@ -8,19 +10,9 @@ import { Card } from "@/components/ui/card"
 import { AreaTimeline, Bars, BarsH, Calendar, HeatLegend, HourOverlap, HourWeekday, MediaPie } from "@/components/charts"
 import { TabError, TabLoading } from "@/components/loading"
 import { Hint } from "@/components/hint"
+import { Section } from "@/components/section"
+import { RankTable } from "@/components/rank-table"
 import { Collapsible } from "@/components/collapsible"
-
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-        {title}
-        {hint && <Hint text={hint} />}
-      </h2>
-      {children}
-    </section>
-  )
-}
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -93,19 +85,17 @@ function SessionsBlock({ s }: { s: SessionsStats }) {
       {longest.length > 0 && (
         <div className="space-y-2">
           <div className="text-sm font-semibold">{t("longestConvs")}</div>
-          <Card className="overflow-hidden border-border bg-card">
-            <table className="w-full text-sm">
-              <tbody>
-                {longest.map((se, i) => (
-                  <tr key={i} className="border-b border-border/60 last:border-0">
-                    <td className="px-4 py-2 text-muted-foreground">{se.start.slice(0, 16).replace("T", " ")}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{fmtInt(se.msg_count)} · {t("messages").toLowerCase()}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{humanizeDuration(se.dur)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          {/* ranked by duration (the "longest" metric) — so the bar, the figure
+              and the rank all agree; message count rides along on the sub-line */}
+          <RankTable
+            color="var(--chart-2)"
+            rows={longest.map((se) => ({
+              label: se.start.slice(0, 16).replace("T", " "),
+              sub: `${fmtInt(se.msg_count)} ${t("messages").toLowerCase()}`,
+              value: Math.round(se.dur),
+              valueText: humanizeDuration(se.dur),
+            }))}
+          />
         </div>
       )}
     </div>
@@ -133,7 +123,7 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
 
   return (
     <div className="space-y-8 pt-2">
-      <Section title={t("howOften")} hint={t("howOftenHint")}>
+      <Section title={t("howOften")} hint={t("howOftenHint")} icon={Activity}>
         {pd.data && <Card className="border-border bg-card p-3"><AreaTimeline data={pd.data.per_day} /></Card>}
         {pd.data && pd.data.per_day.length > 0 && (() => {
           const calYears = [...new Set(pd.data.per_day.map(([d]) => d.slice(0, 4)))].sort()
@@ -197,7 +187,7 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
       </Section>
 
       {hw.data && hw.data.grid.some((r) => r.some((v) => v > 0)) && (
-        <Section title={t("whenHours")} hint={t("whenHoursHint")}>
+        <Section title={t("whenHours")} hint={t("whenHoursHint")} icon={Clock}>
           <Card className="border-border bg-card p-3"><HourWeekday grid={hw.data.grid} /></Card>
           {(() => {
             // Surface two insights right under the heatmap. Both are derived from
@@ -244,7 +234,7 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
         </Section>
       )}
 
-      <Section title={t("whatAbout")} hint={t("whatAboutHint")}>
+      <Section title={t("whatAbout")} hint={t("whatAboutHint")} icon={Sparkles}>
         {emojis.data && emojis.data.chat_top.length > 0 && (
           <div className="space-y-2">
             <div className="text-sm font-semibold">{t("emojiTop")}</div>
@@ -252,7 +242,7 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
             <Card className="border-border bg-card p-3">
               {/* horizontal: emoji read clearly as row labels (vertical bars
                   squeezed them into illegible x-axis ticks) */}
-              <BarsH data={emojis.data.chat_top.slice(0, 15)} color="#9270CA" />
+              <BarsH data={emojis.data.chat_top.slice(0, 15)} color="var(--chart-4)" />
             </Card>
             {emojis.data.chat_top.length > 20 && (
               <Collapsible label={t("showAll", { n: emojis.data.chat_top.length })}>
@@ -294,26 +284,22 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
       </Section>
 
       {lat.data && lat.data.overall_seconds.length > 0 && (
-        <Section title={t("whoToWhom")} hint={t("whoToWhomHint")}>
+        <Section title={t("whoToWhom")} hint={t("whoToWhomHint")} icon={Timer}>
           <LatencyBlock l={lat.data} />
         </Section>
       )}
 
       {mono.data && mono.data.longest.length > 0 && (
-        <Section title={t("longestMonologues")} hint={t("longestMonologuesHint")}>
-          <Card className="overflow-hidden border-border bg-card">
-            <table className="w-full text-sm">
-              <tbody>
-                {mono.data.longest.slice(0, 8).map((r, i) => (
-                  <tr key={i} className="border-b border-border/60 last:border-0">
-                    <td className="px-4 py-2 font-medium">{r.name}</td>
-                    <td className="px-4 py-2 tabular-nums text-muted-foreground">{fmtInt(r.msg_count)}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{r.start.slice(0, 16).replace("T", " ")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+        <Section title={t("longestMonologues")} hint={t("longestMonologuesHint")} icon={MessageSquareText}>
+          <RankTable
+            color="var(--chart-1)"
+            unit={t("messages").toLowerCase()}
+            rows={mono.data.longest.slice(0, 8).map((r) => ({
+              label: r.name,
+              sub: r.start.slice(0, 16).replace("T", " "),
+              value: r.msg_count,
+            }))}
+          />
         </Section>
       )}
     </div>

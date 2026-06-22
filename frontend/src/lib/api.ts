@@ -314,6 +314,20 @@ export async function uploadFile(file: File): Promise<{ path: string; size: numb
   return res.json()
 }
 
+/** Open a NATIVE OS file picker on the local server and get back the REAL path.
+ *  Unlike uploadFile this keeps the file in place, so adjacent media (chats/…)
+ *  resolves and stickers/photos load. `unavailable` is returned on non-macOS so
+ *  the caller can fall back to the manual path field. */
+export async function browse(
+  prompt: string,
+): Promise<{ path?: string; cancelled?: boolean; unavailable?: boolean }> {
+  const qs = new URLSearchParams({ prompt })
+  const res = await fetch(`${BASE}/browse?${qs.toString()}`, { method: "POST" })
+  if (res.status === 501) return { unavailable: true }
+  if (!res.ok) throw new Error(`browse → ${res.status}`)
+  return res.json()
+}
+
 /** Wordcloud is an image endpoint — build the URL for an <img src>. */
 export function wordcloudUrl(path: string, chat?: string, channel = false): string {
   const qs = new URLSearchParams({ path })

@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next"
 
 import { api, stickerFileUrl, type Sel, type StickerRef } from "@/lib/api"
 import { dayWord, fmtInt, humanizeDuration, personaForLength, personaForTimeOfDay, timeBucketLabel } from "@/lib/i18n"
+import { personColor, personPalette } from "@/lib/chart-theme"
 import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Bars, BarsH, Box, HourWeekday, Lines, Radar } from "@/components/charts"
+import { RankTable } from "@/components/rank-table"
 import { TabError, TabLoading } from "@/components/loading"
 import { ExtremeList } from "@/Sentiment"
 
@@ -35,6 +37,53 @@ function H3({ children }: { children: React.ReactNode }) {
   return <h3 className="text-lg font-semibold tracking-tight">{children}</h3>
 }
 
+/** Qualitative portrait of the selected participant — an initial avatar in their
+ *  app-wide colour, their name, share of the chat, and a row of trait chips
+ *  (when they write, how long, whether they start chats / reply fast). Turns the
+ *  wall of metric cards below into a person first: you meet someone, then read
+ *  their numbers. The chips reuse the persona labels; the numbers stay in the
+ *  KPI grid right below so the lead doesn't duplicate them. */
+function PersonaLead({ name, color, shareLabel, chips }: { name: string; color: string; shareLabel: string; chips: string[] }) {
+  const initial = name.trim().charAt(0).toUpperCase() || "?"
+  return (
+    <Card className="relative overflow-hidden border-border bg-card px-6 py-5">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -top-24 size-60 rounded-full blur-3xl"
+        style={{ background: color, opacity: 0.1 }}
+      />
+      <div className="relative flex items-center gap-4">
+        <span
+          className="flex size-14 shrink-0 items-center justify-center rounded-full text-xl font-bold"
+          style={{ background: `${color}22`, color, boxShadow: `inset 0 0 0 1px ${color}55` }}
+        >
+          {initial}
+        </span>
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h2 className="text-2xl font-bold tracking-tight">{name}</h2>
+            <span className="rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+              {shareLabel}
+            </span>
+          </div>
+          {chips.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {chips.map((c) => (
+                <span
+                  key={c}
+                  className="rounded-full bg-foreground/[0.05] px-2.5 py-1 text-xs font-medium text-foreground/90 ring-1 ring-foreground/10"
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
 /** Favourite stickers as pictures. Static `.webp`/`.png` render the full sticker;
  *  animated `.webm`/`.tgs` render their `.jpg` thumbnail (a static frame works
  *  everywhere). When the media isn't on disk (chat loaded from an uploaded copy,
@@ -58,7 +107,7 @@ function StickerGrid({
     return (
       <>
         {emojiFallback.length > 0 && (
-          <Card className="border-border bg-card p-3"><BarsH data={emojiFallback.slice(0, 12)} color="#5AD8F7" /></Card>
+          <Card className="border-border bg-card p-3"><BarsH data={emojiFallback.slice(0, 12)} color="var(--chart-5)" /></Card>
         )}
         <p className="text-xs text-muted-foreground">{t("stickersNoImg")}</p>
       </>
@@ -150,10 +199,12 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
   const userStickerData = stickersQ.data?.[id]
   const userLat = latencyQ.data?.per_user_seconds?.[id] ?? []
 
-  // tone radar across all users
+  // tone radar across all users — each keeps their app-wide hue (distinct per chat)
+  const orderedPal = personPalette(ordered.map((u) => u.name))
   const radarSeries = ordered.map((u) => ({
     name: u.name,
     highlight: u.user_id === id,
+    color: orderedPal[u.name],
     values: [
       Math.round(u.question_ratio * 100),
       Math.round(u.exclamation_ratio * 100),
@@ -199,6 +250,16 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
   const matRows = matQ.data ? Object.values(matQ.data.per_user).sort((a, b) => b.mat_hits / Math.max(1, b.total_messages) - a.mat_hits / Math.max(1, a.total_messages)) : []
   const dist = distQ.data
 
+  // persona portrait: hue + qualitative trait chips for the selected participant
+  const personaColor = personColor(s.name)
+  const personaChips = [
+    personaForTimeOfDay(s.time_of_day),
+    personaForLength(s.length_buckets),
+    ...(initRow && initRow.share >= 0.55 ? [t("traitInitiator")] : []),
+    ...(dir && dir.median_seconds <= 120 ? [t("traitFastReplier")] : []),
+  ].filter((c) => c && c !== "—")
+  const personaShare = `${pct(total ? s.msg_count / total : 0)} · ${t("shareOfChat")}`
+
   return (
     <div className="space-y-8 pt-2">
       <div className="flex items-center gap-3">
@@ -220,6 +281,8 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
           </SelectContent>
         </Select>
       </div>
+
+      <PersonaLead name={s.name} color={personaColor} shareLabel={personaShare} chips={personaChips} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label={t("messages")} value={fmtInt(s.msg_count)} />
@@ -272,7 +335,9 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
             <H3>{t("dailyActivity")}</H3>
             <p className="-mt-1 text-sm text-muted-foreground">{t("dailyActivityHint")}</p>
             <Card className="border-border bg-card p-3">
-              <Lines series={[{ name: s.name, data: pdU.data.per_day }]} />
+              {/* height matched to the hour×weekday heatmap beside it so the two
+                  cards in this row line up; line takes the participant's hue */}
+              <Lines series={[{ name: s.name, data: pdU.data.per_day, color: personaColor }]} height={260} />
             </Card>
           </section>
         )}
@@ -341,24 +406,14 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
             <Stat label={t("activeDays")} value={fmtInt(streakQ.data.total_active_days)} />
           </div>
           {streakQ.data.longest_silences.length > 0 && (
-            <Card className="overflow-hidden border-border bg-card">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="px-4 py-2 font-semibold">{t("longestSilences")}</th>
-                    <th className="px-4 py-2 text-right font-semibold">{t("days")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {streakQ.data.longest_silences.slice(0, 5).map(([from, to, d], i) => (
-                    <tr key={i} className="border-b border-border/60 last:border-0">
-                      <td className="px-4 py-2 text-muted-foreground">{from.slice(0, 10)} → {to.slice(0, 10)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{fmtInt(d)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
+            <RankTable
+              columns={[t("longestSilences"), t("days")]}
+              color={personaColor}
+              rows={streakQ.data.longest_silences.slice(0, 5).map(([from, to, d]) => ({
+                label: `${from.slice(0, 10)} → ${to.slice(0, 10)}`,
+                value: d,
+              }))}
+            />
           )}
         </section>
       )}
@@ -407,13 +462,13 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         {userWords && userWords.top_words.length > 0 && (
           <section className="space-y-3">
             <H3>{t("topWords")}</H3>
-            <Card className="border-border bg-card p-3"><BarsH data={userWords.top_words.slice(0, 15)} color="var(--chart-1)" /></Card>
+            <Card className="border-border bg-card p-3"><BarsH data={userWords.top_words.slice(0, 15)} color={personaColor} /></Card>
           </section>
         )}
         {userPhrases.length > 0 && (
           <section className="space-y-3">
             <H3>{t("characteristicPhrases")}</H3>
-            <Card className="border-border bg-card p-3"><BarsH data={userPhrases.slice(0, 15)} color="var(--chart-4)" /></Card>
+            <Card className="border-border bg-card p-3"><BarsH data={userPhrases.slice(0, 15)} color={personaColor} /></Card>
           </section>
         )}
       </div>
@@ -422,7 +477,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         <section className="space-y-3">
           <H3>{t("emojisOfUser")}</H3>
           <p className="-mt-1 text-sm text-muted-foreground">{t("emojisHelp")}</p>
-          <Card className="border-border bg-card p-3"><BarsH data={userEmojis.slice(0, 12)} color="#9270CA" /></Card>
+          <Card className="border-border bg-card p-3"><BarsH data={userEmojis.slice(0, 12)} color={personaColor} /></Card>
         </section>
       )}
 

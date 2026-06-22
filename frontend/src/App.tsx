@@ -278,39 +278,85 @@ function TopBar(props: {
   )
 }
 
-function HeroBlock({ hero }: { hero: Hero }) {
-  return (
-    <Card className="border-border bg-card px-8 py-7">
-      <h1 className="text-4xl font-bold tracking-tight">{hero.title}</h1>
-      <p
-        className="mt-3 text-base leading-relaxed text-foreground [&_b]:font-semibold [&_b]:text-primary"
-        dangerouslySetInnerHTML={{ __html: hero.prose_html }}
-      />
-      <div className="mt-3 text-sm text-muted-foreground">
-        {hero.meta} · {chatTypeLabel(hero.chat_type)}
-      </div>
-    </Card>
-  )
-}
-
-function KpiCards({ kpis, voiceSeconds }: { kpis: Kpis; voiceSeconds?: number }) {
+/** The "wrapped" summary poster: the chat's identity, the narrative recap, the
+ *  relationship anniversary line, and a strip of headline figures — one cohesive
+ *  card (with a soft brand glow) instead of a plain title + a separate KPI row.
+ *  Shown above the tabs, so it frames every view. */
+function SummaryCard({
+  hero,
+  kpis,
+  voiceSeconds,
+  annivLine,
+  compact = false,
+}: {
+  hero: Hero
+  kpis: Kpis
+  voiceSeconds?: number
+  annivLine?: string
+  // slim identity bar (title + figures only) for non-overview tabs, so the full
+  // narrative poster isn't repeated above every view
+  compact?: boolean
+}) {
   const { t } = useTranslation()
-  const items = [
+  const figures = [
     { label: t("messages"), value: fmtInt(kpis.total_messages) },
-    { label: t("participants"), value: fmtInt(kpis.unique_users) },
     { label: t("daysActive"), value: fmtInt(kpis.days_active) },
+    { label: t("participants"), value: fmtInt(kpis.unique_users) },
     { label: t("media"), value: fmtInt(kpis.media_messages) },
   ]
-  if (voiceSeconds && voiceSeconds > 0) items.push({ label: t("voice"), value: humanizeDuration(voiceSeconds) })
+  if (voiceSeconds && voiceSeconds > 0) figures.push({ label: t("voice"), value: humanizeDuration(voiceSeconds) })
+
+  if (compact) {
+    return (
+      <Card className="border-border bg-card px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold tracking-tight">{hero.title}</h1>
+            <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[0.7rem] font-medium text-muted-foreground">
+              {chatTypeLabel(hero.chat_type)}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-baseline gap-x-7 gap-y-2">
+            {figures.map((f) => (
+              <div key={f.label} className="flex items-baseline gap-1.5">
+                <span className="text-base font-semibold tabular-nums">{f.value}</span>
+                <span className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">{f.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
   return (
-    <div className={`grid grid-cols-2 gap-3 sm:grid-cols-4 ${items.length === 5 ? "lg:grid-cols-5" : ""}`}>
-      {items.map((it) => (
-        <Card key={it.label} className="gap-1 border-border bg-card px-4 py-3">
-          <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{it.label}</div>
-          <div className="text-2xl font-semibold tabular-nums">{it.value}</div>
-        </Card>
-      ))}
-    </div>
+    <Card className="relative overflow-hidden border-border bg-card px-8 py-7">
+      {/* soft brand glow, top-right — gives the poster a deliberate accent
+          without a loud full-card gradient */}
+      <div aria-hidden className="pointer-events-none absolute -right-28 -top-28 size-72 rounded-full bg-primary/10 blur-3xl" />
+      <div className="relative">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{hero.title}</h1>
+          <span className="rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            {chatTypeLabel(hero.chat_type)}
+          </span>
+        </div>
+        <p
+          className="mt-3 max-w-3xl text-base leading-relaxed text-foreground [&_b]:font-semibold [&_b]:text-primary"
+          dangerouslySetInnerHTML={{ __html: hero.prose_html }}
+        />
+        <div className="mt-2 text-sm text-muted-foreground">{hero.meta}</div>
+        {annivLine && <div className="mt-1 text-sm text-muted-foreground">{annivLine}</div>}
+        <div className="mt-6 grid grid-cols-2 gap-x-8 gap-y-4 border-t border-border/70 pt-5 sm:grid-cols-3 lg:flex lg:flex-wrap lg:gap-x-12">
+          {figures.map((f) => (
+            <div key={f.label}>
+              <div className="text-2xl font-semibold tabular-nums sm:text-3xl">{f.value}</div>
+              <div className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{f.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
   )
 }
 
@@ -322,10 +368,17 @@ function HighlightsRow({ items }: { items: Highlight[] }) {
       <h2 className="text-sm font-semibold">{t("highlights")}</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((h) => (
-          <Card key={h.label} className="gap-1 border-border border-l-2 border-l-primary/45 bg-card px-4 py-3">
-            <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{h.label}</div>
-            <div className="text-lg font-semibold">{h.value}</div>
-            <div className="text-xs text-muted-foreground">{h.sub}</div>
+          <Card key={h.label} className="flex-row items-center gap-3 border-border bg-card px-4 py-3">
+            {h.icon && (
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04] text-xl ring-1 ring-foreground/10">
+                {h.icon}
+              </span>
+            )}
+            <div className="min-w-0">
+              <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{h.label}</div>
+              <div className="text-lg font-semibold leading-tight">{h.value}</div>
+              <div className="truncate text-xs text-muted-foreground" title={h.sub}>{h.sub}</div>
+            </div>
           </Card>
         ))}
       </div>
@@ -389,6 +442,21 @@ export default function App() {
   const mediaQ = useQuery({ queryKey: ["media", path, sel, from, to], queryFn: () => api.media(path!, period), enabled: !!sel })
   const annivQ = useQuery({ queryKey: ["anniv", path, sel, from, to, lang], queryFn: () => api.anniversaries(path!, period), enabled: !!sel })
   const isHtml = !!chatsQ.data && chatsQ.data.source !== "json"
+
+  // One-line relationship recap for the summary card: "N days together · crossed
+  // <milestone> on <date> · <milestone> in M days".
+  const annivLine = (() => {
+    const a = annivQ.data
+    if (!a || a.days_since_start <= 0) return undefined
+    const lastCrossed = [...(a.crossed_counts ?? []), ...(a.crossed_days ?? [])]
+      .filter((m) => !!m.when)
+      .sort((x, y) => (x.when! > y.when! ? -1 : 1))[0]
+    const bits: string[] = []
+    bits.push(t("annivBase", { days: fmtInt(a.days_since_start), w: dayWord(a.days_since_start) }))
+    if (lastCrossed) bits.push(t("annivCrossed", { label: lastCrossed.label, date: lastCrossed.when }))
+    if (a.upcoming_day) bits.push(t("annivUpcoming", { label: a.upcoming_day.label, n: fmtInt(a.upcoming_day.days_until ?? 0) }))
+    return bits.join(" · ")
+  })()
 
   // available tabs for this chat type; reset active tab if it vanished.
   // The combined archive view is synthetic (multichat → overview + words).
@@ -474,21 +542,18 @@ export default function App() {
             {t("htmlWarning")}
           </div>
         )}
-        {heroQ.data ? <HeroBlock hero={heroQ.data} /> : <HeaderSkeleton />}
-        {annivQ.data && annivQ.data.days_since_start > 0 && (() => {
-          const a = annivQ.data
-          const lastCrossed = [...(a.crossed_counts ?? []), ...(a.crossed_days ?? [])]
-            .filter((m) => !!m.when)
-            .sort((x, y) => (x.when! > y.when! ? -1 : 1))[0]
-          const bits: string[] = []
-          bits.push(t("annivBase", { days: fmtInt(a.days_since_start), w: dayWord(a.days_since_start) }))
-          if (lastCrossed) bits.push(t("annivCrossed", { label: lastCrossed.label, date: lastCrossed.when }))
-          if (a.upcoming_day)
-            bits.push(t("annivUpcoming", { label: a.upcoming_day.label, n: fmtInt(a.upcoming_day.days_until ?? 0) }))
-          return <div className="text-sm text-muted-foreground">{bits.join(" · ")}</div>
-        })()}
-        {kpisQ.data && <KpiCards kpis={kpisQ.data} voiceSeconds={mediaQ.data?.voice_total_seconds} />}
-        {hlQ.data && <HighlightsRow items={hlQ.data.highlights} />}
+        {heroQ.data && kpisQ.data ? (
+          <SummaryCard
+            hero={heroQ.data}
+            kpis={kpisQ.data}
+            voiceSeconds={mediaQ.data?.voice_total_seconds}
+            annivLine={annivLine}
+            compact={tab !== "overview"}
+          />
+        ) : (
+          <HeaderSkeleton />
+        )}
+        {tab === "overview" && hlQ.data && <HighlightsRow items={hlQ.data.highlights} />}
 
         {sel && (
           <Tabs value={tab} onValueChange={setTab} className="pt-2">

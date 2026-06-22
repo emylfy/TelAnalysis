@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+import i18n
+
 # Milestone thresholds — picked to feel like real anniversaries, not
 # arbitrary round numbers. Anything bigger than 1M won't trigger for
 # normal personal chats; cheap to keep as headroom.
@@ -125,22 +127,25 @@ def compute(
     )
 
 
+# Day thresholds that read better as round years than as a day count.
+_DAY_AS_YEARS = {365: 1, 730: 2, 1825: 5, 3650: 10}
+
+
 def _label_days(n: int) -> str:
-    """Human label keyed by exact threshold — RU/EN handled at render time."""
-    return {
-        100: "100 дней",
-        365: "1 год",
-        500: "500 дней",
-        730: "2 года",
-        1000: "1000 дней",
-        1825: "5 лет",
-        3650: "10 лет",
-    }.get(n, f"{n} дней")
+    """Localized milestone label — resolved against the request's active
+    language (i18n reads the per-request override), so labels never leak the
+    other locale (e.g. "2 года" inside the English view)."""
+    y = _DAY_AS_YEARS.get(n)
+    if y:
+        return f"{y} {i18n.plural(y, 'год', 'года', 'лет', 'year', 'years')}"
+    return i18n.n_days(n)
 
 
 def _label_count(n: int) -> str:
+    word = i18n.plural(n, "сообщение", "сообщения", "сообщений", "message", "messages")
     if n >= 1_000_000:
-        return f"{n // 1_000_000} млн сообщений"
+        num = f"{n // 1_000_000} млн" if i18n.get_lang() == "ru" else f"{n // 1_000_000}M"
+        return f"{num} {word}"
     if n >= 1_000:
-        return f"{n // 1_000}k сообщений"
-    return f"{n} сообщений"
+        return f"{n // 1_000}k {word}"
+    return f"{n} {word}"

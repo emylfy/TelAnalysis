@@ -1,12 +1,16 @@
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
+import { Smile } from "lucide-react"
 
 import { api, type Sel, type SentimentPoint } from "@/lib/api"
 import { weekdayShort } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { DivergingBars, Lines } from "@/components/charts"
+import { personPalette } from "@/lib/chart-theme"
+import { Section } from "@/components/section"
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** Sub-section header inside the sentiment block (smaller than a tab Section). */
+function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
       <h3 className="text-base font-semibold tracking-tight">{title}</h3>
@@ -16,7 +20,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function ExtremeList({ title, rows, tone }: { title: string; rows: [string, number, string][]; tone: "pos" | "neg" }) {
-  const color = tone === "pos" ? "text-[#5AD8A6]" : "text-[#E86452]"
+  const color = tone === "pos" ? "text-pos" : "text-neg"
   return (
     <div className="space-y-2">
       <div className="text-sm font-semibold">{title}</div>
@@ -66,54 +70,57 @@ export function SentimentBlock({ path, sel }: { path: string; sel: Sel }) {
     arr.push([p.period!, +p.avg.toFixed(3)])
     byUser.set(p.user_id!, arr)
   }
-  const userSeries = [...byUser.entries()].map(([uid, data]) => ({ name: d.user_names?.[uid] ?? uid, data }))
+  const userSeriesRaw = [...byUser.entries()].map(([uid, data]) => ({ name: d.user_names?.[uid] ?? uid, data }))
+  // each participant keeps their app-wide hue so a line matches them elsewhere
+  const userPal = personPalette(userSeriesRaw.map((s) => s.name))
+  const userSeries = userSeriesRaw.map((s) => ({ ...s, color: userPal[s.name] }))
 
   const hourData: [string, number][] = (d.by_hour ?? []).map((h: SentimentPoint) => [String(h.hour), +h.avg.toFixed(3)])
   const wdData: [string, number][] = (d.by_weekday ?? []).map((w: SentimentPoint) => [wd[w.weekday!], +w.avg.toFixed(3)])
 
+  const avgBadge =
+    d.avg != null ? (
+      <span className={`tabular-nums text-lg font-semibold ${d.avg >= 0 ? "text-pos" : "text-neg"}`}>
+        {d.avg >= 0 ? "+" : ""}
+        {d.avg.toFixed(2)}
+      </span>
+    ) : undefined
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-baseline gap-3">
-        <h2 className="text-xl font-semibold tracking-tight">{t("sentiment")}</h2>
-        {d.avg != null && (
-          <span className={`tabular-nums text-lg font-semibold ${d.avg >= 0 ? "text-[#5AD8A6]" : "text-[#E86452]"}`}>
-            {d.avg >= 0 ? "+" : ""}{d.avg.toFixed(2)}
-          </span>
+    <Section title={t("sentiment")} hint={t("sentimentHint")} icon={Smile} action={avgBadge}>
+      <div className="space-y-8 pt-1">
+        {weeklySeries.length > 0 && (
+          <SubSection title={t("sentimentOverTime")}>
+            <Card className="border-border bg-card p-3"><Lines series={weeklySeries} zeroLine /></Card>
+          </SubSection>
         )}
-      </div>
-      <p className="-mt-6 text-sm text-muted-foreground">{t("sentimentHint")}</p>
 
-      {weeklySeries.length > 0 && (
-        <Section title={t("sentimentOverTime")}>
-          <Card className="border-border bg-card p-3"><Lines series={weeklySeries} zeroLine /></Card>
-        </Section>
-      )}
-
-      {userSeries.length > 1 && (
-        <Section title={t("sentimentPerUser")}>
-          <Card className="border-border bg-card p-3"><Lines series={userSeries} zeroLine /></Card>
-        </Section>
-      )}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {hourData.length > 0 && (
-          <Section title={t("sentimentByHour")}>
-            <Card className="border-border bg-card p-3"><DivergingBars data={hourData} /></Card>
-          </Section>
+        {userSeries.length > 1 && (
+          <SubSection title={t("sentimentPerUser")}>
+            <Card className="border-border bg-card p-3"><Lines series={userSeries} zeroLine /></Card>
+          </SubSection>
         )}
-        {wdData.length > 0 && (
-          <Section title={t("sentimentByWeekday")}>
-            <Card className="border-border bg-card p-3"><DivergingBars data={wdData} /></Card>
-          </Section>
-        )}
-      </div>
 
-      {((d.positive?.length ?? 0) > 0 || (d.negative?.length ?? 0) > 0) && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {d.positive?.length ? <ExtremeList title={t("mostPositive")} rows={d.positive} tone="pos" /> : null}
-          {d.negative?.length ? <ExtremeList title={t("mostNegative")} rows={d.negative} tone="neg" /> : null}
+          {hourData.length > 0 && (
+            <SubSection title={t("sentimentByHour")}>
+              <Card className="border-border bg-card p-3"><DivergingBars data={hourData} /></Card>
+            </SubSection>
+          )}
+          {wdData.length > 0 && (
+            <SubSection title={t("sentimentByWeekday")}>
+              <Card className="border-border bg-card p-3"><DivergingBars data={wdData} /></Card>
+            </SubSection>
+          )}
         </div>
-      )}
-    </div>
+
+        {((d.positive?.length ?? 0) > 0 || (d.negative?.length ?? 0) > 0) && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {d.positive?.length ? <ExtremeList title={t("mostPositive")} rows={d.positive} tone="pos" /> : null}
+            {d.negative?.length ? <ExtremeList title={t("mostNegative")} rows={d.negative} tone="neg" /> : null}
+          </div>
+        )}
+      </div>
+    </Section>
   )
 }

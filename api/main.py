@@ -17,6 +17,8 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import time
 from dataclasses import asdict, is_dataclass
@@ -659,6 +661,45 @@ async def upload(file: UploadFile = File(...)):
     with target.open("wb") as out:
         shutil.copyfileobj(file.file, out)
     return {"path": str(target.resolve()), "size": target.stat().st_size}
+
+
+@app.post("/api/browse")
+def browse(prompt: str = Query("Choose your Telegram export result.json")):
+    """Open a NATIVE macOS file picker and return the chosen absolute path.
+
+    The server runs locally in the user's GUI session, so unlike /api/upload it
+    hands back the REAL path — the adjacent media (chats/…) stays resolvable, so
+    stickers/photos load. This is a sync `def`, so FastAPI runs it in a thread
+    pool: the blocking dialog never stalls the async event loop.
+
+    Returns {"path", "size"} on pick, {"cancelled": True} if the user cancels,
+    or 501 on non-macOS (the frontend then falls back to the manual path field).
+    """
+    if sys.platform != "darwin":
+        raise HTTPException(status_code=501, detail="native-picker-unavailable")
+    # Escape for an AppleScript string literal — only \ and ". NOT json.dumps:
+    # it emits \uXXXX for non-ASCII, which AppleScript can't parse (syntax error
+    # -2741). osascript reads UTF-8, so a raw Cyrillic prompt is fine.
+    esc = prompt.replace("\\", "\\\\").replace('"', '\\"')
+    script = f'POSIX path of (choose file with prompt "{esc}")'
+    try:
+        proc = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True, text=True, encoding="utf-8", timeout=600,
+        )
+    except Exception as exc:  # osascript missing / timeout
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if proc.returncode != 0:
+        err = (proc.stderr or "").strip()
+        if "-128" in err or "cancel" in err.lower():  # user hit Cancel
+            return {"cancelled": True}
+        raise HTTPException(status_code=500, detail=err or "picker failed")
+    path = proc.stdout.strip()
+    if not path or not os.path.isfile(path):
+        raise HTTPException(status_code=400, detail="no file chosen")
+    if not path.lower().endswith((".json", ".html")):
+        raise HTTPException(status_code=400, detail="not-json")
+    return {"path": path, "size": os.path.getsize(path)}
 
 
 @app.get("/api/health")
