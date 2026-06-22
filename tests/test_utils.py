@@ -95,24 +95,23 @@ def test_clear_user_handles_int():
 
 def test_read_conf_falls_back_to_defaults_when_missing(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(utils, "CONFIG_PATH", tmp_path / "config.json")
-    val = utils.read_conf("most_com")
-    assert val == utils.DEFAULT_CONF["most_com"]
+    val = utils.read_conf("select_type_stem")
+    assert val == utils.DEFAULT_CONF["select_type_stem"]
     # write_conf should have created the file
     assert (tmp_path / "config.json").exists()
 
 
 def test_write_conf_then_read_conf_roundtrip(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(utils, "CONFIG_PATH", tmp_path / "config.json")
-    utils.write_conf({"select_type_stem": "On", "most_com": 50, "most_com_channel": 200})
+    utils.write_conf({"select_type_stem": "On"})
     assert utils.read_conf("select_type_stem") == "On"
-    assert utils.read_conf("most_com") == 50
 
 
 def test_read_conf_recovers_from_corrupted_file(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(utils, "CONFIG_PATH", tmp_path / "config.json")
     (tmp_path / "config.json").write_text("not json at all", encoding="utf-8")
-    val = utils.read_conf("most_com")
-    assert val == utils.DEFAULT_CONF["most_com"]
+    val = utils.read_conf("select_type_stem")
+    assert val == utils.DEFAULT_CONF["select_type_stem"]
     # Should have rewritten with defaults
     written = json.loads((tmp_path / "config.json").read_text())
     assert written == utils.DEFAULT_CONF

@@ -10,6 +10,28 @@ import { Card } from "@/components/ui/card"
 const DEMO_PERSONAL = "demo/personal_demo.json"
 const DEMO_GROUP = "demo/group_demo.json"
 
+/** Accept what a user actually pastes. Finder "Copy as Pathname" gives a bare
+ *  path, but dragging a file or copying its URL yields a `file://` URL with
+ *  percent-encoded spaces — strip the scheme and decode so both work. */
+function normalizePath(raw: string): string {
+  let s = raw.trim()
+  // strip surrounding quotes (shells / "Copy as Pathname" sometimes add them)
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1)
+  }
+  if (/^file:\/\//i.test(s)) {
+    s = s.replace(/^file:\/\//i, "")
+    // file://localhost/Users/… and file:///Users/… both reduce to /Users/…
+    if (s.toLowerCase().startsWith("localhost/")) s = s.slice("localhost".length)
+    try {
+      s = decodeURIComponent(s)
+    } catch {
+      /* malformed %xx — keep the raw form */
+    }
+  }
+  return s.trim()
+}
+
 function Logo() {
   return (
     <svg width="40" height="40" viewBox="0 0 56 56" fill="none">
@@ -40,7 +62,7 @@ export function Onboarding({
   const fileRef = useRef<HTMLInputElement>(null)
 
   const submitPath = () => {
-    const p = path.trim()
+    const p = normalizePath(path)
     if (p) onLoad(p)
   }
 
@@ -126,6 +148,7 @@ export function Onboarding({
             {t("load")}
           </Button>
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">{t("pathHint")}</p>
         {error && <p className="mt-2 text-sm text-destructive">{t("loadError")}</p>}
 
         <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-5">

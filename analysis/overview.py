@@ -145,19 +145,3 @@ def filter_by_date(messages: list[dict], from_date: str, to_date: str) -> list[d
         if from_date <= ds <= to_date:
             out.append(m)
     return out
-
-
-def participants_table(messages: list[dict]) -> list[tuple[str, str, int]]:
-    """[(user_id, display_name, message_count)] sorted by count desc."""
-    counts: Counter[str] = Counter()
-    name_index: dict[str, str] = {}
-    for m in messages:
-        if not isinstance(m, dict):
-            continue
-        uid = m.get("from_id")
-        if not uid:
-            continue
-        counts[uid] += 1
-        if uid not in name_index:
-            name_index[uid] = m.get("from") or uid
-    return [(uid, name_index[uid], c) for uid, c in counts.most_common()]

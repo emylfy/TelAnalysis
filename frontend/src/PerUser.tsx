@@ -2,8 +2,8 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 
-import { api, type Sel } from "@/lib/api"
-import { dayWord, fmtInt, personaForLength, personaForTimeOfDay, timeBucketLabel } from "@/lib/i18n"
+import { api, stickerFileUrl, type Sel, type StickerRef } from "@/lib/api"
+import { dayWord, fmtInt, humanizeDuration, personaForLength, personaForTimeOfDay, timeBucketLabel } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Bars, BarsH, Box, HourWeekday, Lines, Radar } from "@/components/charts"
@@ -33,6 +33,66 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 function H3({ children }: { children: React.ReactNode }) {
   return <h3 className="text-lg font-semibold tracking-tight">{children}</h3>
+}
+
+/** Favourite stickers as pictures. Static `.webp`/`.png` render the full sticker;
+ *  animated `.webm`/`.tgs` render their `.jpg` thumbnail (a static frame works
+ *  everywhere). When the media isn't on disk (chat loaded from an uploaded copy,
+ *  or demo data) the first image 404s — we then fall back to the emoji-tag bars
+ *  plus a hint to reload from the export folder. */
+function StickerGrid({
+  path,
+  stickers,
+  total,
+  emojiFallback,
+}: {
+  path: string
+  stickers: StickerRef[]
+  total: number
+  emojiFallback: [string, number][]
+}) {
+  const { t } = useTranslation()
+  const [failed, setFailed] = useState(false)
+
+  if (failed || stickers.length === 0) {
+    return (
+      <>
+        {emojiFallback.length > 0 && (
+          <Card className="border-border bg-card p-3"><BarsH data={emojiFallback.slice(0, 12)} color="#5AD8F7" /></Card>
+        )}
+        <p className="text-xs text-muted-foreground">{t("stickersNoImg")}</p>
+      </>
+    )
+  }
+
+  return (
+    <Card className="space-y-3 border-border bg-card p-3">
+      <div className="text-xs text-muted-foreground">{t("totalStickers")}: {fmtInt(total)}</div>
+      <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">
+        {stickers.map((st, i) => {
+          const isImg = /\.(webp|png)$/i.test(st.file)
+          const src = stickerFileUrl(path, isImg ? st.file : st.thumbnail || st.file)
+          return (
+            <div key={st.file} className="flex flex-col items-center gap-1">
+              <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md bg-muted/50">
+                <img
+                  src={src}
+                  alt={st.emoji}
+                  loading="lazy"
+                  onError={() => i === 0 && setFailed(true)}
+                  className="size-full object-contain p-1"
+                />
+                <span className="absolute right-0.5 top-0.5 rounded bg-black/65 px-1 text-[0.7rem] font-medium tabular-nums text-white">
+                  ×{fmtInt(st.count)}
+                </span>
+              </div>
+              <span className="text-xs leading-none">{st.emoji}</span>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
 }
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
@@ -87,7 +147,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
   const userWords = words.data?.users.find((u) => u.user_id === id)
   const userPhrases = phrases.data?.[id] ?? []
   const userEmojis = emojisQ.data?.per_user?.[id] ?? []
-  const userStickers = stickersQ.data?.[id]?.top_emojis ?? []
+  const userStickerData = stickersQ.data?.[id]
   const userLat = latencyQ.data?.per_user_seconds?.[id] ?? []
 
   // tone radar across all users
@@ -101,9 +161,15 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       Math.round(u.msg_count ? (u.reply_count / u.msg_count) * 100 : 0),
     ],
   }))
-  // auto-scale axes to the data so the polygon fills the chart
-  const radarMax = Math.max(10, Math.ceil(Math.max(...radarSeries.flatMap((r) => r.values), 0) / 10) * 10)
-  const indicators = [t("axisQuestion"), t("axisExcl"), t("axisCaps"), t("axisReply")].map((name) => ({ name, max: radarMax }))
+  // Per-axis max — each indicator scaled to its own range across users. A single
+  // shared max lets the wide axes (reply/question ratios) dominate and collapses
+  // the small ones (caps, exclamations) to the centre, so the polygon degenerates
+  // into a sliver. Rounded up to a "nice" step, min 1 to avoid a zero axis.
+  const axisMax = radarSeries[0].values.map((_, i) => {
+    const m = Math.max(...radarSeries.map((r) => r.values[i]), 0)
+    return m > 0 ? Math.ceil(m / 5) * 5 : 1
+  })
+  const indicators = [t("axisQuestion"), t("axisExcl"), t("axisCaps"), t("axisReply")].map((name, i) => ({ name, max: axisMax[i] }))
 
   // wakeup
   const wakeMin = median(s.first_msg_minutes ?? [])
@@ -171,6 +237,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       {ordered.length >= 2 && (
         <section className="space-y-3">
           <H3>{t("toneRadar")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("toneRadarHint")}</p>
           <Card className="border-border bg-card p-3"><Radar indicators={indicators} series={radarSeries} /></Card>
         </section>
       )}
@@ -178,6 +245,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       {(s.first_msg_minutes?.length ?? 0) > 0 && (
         <section className="space-y-3">
           <H3>{t("wakeup")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("wakeupHint")}</p>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             <Stat label={t("wakeupMedian")} value={hhmm(wakeMin)} />
             {wakeGroups.length >= 2 && (
@@ -202,6 +270,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         {pdU.data && pdU.data.per_day.length > 0 && (
           <section className="space-y-3">
             <H3>{t("dailyActivity")}</H3>
+            <p className="-mt-1 text-sm text-muted-foreground">{t("dailyActivityHint")}</p>
             <Card className="border-border bg-card p-3">
               <Lines series={[{ name: s.name, data: pdU.data.per_day }]} />
             </Card>
@@ -210,6 +279,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         {hwU.data && hwU.data.grid.some((r) => r.some((v) => v > 0)) && (
           <section className="space-y-3">
             <H3>{t("hourWeekdayUser")}</H3>
+            <p className="-mt-1 text-sm text-muted-foreground">{t("hourWeekdayUserHint")}</p>
             <Card className="border-border bg-card p-3"><HourWeekday grid={hwU.data.grid} /></Card>
           </section>
         )}
@@ -235,8 +305,9 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       {dir && (
         <section className="space-y-3">
           <H3>{t("reciprocity")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("reciprocityHint")}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label={t("medianReply")} value={`${Math.round(dir.median_seconds / 60)}m`} />
+            <Stat label={t("medianReply")} value={humanizeDuration(dir.median_seconds)} />
             <Stat label={t("within5")} value={pct(dir.within_5m)} />
             <Stat label={t("within30")} value={pct(dir.within_30m)} />
             <Stat label={t("within60")} value={pct(dir.within_60m)} />
@@ -250,7 +321,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
                 {t("reciprocityReverse", {
                   a: other.initiator_name,
                   b: other.responder_name,
-                  m: `${Math.round(other.median_seconds / 60)}m`,
+                  m: humanizeDuration(other.median_seconds),
                   p: (other.within_5m * 100).toFixed(1),
                   d: (delta >= 0 ? "+" : "") + delta.toFixed(1),
                 })}
@@ -263,6 +334,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       {streakQ.data && streakQ.data.total_active_days > 0 && (
         <section className="space-y-3">
           <H3>{t("streaks")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("streaksHint")}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Stat label={t("longestStreak")} value={`${fmtInt(streakQ.data.longest_streak_days)} ${dayWord(streakQ.data.longest_streak_days)}`} sub={streakQ.data.longest_streak_start ?? undefined} />
             <Stat label={t("currentStreak")} value={`${fmtInt(streakQ.data.current_streak_days)} ${dayWord(streakQ.data.current_streak_days)}`} />
@@ -294,6 +366,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       {initRow && (
         <section className="space-y-3">
           <H3>{t("initiator")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("initiatorHint")}</p>
           <div className="grid grid-cols-2 gap-3 sm:max-w-md">
             <Stat label={t("initiations")} value={fmtInt(initRow.initiations)} />
             <Stat label={t("initiatorShare")} value={pct(initRow.share)} />
@@ -309,6 +382,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       {fwd && fwd.forwarded_count > 0 && (
         <section className="space-y-3">
           <H3>{t("forwards")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("forwardsHint")}</p>
           <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
             <Stat label={t("forwardShare")} value={pct(fwd.total_messages ? fwd.forwarded_count / fwd.total_messages : 0)} sub={`${fmtInt(fwd.forwarded_count)} / ${fmtInt(fwd.total_messages)}`} />
           </div>
@@ -321,8 +395,9 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       {latData.length > 0 && (
         <section className="space-y-3">
           <H3>{t("latencyHist")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("latencyHistHint")}</p>
           <div className="text-sm text-muted-foreground">
-            {t("medianReply")}: {Math.round(median(userLat) / 60)}m · {fmtInt(userLat.length)}
+            {t("medianReply")}: {humanizeDuration(median(userLat))} · {fmtInt(userLat.length)}
           </div>
           <Card className="border-border bg-card p-3"><Bars data={latData} height={240} color="var(--chart-1)" /></Card>
         </section>
@@ -343,20 +418,26 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {userEmojis.length > 0 && (
-          <section className="space-y-3">
-            <H3>{t("emojisOfUser")}</H3>
-            <Card className="border-border bg-card p-3"><BarsH data={userEmojis.slice(0, 12)} color="#9270CA" /></Card>
-          </section>
-        )}
-        {userStickers.length > 0 && (
-          <section className="space-y-3">
-            <H3>{t("stickersOfUser")}</H3>
-            <Card className="border-border bg-card p-3"><BarsH data={userStickers.slice(0, 12)} color="#5AD8F7" /></Card>
-          </section>
-        )}
-      </div>
+      {userEmojis.length > 0 && (
+        <section className="space-y-3">
+          <H3>{t("emojisOfUser")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("emojisHelp")}</p>
+          <Card className="border-border bg-card p-3"><BarsH data={userEmojis.slice(0, 12)} color="#9270CA" /></Card>
+        </section>
+      )}
+
+      {userStickerData && (userStickerData.top_stickers.length > 0 || userStickerData.top_emojis.length > 0) && (
+        <section className="space-y-3">
+          <H3>{t("stickersOfUser")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("stickersHelp")}</p>
+          <StickerGrid
+            path={path}
+            stickers={userStickerData.top_stickers}
+            total={userStickerData.total_stickers}
+            emojiFallback={userStickerData.top_emojis}
+          />
+        </section>
+      )}
 
       {userWords && userWords.total_tokens > 0 && (
         <section className="space-y-3">

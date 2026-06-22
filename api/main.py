@@ -26,6 +26,7 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import i18n
@@ -242,12 +243,6 @@ def hour_weekday(
     return {"grid": overview.hour_weekday_heatmap(_only_user(msgs, user))}
 
 
-@app.get("/api/participants")
-def participants(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T):
-    _, msgs = _resolve(path, chat, from_, to)
-    return {"participants": overview.participants_table(msgs)}
-
-
 @app.get("/api/hour-by-user")
 def hour_by_user(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T):
     """Per-user hour-of-day distribution (24-int list). Used by the 2-user
@@ -449,10 +444,49 @@ def stickers(
     chat: str | None = _C,
     from_: str | None = _F,
     to: str | None = _T,
-    top_n: int = Query(10),
+    top_n: int = Query(12),
 ):
     _, msgs = _resolve(path, chat, from_, to)
     return {uid: to_jsonable(s) for uid, s in stickers_mod.analyze(msgs, top_n=top_n).per_user.items()}
+
+
+_STICKER_EXTS = {".webp", ".webm", ".jpg", ".jpeg", ".png", ".tgs"}
+_STICKER_MIME = {
+    ".webp": "image/webp",
+    ".webm": "video/webm",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".tgs": "application/octet-stream",
+}
+
+
+@app.get("/api/sticker-file")
+def sticker_file(
+    path: str = _P,
+    rel: str = Query(..., description="Media path relative to the export root"),
+):
+    """Serve a sticker / thumbnail image straight from the export folder.
+
+    `path` is the loaded result.json; its parent directory is the export root.
+    `rel` is the media path stored in the JSON (e.g.
+    `chats/chat_009/stickers/sticker (1).webp`). We only resolve files that stay
+    inside the export root, live under `chats/`, and carry a known image/video
+    extension — so a crafted `?rel=../../etc/passwd` can't escape. Returns 404
+    when the media isn't on disk (e.g. a session loaded from an uploaded copy of
+    result.json, which has no media alongside it)."""
+    rel_norm = rel.replace("\\", "/")
+    parts = rel_norm.split("/")
+    if ".." in parts or rel_norm.startswith("/") or not rel_norm.startswith("chats/"):
+        raise HTTPException(status_code=404, detail="Not found")
+    ext = Path(rel_norm).suffix.lower()
+    if ext not in _STICKER_EXTS:
+        raise HTTPException(status_code=404, detail="Not found")
+    root = Path(path).resolve().parent
+    target = (root / rel_norm).resolve()
+    if not target.is_relative_to(root) or not target.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(target, media_type=_STICKER_MIME.get(ext, "application/octet-stream"))
 
 
 def _words_summary(res) -> dict:

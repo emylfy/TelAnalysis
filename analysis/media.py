@@ -22,32 +22,6 @@ class MediaStats:
     total_links: int = 0
 
 
-_KIND_LABELS: dict[str, tuple[str, str]] = {
-    "text": ("Текст", "Text"),
-    "photo": ("Фото", "Photo"),
-    "video_file": ("Видео", "Video"),
-    "video_message": ("Кружок", "Video msg (round)"),
-    "voice_message": ("Голосовое", "Voice"),
-    "audio_file": ("Аудио", "Audio"),
-    "sticker": ("Стикер", "Sticker"),
-    "animation": ("GIF", "Animation/GIF"),
-    "file": ("Файл", "File"),
-    "location": ("Геопозиция", "Location"),
-    "contact": ("Контакт", "Contact"),
-    "poll": ("Опрос", "Poll"),
-    "service": ("Сервисное", "Service"),
-    "other": ("Другое", "Other"),
-}
-
-
-def kind_label(kind: str) -> str:
-    """Localized media-kind label (RU/EN). Unknown kinds fall back to the code."""
-    pair = _KIND_LABELS.get(kind)
-    if pair is None:
-        return kind
-    return pair[0] if i18n.get_lang() == "ru" else pair[1]
-
-
 def _classify(m: dict) -> str:
     if not isinstance(m, dict):
         return "other"

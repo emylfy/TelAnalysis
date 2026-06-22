@@ -1,6 +1,6 @@
 import ReactECharts from "echarts-for-react"
 
-import { mediaKindLabel, weekdayShort } from "@/lib/i18n"
+import { fmtDateTick, fmtInt, mediaKindLabel, monthShort, weekdayShort } from "@/lib/i18n"
 
 const AXIS = "rgba(255,255,255,0.10)"
 const GRID = "rgba(255,255,255,0.06)"
@@ -77,44 +77,73 @@ export function HourWeekday({ grid }: { grid: number[][] }) {
   )
 }
 
-export function Calendar({ perDay, binary = false }: { perDay: [string, number][]; binary?: boolean }) {
+export function Calendar({
+  perDay,
+  binary = false,
+  year,
+}: {
+  perDay: [string, number][]
+  binary?: boolean
+  year?: string
+}) {
   // binary mode collapses every active day to "1" so the heatmap shows
   // wrote-vs-didn't rather than volume — useful for spotting silent streaks.
   const display: [string, number][] = binary
     ? perDay.map(([d, v]) => [d, v > 0 ? 1 : 0])
     : perDay
   const years = [...new Set(display.map((d) => d[0].slice(0, 4)))].sort()
+  // One year at a time (caller switches via tabs); fall back to the latest.
+  const activeYear = year && years.includes(year) ? year : years[years.length - 1]
   let max = 1
   for (const [, v] of display) if (v > max) max = v
-  const calendar = years.map((y, i) => ({
-    range: y,
-    top: 30 + i * 140,
-    left: 40,
-    right: 16,
-    cellSize: ["auto", 13],
-    splitLine: { show: false },
-    itemStyle: { color: "transparent", borderColor: GRID, borderWidth: 1 },
-    dayLabel: { color: TICK, firstDay: 1 },
-    monthLabel: { color: TICK },
-    yearLabel: { show: true, color: "#e5e7eb", margin: 28 },
-  }))
-  const series = years.map((y, i) => ({
-    type: "heatmap" as const,
-    coordinateSystem: "calendar",
-    calendarIndex: i,
-    data: display.filter((d) => d[0].startsWith(y)),
-  }))
+  // All 7 weekday labels, localized. ECharts' nameMap is indexed by day-of-week
+  // (0 = Sunday), but weekdayShort() is Monday-first — reorder to Sun-first.
+  const wd = weekdayShort()
+  const dayNameMap = [wd[6], wd[0], wd[1], wd[2], wd[3], wd[4], wd[5]]
+  const months = monthShort()
   return (
     <Chart
-      height={years.length * 140 + 30}
+      height={196}
       option={{
         ...base,
-        tooltip: { ...TOOLTIP },
+        tooltip: {
+          ...TOOLTIP,
+          formatter: (p: { value: [string, number] }) => {
+            const [, m, d] = p.value[0].split("-")
+            return `${Number(d)} ${months[Number(m) - 1]} · ${fmtInt(p.value[1])}`
+          },
+        },
         visualMap: { min: 0, max, show: false, inRange: { color: HEAT } },
-        calendar,
-        series,
+        calendar: {
+          range: activeYear,
+          top: 28,
+          left: 44,
+          right: 16,
+          cellSize: ["auto", 16],
+          splitLine: { show: false },
+          itemStyle: { color: "transparent", borderColor: GRID, borderWidth: 1 },
+          dayLabel: { color: TICK, firstDay: 1, nameMap: dayNameMap, margin: 6, fontSize: 11 },
+          monthLabel: { color: TICK, margin: 8, nameMap: months },
+          yearLabel: { show: false },
+        },
+        series: {
+          type: "heatmap",
+          coordinateSystem: "calendar",
+          data: display.filter((d) => d[0].startsWith(activeYear)),
+        },
       }}
     />
+  )
+}
+
+/** Tiny "less → more" gradient key for the calendar heat scale. */
+export function HeatLegend({ less, more }: { less: string; more: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span>{less}</span>
+      <span className="h-2 w-16 rounded-full" style={{ background: `linear-gradient(to right, ${HEAT.join(", ")})` }} />
+      <span>{more}</span>
+    </div>
   )
 }
 
@@ -136,7 +165,10 @@ export function MediaPie({ byKind }: { byKind: Record<string, number> }) {
             type: "pie",
             radius: ["38%", "68%"],
             center: ["38%", "50%"],
-            label: { color: "#e5e7eb" },
+            // Slice labels + leader lines crowd and overlap on the left for the
+            // long tail of media kinds — the legend already names every slice.
+            label: { show: false },
+            labelLine: { show: false },
             data,
           },
         ],
@@ -191,7 +223,7 @@ export function AreaTimeline({ data, height = 280 }: { data: [string, number][];
           type: "category",
           data: data.map((d) => d[0]),
           axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK, hideOverlap: true },
+          axisLabel: { color: TICK, hideOverlap: true, formatter: fmtDateTick },
         },
         yAxis: { type: "value", axisLine: { show: false }, splitLine: { lineStyle: { color: GRID } }, axisLabel: { color: TICK } },
         series: [
@@ -241,7 +273,9 @@ export function Lines({
       showSymbol: false,
       connectNulls: true,
       data: cats.map((c) => (m.has(c) ? m.get(c)! : null)),
-      lineStyle: { width: 2 },
+      // Thin & slightly translucent when many series overlap (e.g. per-user
+      // sentiment) so the spaghetti stays readable; legend toggles individuals.
+      lineStyle: { width: series.length > 4 ? 1.2 : 2, opacity: series.length > 4 ? 0.85 : 1 },
       itemStyle: { color: NET_COLORS[i % NET_COLORS.length] },
       ...(zeroLine && i === 0
         ? { markLine: { silent: true, symbol: "none", lineStyle: { color: "rgba(255,255,255,0.25)", type: "dashed" }, data: [{ yAxis: 0 }] } }
@@ -260,7 +294,7 @@ export function Lines({
           type: "category",
           data: cats,
           axisLine: { lineStyle: { color: AXIS } },
-          axisLabel: { color: TICK, hideOverlap: true },
+          axisLabel: { color: TICK, hideOverlap: true, formatter: fmtDateTick },
         },
         yAxis: { type: "value", axisLine: { show: false }, splitLine: { lineStyle: { color: GRID } }, axisLabel: { color: TICK } },
         series: ech,
@@ -344,9 +378,12 @@ export function Network({
     return { source, target, lineStyle: { width: 1 + 5 * (w / maxE), opacity: 0.5 } }
   })
 
+  // Small graphs (e.g. a 7-person group) cluster in the middle of a big canvas;
+  // push them apart and shrink the height so they fill the space instead.
+  const small = kept.length <= 12
   return (
     <Chart
-      height={520}
+      height={small ? 400 : 520}
       option={{
         ...base,
         tooltip: { ...TOOLTIP },
@@ -361,7 +398,11 @@ export function Network({
             label: { color: "#e5e7eb", position: "right", fontSize: 11 },
             emphasis: { focus: "adjacency", lineStyle: { width: 6 } },
             lineStyle: { color: "rgba(255,255,255,0.25)", curveness: 0.05 },
-            force: { repulsion: 220, edgeLength: [40, 140], gravity: 0.08 },
+            force: {
+              repulsion: small ? 700 : 220,
+              edgeLength: small ? [90, 220] : [40, 140],
+              gravity: small ? 0.05 : 0.08,
+            },
           },
         ],
       }}

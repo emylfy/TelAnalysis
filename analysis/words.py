@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import math as _math
 import re
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -436,29 +436,6 @@ def sentiment_by_weekday(
     ]
 
 
-def _msg_text_blob(message: dict) -> str:
-    """Concatenate all text content from a message into a lowercase string."""
-    parts: list[str] = []
-    t = message.get("text")
-    if isinstance(t, str):
-        parts.append(t)
-    elif isinstance(t, list):
-        for item in t:
-            if isinstance(item, str):
-                parts.append(item)
-            elif isinstance(item, dict) and "text" in item:
-                v = item.get("text")
-                if isinstance(v, str):
-                    parts.append(v)
-    c = message.get("caption")
-    if isinstance(c, str):
-        parts.append(c)
-    ents = jmespath.search("text_entities[*].text", message)
-    if ents:
-        parts.extend(e for e in ents if isinstance(e, str))
-    return " ".join(parts).lower()
-
-
 def _period_key(d: datetime, granularity: str) -> str:
     if granularity == "day":
         return d.strftime("%Y-%m-%d")
@@ -467,52 +444,3 @@ def _period_key(d: datetime, granularity: str) -> str:
     # default: ISO week, Monday-anchored
     start = d - timedelta(days=d.weekday())
     return start.strftime("%Y-%m-%d")
-
-
-def word_timeline(
-    messages: list[dict],
-    terms: list[str],
-    granularity: str = "week",
-) -> dict[str, list[tuple[str, int]]]:
-    """For each term, return [(period_start_iso, count)] sorted ascending.
-
-    Match is case-insensitive substring. For full-word matching,
-    the term must be alphanumeric (we apply word boundaries).
-    Granularity: 'day' | 'week' | 'month'.
-    """
-    if not terms:
-        return {}
-
-    patterns = {}
-    for raw in terms:
-        t = (raw or "").strip().lower()
-        if not t:
-            continue
-        # word-boundary match if term is alphanumeric, else substring
-        if re.fullmatch(r"[\w\-]+", t, flags=re.UNICODE):
-            patterns[t] = re.compile(rf"(?<![\w]){re.escape(t)}(?![\w])", re.UNICODE)
-        else:
-            patterns[t] = re.compile(re.escape(t), re.UNICODE)
-
-    counts: dict[str, Counter] = {t: Counter() for t in patterns}
-
-    for m in messages:
-        if not isinstance(m, dict):
-            continue
-        date_str = m.get("date")
-        if not isinstance(date_str, str):
-            continue
-        try:
-            d = datetime.fromisoformat(date_str)
-        except ValueError:
-            continue
-        blob = _msg_text_blob(m)
-        if not blob:
-            continue
-        key = _period_key(d, granularity)
-        for term, pat in patterns.items():
-            n = len(pat.findall(blob))
-            if n:
-                counts[term][key] += n
-
-    return {t: sorted(c.items()) for t, c in counts.items()}

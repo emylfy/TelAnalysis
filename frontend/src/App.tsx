@@ -399,7 +399,9 @@ export default function App() {
   // If the active tab isn't available for this chat type, fall back to the
   // first available one. Done during render (not in an effect) so the wrong
   // tab never paints; React discards this render and re-runs with the new tab.
-  if (availTabs.length && !availTabs.some((d) => d.id === tab)) {
+  // Guard on isSuccess: until chats load, availTabs is the ["overview"]
+  // placeholder, which would clobber a deep-linked ?tab=words on first paint.
+  if (chatsQ.isSuccess && availTabs.length && !availTabs.some((d) => d.id === tab)) {
     setTab(availTabs[0].id)
   }
 
@@ -497,9 +499,9 @@ export default function App() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            {/* Render only the active tab — every TabsContent triggers its own
-                useQuery calls, so mounting all of them on chat-load fired ~15
-                requests up front. react-query still caches by key on return.
+            {/* Render only the active tab — mounting every tab's panel triggers
+                its own useQuery calls, so rendering all of them on chat-load fired
+                ~15 requests up front. react-query still caches by key on return.
                 Suspense covers the lazy chunk download for that tab. */}
             <div className="mt-2" key={tab}>
               <Suspense fallback={<TabLoading />}>{renderTab(tab)}</Suspense>

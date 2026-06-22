@@ -27,8 +27,6 @@ def sanitize_chat_filename(name, chat_id):
 
 DEFAULT_CONF = {
     "select_type_stem": "Off",
-    "most_com": 30,
-    "most_com_channel": 100,
 }
 
 # Anchored to the repo root (parent of analysis/) so reads/writes don't depend

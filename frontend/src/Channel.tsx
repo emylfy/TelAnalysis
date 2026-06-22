@@ -33,7 +33,10 @@ export function Channel({ path, sel }: { path: string; sel: Sel }) {
 
       {d.has_wordcloud && (
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold tracking-tight">{t("wordcloud")}</h2>
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">{t("wordcloud")}</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">{t("wordcloudHint")}</p>
+          </div>
           <Card className="flex items-center justify-center border-border bg-card p-3">
             <img
               src={wordcloudUrl(path, sel.chat, true)}
@@ -46,7 +49,10 @@ export function Channel({ path, sel }: { path: string; sel: Sel }) {
 
       {d.top_words.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold tracking-tight">{t("topWords")}</h2>
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">{t("topWords")}</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">{t("topWordsHint")}</p>
+          </div>
           <Card className="border-border bg-card p-3">
             <BarsH data={d.top_words.slice(0, 50)} color="var(--chart-1)" />
           </Card>

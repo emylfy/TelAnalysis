@@ -20,7 +20,7 @@ const ru = {
   // section headers
   howOften: "Как часто пишут",
   whenHours: "В какие часы",
-  whatAbout: "О чём говорят",
+  whatAbout: "Эмодзи, медиа и ссылки",
   whoToWhom: "Кто кому",
   topDomains: "Топ доменов",
   longestMonologues: "Самые длинные монологи",
@@ -156,7 +156,7 @@ const ru = {
   forwardShare: "Доля форвардов",
   latencyHist: "Распределение скорости ответа",
   emojisOfUser: "Эмодзи",
-  stickersOfUser: "Стикеры (эмодзи)",
+  stickersOfUser: "Любимые стикеры",
   vocabUser: "Словарь",
   matTitle: "Мат",
   matHelp: "Совпадение по корням. Hits/100 — попаданий на 100 сообщений.",
@@ -207,6 +207,9 @@ const ru = {
   calendarMode: "Режим",
   calendarCount: "по количеству",
   calendarBinary: "писали / нет",
+  calendarYear: "Год",
+  calendarLess: "меньше",
+  calendarMore: "больше",
   calendarActiveDays: "Активных дней: {{a}} из {{t}} ({{p}}%)",
   // heatmap caplets
   capPeakHour: "пик активности — {{h}}:00",
@@ -235,6 +238,40 @@ const ru = {
   lenpersona_med: "💬 коротко",
   lenpersona_long: "📄 подробно",
   lenpersona_xl: "📜 эссе",
+  // section hints — «что отсюда понять»
+  howOftenHint: "Объём сообщений по дням и календарь активности по годам.",
+  whenHoursHint: "Тепловая карта час × день недели: когда переписка живее всего.",
+  whatAboutHint: "Чем наполнен чат помимо текста — эмодзи, вложения и ссылки.",
+  longestMonologuesHint: "Серии сообщений подряд без ответа собеседника.",
+  topDomainsHint: "Домены ссылок, которыми делятся в чате.",
+  emojiTop: "Любимые эмодзи",
+  emojiTopHint: "Эмоциональный фон чата — какие эмодзи в ходу.",
+  wordcloudHint: "Самые частые слова после чистки стоп-слов: крупнее — чаще.",
+  topWordsHint: "Частота отдельных слов.",
+  phrasesHint: "Устойчивые пары и тройки слов — характерные обороты.",
+  contactsHint: "E-mail и телефоны из переписки. Нажми, чтобы раскрыть и скопировать.",
+  toneRadarHint: "Доля вопросов, восклицаний, КАПСА и цитирований — стиль участника.",
+  wakeupHint: "Медиана времени первого сообщения за день.",
+  dailyActivityHint: "Сообщения участника по дням.",
+  hourWeekdayUserHint: "Час × день недели для выбранного участника.",
+  reciprocityHint: "Как быстро участник отвечает собеседнику.",
+  streaksHint: "Самые длинные серии активных дней и паузы в общении.",
+  initiatorHint: "Сколько разговоров участник начал первым.",
+  forwardsHint: "Доля пересланных сообщений и откуда их репостят.",
+  latencyHistHint: "Сколько ответов попадает в каждый интервал времени.",
+  emojisHelp: "Любимые эмодзи участника в тексте — эмоциональный почерк.",
+  stickersHelp: "Самые часто отправляемые стикеры.",
+  chainDepthHint: "Насколько длинные треды-ответы: глубже — длиннее обсуждение.",
+  // stickers as images
+  totalStickers: "Всего стикеров",
+  stickersNoImg: "Картинки стикеров появятся, если открыть чат через путь к папке экспорта (кнопка загрузки копирует только result.json, без медиа).",
+  // contacts list
+  showEmails: "Показать e-mail",
+  showPhones: "Показать телефоны",
+  copy: "Копировать",
+  copied: "Скопировано",
+  // onboarding
+  pathHint: "Путь к папке экспорта (или к result.json внутри неё) — тогда покажем и стикеры с медиа. Кнопка выше копирует только result.json, без картинок.",
 }
 
 const en: typeof ru = {
@@ -251,7 +288,7 @@ const en: typeof ru = {
   tab_peruser: "Per user",
   howOften: "How often",
   whenHours: "When (by hour)",
-  whatAbout: "What about",
+  whatAbout: "Emoji, media & links",
   whoToWhom: "Who replies to whom",
   topDomains: "Top domains",
   longestMonologues: "Longest monologues",
@@ -375,7 +412,7 @@ const en: typeof ru = {
   forwardShare: "Forward share",
   latencyHist: "Reply-speed distribution",
   emojisOfUser: "Emoji",
-  stickersOfUser: "Stickers (emoji)",
+  stickersOfUser: "Favourite stickers",
   vocabUser: "Vocabulary",
   matTitle: "Profanity",
   matHelp: "Root matching. Hits/100 = hits per 100 messages.",
@@ -418,6 +455,9 @@ const en: typeof ru = {
   calendarMode: "Mode",
   calendarCount: "by count",
   calendarBinary: "wrote / didn't",
+  calendarYear: "Year",
+  calendarLess: "less",
+  calendarMore: "more",
   calendarActiveDays: "Active days: {{a}} of {{t}} ({{p}}%)",
   capPeakHour: "peak hour — {{h}}:00",
   capNightShare: "at night ({{from}}–{{to}}) — {{p}}% of messages",
@@ -440,6 +480,40 @@ const en: typeof ru = {
   lenpersona_med: "💬 short",
   lenpersona_long: "📄 elaborate",
   lenpersona_xl: "📜 essayist",
+  // section hints — "what you learn here"
+  howOftenHint: "Message volume by day and a per-year activity calendar.",
+  whenHoursHint: "An hour × weekday heatmap: when the chat is most alive.",
+  whatAboutHint: "What fills the chat beyond text — emoji, attachments and links.",
+  longestMonologuesHint: "Runs of consecutive messages with no reply from the other side.",
+  topDomainsHint: "Domains of links shared in the chat.",
+  emojiTop: "Top emoji",
+  emojiTopHint: "The chat's emotional backdrop — which emoji are in play.",
+  wordcloudHint: "Most frequent words after stop-word removal: larger = more frequent.",
+  topWordsHint: "Frequency of individual words.",
+  phrasesHint: "Recurring word pairs and triples — signature expressions.",
+  contactsHint: "E-mails and phone numbers from the chat. Click to expand and copy.",
+  toneRadarHint: "Share of questions, exclamations, CAPS and quoting — the person's style.",
+  wakeupHint: "Median time of the first message each day.",
+  dailyActivityHint: "The person's messages by day.",
+  hourWeekdayUserHint: "Hour × weekday for the selected participant.",
+  reciprocityHint: "How quickly the person replies to the other side.",
+  streaksHint: "Longest runs of active days and the quietest gaps.",
+  initiatorHint: "How many conversations the person started first.",
+  forwardsHint: "Share of forwarded messages and where they're reposted from.",
+  latencyHistHint: "How many replies fall into each time bucket.",
+  emojisHelp: "The person's favourite emoji in text — an emotional fingerprint.",
+  stickersHelp: "The stickers they send most.",
+  chainDepthHint: "How long reply threads get: deeper = longer discussion.",
+  // stickers as images
+  totalStickers: "Total stickers",
+  stickersNoImg: "Sticker images appear when the chat is opened via the export-folder path (the upload button copies only result.json, without media).",
+  // contacts list
+  showEmails: "Show e-mails",
+  showPhones: "Show phone numbers",
+  copy: "Copy",
+  copied: "Copied",
+  // onboarding
+  pathHint: "Path to the export folder (or the result.json inside it) — then stickers and media show too. The button above copies only result.json, without images.",
 }
 
 i18n.use(initReactI18next).init({
@@ -525,6 +599,28 @@ export function weekdayShort(): string[] {
   return isRu()
     ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
     : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+}
+
+/** Short month names, January first (index 0 = Jan) — matches ECharts
+ *  calendar `monthLabel.nameMap`. */
+export function monthShort(): string[] {
+  return isRu()
+    ? ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"]
+    : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+}
+
+/** Compact, locale-aware date for chart axis ticks: "15.01.24" (ru) /
+ *  "01/15/24" (en). Built from parts (no UTC parse) to avoid timezone shifts;
+ *  returns the raw value unchanged for non-date ticks. */
+export function fmtDateTick(v: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
+  if (!m) return v
+  const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  return new Intl.DateTimeFormat(isRu() ? "ru-RU" : "en-US", {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(dt)
 }
 
 export function fmtInt(n: number): string {

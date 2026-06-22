@@ -5,7 +5,7 @@ import { api, type LatencyStats, type SessionsStats, type Sel } from "@/lib/api"
 import { fmtInt, humanizeDuration } from "@/lib/i18n"
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
-import { AreaTimeline, Bars, Calendar, HourOverlap, HourWeekday, MediaPie } from "@/components/charts"
+import { AreaTimeline, Bars, BarsH, Calendar, HeatLegend, HourOverlap, HourWeekday, MediaPie } from "@/components/charts"
 import { TabError, TabLoading } from "@/components/loading"
 import { Hint } from "@/components/hint"
 import { Collapsible } from "@/components/collapsible"
@@ -117,6 +117,7 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
   const k = [path, sel.chat, sel.from, sel.to]
   const on = !!sel.chat
   const [calMode, setCalMode] = useState<"count" | "binary">("count")
+  const [calYear, setCalYear] = useState<string | null>(null)
 
   const pd = useQuery({ queryKey: ["pd", ...k], queryFn: () => api.perDay(path, sel), enabled: on })
   const hw = useQuery({ queryKey: ["hw", ...k], queryFn: () => api.hourWeekday(path, sel), enabled: on })
@@ -132,42 +133,71 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
 
   return (
     <div className="space-y-8 pt-2">
-      <Section title={t("howOften")}>
+      <Section title={t("howOften")} hint={t("howOftenHint")}>
         {pd.data && <Card className="border-border bg-card p-3"><AreaTimeline data={pd.data.per_day} /></Card>}
-        {pd.data && pd.data.per_day.length > 0 && (
-          <>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{t("calendarMode")}:</span>
-              <div className="flex items-center rounded-md border border-border bg-card p-0.5">
-                {(["count", "binary"] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setCalMode(m)}
-                    className={`rounded px-2 py-0.5 text-xs transition-colors ${
-                      calMode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {m === "count" ? t("calendarCount") : t("calendarBinary")}
-                  </button>
-                ))}
+        {pd.data && pd.data.per_day.length > 0 && (() => {
+          const calYears = [...new Set(pd.data.per_day.map(([d]) => d.slice(0, 4)))].sort()
+          const activeYear = calYear && calYears.includes(calYear) ? calYear : calYears[calYears.length - 1]
+          const yearDays = pd.data.per_day.filter(([d]) => d.startsWith(activeYear))
+          const yearActive = yearDays.filter(([, v]) => v > 0).length
+          return (
+            <>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <span>{t("calendarMode")}:</span>
+                  <div className="flex items-center rounded-md border border-border bg-card p-0.5">
+                    {(["count", "binary"] as const).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setCalMode(m)}
+                        className={`rounded px-2 py-0.5 text-xs transition-colors ${
+                          calMode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {m === "count" ? t("calendarCount") : t("calendarBinary")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {calYears.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span>{t("calendarYear")}:</span>
+                    <div className="flex items-center rounded-md border border-border bg-card p-0.5">
+                      {calYears.map((y) => (
+                        <button
+                          key={y}
+                          onClick={() => setCalYear(y)}
+                          className={`rounded px-2 py-0.5 text-xs transition-colors ${
+                            activeYear === y ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {y}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {calMode === "count" && <HeatLegend less={t("calendarLess")} more={t("calendarMore")} />}
               </div>
-            </div>
-            <Card className="border-border bg-card p-3"><Calendar perDay={pd.data.per_day} binary={calMode === "binary"} /></Card>
-            {calMode === "binary" && (() => {
-              const active = pd.data.per_day.filter(([, v]) => v > 0).length
-              const total = pd.data.per_day.length
-              return (
+              <Card className="border-border bg-card p-3">
+                <Calendar perDay={pd.data.per_day} binary={calMode === "binary"} year={activeYear} />
+              </Card>
+              {calMode === "binary" && (
                 <p className="text-xs text-muted-foreground">
-                  {t("calendarActiveDays", { a: active, t: total, p: ((active * 100) / total).toFixed(1) })}
+                  {t("calendarActiveDays", {
+                    a: yearActive,
+                    t: yearDays.length,
+                    p: ((yearActive * 100) / yearDays.length).toFixed(1),
+                  })}
                 </p>
-              )
-            })()}
-          </>
-        )}
+              )}
+            </>
+          )
+        })()}
       </Section>
 
       {hw.data && hw.data.grid.some((r) => r.some((v) => v > 0)) && (
-        <Section title={t("whenHours")}>
+        <Section title={t("whenHours")} hint={t("whenHoursHint")}>
           <Card className="border-border bg-card p-3"><HourWeekday grid={hw.data.grid} /></Card>
           {(() => {
             // Surface two insights right under the heatmap. Both are derived from
@@ -214,11 +244,15 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
         </Section>
       )}
 
-      <Section title={t("whatAbout")}>
+      <Section title={t("whatAbout")} hint={t("whatAboutHint")}>
         {emojis.data && emojis.data.chat_top.length > 0 && (
-          <>
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">{t("emojiTop")}</div>
+            <p className="-mt-1 text-xs text-muted-foreground">{t("emojiTopHint")}</p>
             <Card className="border-border bg-card p-3">
-              <Bars data={emojis.data.chat_top.slice(0, 20)} color="#9270CA" />
+              {/* horizontal: emoji read clearly as row labels (vertical bars
+                  squeezed them into illegible x-axis ticks) */}
+              <BarsH data={emojis.data.chat_top.slice(0, 15)} color="#9270CA" />
             </Card>
             {emojis.data.chat_top.length > 20 && (
               <Collapsible label={t("showAll", { n: emojis.data.chat_top.length })}>
@@ -236,7 +270,7 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
                 </Card>
               </Collapsible>
             )}
-          </>
+          </div>
         )}
         {media.data && Object.keys(media.data.by_kind).length > 0 && (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
@@ -253,7 +287,8 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
         {media.data && media.data.top_domains.length > 0 && (
           <div className="space-y-2">
             <div className="text-sm font-semibold">{t("topDomains")}</div>
-            <Card className="border-border bg-card p-3"><Bars data={media.data.top_domains.slice(0, 15)} /></Card>
+            <p className="-mt-1 text-xs text-muted-foreground">{t("topDomainsHint")}</p>
+            <Card className="border-border bg-card p-3"><BarsH data={media.data.top_domains.slice(0, 15)} /></Card>
           </div>
         )}
       </Section>
@@ -265,7 +300,7 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
       )}
 
       {mono.data && mono.data.longest.length > 0 && (
-        <Section title={t("longestMonologues")}>
+        <Section title={t("longestMonologues")} hint={t("longestMonologuesHint")}>
           <Card className="overflow-hidden border-border bg-card">
             <table className="w-full text-sm">
               <tbody>

@@ -1,10 +1,12 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
+import { Copy } from "lucide-react"
 
 import { api, wordcloudUrl, type Sel } from "@/lib/api"
 import { fmtInt } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { BarsH } from "@/components/charts"
 import { TabError, TabLoading } from "@/components/loading"
 import { Collapsible } from "@/components/collapsible"
@@ -47,8 +49,8 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
 
   return (
     <div className="space-y-8 pt-2">
-      <Section title={t("wordcloud")}>
-        <Card className="flex items-center justify-center border-border bg-card p-3">
+      <Section title={t("wordcloud")} hint={t("wordcloudHint")}>
+        <Card className="flex min-h-[220px] items-center justify-center border-border bg-card p-3">
           <img
             src={wordcloudUrl(path, sel.chat)}
             alt={t("wordcloud")}
@@ -58,7 +60,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
       </Section>
 
       {w.chat_top_words.length > 0 && (
-        <Section title={t("topWords")}>
+        <Section title={t("topWords")} hint={t("topWordsHint")}>
           <Card className="border-border bg-card p-3">
             <BarsH data={w.chat_top_words.slice(0, 25)} color="var(--chart-1)" />
           </Card>
@@ -70,7 +72,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
         </Section>
       )}
 
-      <Section title={t("phrases")}>
+      <Section title={t("phrases")} hint={t("phrasesHint")}>
         <div className="flex items-center rounded-lg border border-border bg-card p-0.5 w-fit">
           {([2, 3] as const).map((v) => (
             <button
@@ -84,7 +86,11 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
             </button>
           ))}
         </div>
-        {phrases.data && phrases.data.phrases.length > 0 ? (
+        {phrases.isLoading ? (
+          // Distinguish "still computing" from "no phrases" — for big chats the
+          // query lags and a bare empty state read as a false "Нет данных".
+          <Skeleton className="h-72 w-full" />
+        ) : phrases.data && phrases.data.phrases.length > 0 ? (
           <>
             <Card className="border-border bg-card p-3">
               <BarsH data={phrases.data.phrases.slice(0, 20)} color="var(--chart-4)" />
@@ -128,16 +134,58 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
       )}
 
       {(w.emails.length > 0 || w.phones.length > 0) && (
-        <Section title={t("contacts")}>
+        <Section title={t("contacts")} hint={t("contactsHint")}>
           <div className="grid grid-cols-2 gap-3 sm:max-w-md">
             <Stat label={t("emailsN")} value={fmtInt(w.emails.length)} />
             <Stat label={t("phonesN")} value={fmtInt(w.phones.length)} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:max-w-2xl">
+            {w.emails.length > 0 && <ContactList label={t("showEmails")} items={w.emails} />}
+            {w.phones.length > 0 && <ContactList label={t("showPhones")} items={w.phones} />}
           </div>
         </Section>
       )}
 
       <SentimentBlock path={path} sel={sel} />
     </div>
+  )
+}
+
+/** Disclosure with the actual e-mails / phones (not just a count) and a
+ *  copy-all button. Data is local to this machine, so showing it is safe. */
+function ContactList({ label, items }: { label: string; items: string[] }) {
+  const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(items.join("\n"))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      /* clipboard unavailable (e.g. non-secure context) — ignore */
+    }
+  }
+  return (
+    <Collapsible label={`${label} (${fmtInt(items.length)})`}>
+      <Card className="max-h-72 overflow-auto border-border bg-card">
+        <div className="sticky top-0 flex items-center justify-end border-b border-border bg-card px-3 py-1.5">
+          <button
+            type="button"
+            onClick={copy}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Copy className="size-3.5" /> {copied ? t("copied") : t("copy")}
+          </button>
+        </div>
+        <ul className="text-sm">
+          {items.map((v, i) => (
+            <li key={i} className="select-all border-b border-border/60 px-4 py-1.5 font-mono text-foreground/90 last:border-0">
+              {v}
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </Collapsible>
   )
 }
 

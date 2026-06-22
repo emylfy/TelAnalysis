@@ -229,11 +229,18 @@ export interface MatStats {
   per_user: Record<string, UserMat>
   weekly_totals: [string, number][]
 }
+export interface StickerRef {
+  file: string
+  thumbnail: string
+  emoji: string
+  count: number
+}
 export interface UserStickers {
   user_id: string
   name: string
   total_stickers: number
   top_emojis: [string, number][]
+  top_stickers: StickerRef[]
 }
 export interface Milestone {
   label: string
@@ -267,8 +274,6 @@ export const api = {
     get<{ grid: number[][] }>("hour-weekday", { ...p(path, s), user }),
   hourByUser: (path: string, s?: Sel) =>
     get<{ users: { user_id: string; name: string; hours: number[] }[] }>("hour-by-user", p(path, s)),
-  participants: (path: string, s?: Sel) =>
-    get<{ participants: [string, string, number][] }>("participants", p(path, s)),
   media: (path: string, s?: Sel) => get<MediaStats>("media", p(path, s)),
   emojis: (path: string, s?: Sel) => get<EmojiStats>("emojis", p(path, s)),
   latency: (path: string, s?: Sel) => get<LatencyStats>("latency", p(path, s)),
@@ -314,6 +319,15 @@ export function wordcloudUrl(path: string, chat?: string, channel = false): stri
   const qs = new URLSearchParams({ path })
   if (chat) qs.set("chat", chat)
   return `${BASE}/${channel ? "channel/wordcloud" : "wordcloud"}?${qs.toString()}`
+}
+
+/** A sticker / thumbnail file served from the export folder — URL for <img src>.
+ *  Resolves only when the chat was loaded from the export folder (an uploaded
+ *  copy of result.json has no media; the endpoint then 404s and the UI falls
+ *  back to emoji tags). `rel` is the relative media path from the API. */
+export function stickerFileUrl(path: string, rel: string): string {
+  const qs = new URLSearchParams({ path, rel })
+  return `${BASE}/sticker-file?${qs.toString()}`
 }
 
 export type { Sel }
