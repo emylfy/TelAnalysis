@@ -37,7 +37,7 @@ export function Channel({ path, sel }: { path: string; sel: Sel }) {
 
       {d.has_wordcloud && (
         <Section title={t("wordcloud")} hint={t("wordcloudHint")} icon={Cloud}>
-          <WordCloud src={wordcloudUrl(path, sel.chat, true)} alt={t("wordcloud")} />
+          <WordCloud src={wordcloudUrl(path, sel.chat, { channel: true })} alt={t("wordcloud")} />
         </Section>
       )}
 

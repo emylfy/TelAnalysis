@@ -18,11 +18,13 @@ export function WordCloud({ src, alt }: { src: string; alt: string }) {
 
   const url = `${src}${src.includes("?") ? "&" : "?"}seed=${seed}`
 
-  // A cached image may already be `complete` before React attaches onLoad, in
-  // which case the event never fires — catch that here so it doesn't hang on the
-  // spinner forever.
+  // When the url changes (shuffle, or switching participant) reset to the
+  // spinner so the previous cloud doesn't linger while the new one loads. A
+  // cached image may already be `complete` before React attaches onLoad, in
+  // which case the load event never fires — flip straight to ready for that.
   useEffect(() => {
     if (ref.current?.complete && ref.current.naturalWidth > 0) setState("ready")
+    else setState("loading")
   }, [url])
 
   const shuffle = () => {

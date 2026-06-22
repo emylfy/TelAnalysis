@@ -174,6 +174,18 @@ def _wordcloud_png(path: str, mtime: float, chat: str | None, from_d: str | None
     return render_mod.wordcloud_png(res.chat_top_words, colors=theme.COLORWAY, seed=seed)
 
 
+@lru_cache(maxsize=64)
+def _user_wordcloud_png(path: str, mtime: float, chat: str | None, from_d: str | None, to_d: str | None, user: str, seed: int):
+    """Word cloud for a single participant. Reuses the same `_words_result(...,
+    200)` the chat-wide cloud already computes, so picking a user costs only the
+    PNG layout — the expensive word/sentiment analysis is shared. `maxsize` is
+    larger since big groups have many participants to flip through."""
+    res = _words_result(path, mtime, chat, from_d, to_d, 200)
+    u = res.users.get(str(user))
+    top = u.top_words if u else []
+    return render_mod.wordcloud_png(top, colors=theme.COLORWAY, seed=seed)
+
+
 @lru_cache(maxsize=32)
 def _channel_wordcloud_png(path: str, mtime: float, chat: str | None, from_d: str | None, to_d: str | None, seed: int):
     """Cached word-cloud PNG for the channel view (see `_wordcloud_png`)."""
@@ -362,8 +374,13 @@ def anniversaries(path: str = _P, chat: str | None = _C, from_: str | None = _F,
 
 
 @app.get("/api/wordcloud")
-def wordcloud(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T, seed: int = Query(0)):
-    png = _wordcloud_png(path, _mtime(path), chat, from_, to, seed)
+def wordcloud(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T, seed: int = Query(0), user: str | None = Query(None)):
+    mtime = _mtime(path)
+    png = (
+        _user_wordcloud_png(path, mtime, chat, from_, to, user, seed)
+        if user
+        else _wordcloud_png(path, mtime, chat, from_, to, seed)
+    )
     if not png:
         raise HTTPException(status_code=404, detail="Not enough text for a wordcloud")
     return Response(content=png, media_type="image/png", headers=_WC_HEADERS)
@@ -768,7 +785,7 @@ def _backup_rows(path: str, mtime: float) -> tuple:
 def _clear_caches() -> None:
     for fn in (
         _load, _chats, _messages, _words_result,
-        _wordcloud_png, _channel_wordcloud_png, _backup_rows,
+        _wordcloud_png, _user_wordcloud_png, _channel_wordcloud_png, _backup_rows,
     ):
         fn.cache_clear()
 

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { BarsH } from "@/components/charts"
 import { RankTable } from "@/components/rank-table"
 import { WordCloud } from "@/components/wordcloud"
+import { UserCombobox } from "@/components/user-combobox"
 import { TabError, TabLoading } from "@/components/loading"
 import { Section } from "@/components/section"
 import { Collapsible } from "@/components/collapsible"
@@ -32,6 +33,8 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function Words({ path, sel }: { path: string; sel: Sel }) {
   const { t } = useTranslation()
   const [n, setN] = useState<2 | 3>(2)
+  // word-cloud participant filter ("" = whole chat)
+  const [cloudUid, setCloudUid] = useState("")
   const k = [path, sel.chat, sel.from, sel.to]
   const on = !!sel.chat
 
@@ -50,10 +53,26 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
   const vocabSignificant = vocabSorted.filter((u) => u.total_tokens >= VOCAB_MIN_TOKENS)
   const vocabUsers = vocabSignificant.length >= 2 ? vocabSignificant : vocabSorted
 
+  // Per-participant word cloud: pick a user to render only their cloud, "Whole
+  // chat" by default. Hidden for <2 participants (saved messages, 1-on-1 bots),
+  // where a per-user cloud equals the chat-wide one. `cloudUser` falls back to
+  // whole-chat when the selected id isn't in this chat (e.g. after switching).
+  const cloudUsers = [...w.users].sort((a, b) => b.msg_count - a.msg_count)
+  const cloudUser = cloudUsers.some((u) => u.user_id === cloudUid) ? cloudUid : ""
+
   return (
     <div className="space-y-8 pt-2">
-      <Section title={t("wordcloud")} hint={t("wordcloudHint")} icon={Cloud}>
-        <WordCloud src={wordcloudUrl(path, sel.chat)} alt={t("wordcloud")} />
+      <Section
+        title={t("wordcloud")}
+        hint={t("wordcloudHint")}
+        icon={Cloud}
+        action={
+          cloudUsers.length >= 2 ? (
+            <UserCombobox users={cloudUsers} value={cloudUser} onChange={setCloudUid} allLabel={t("wholeChat")} />
+          ) : undefined
+        }
+      >
+        <WordCloud src={wordcloudUrl(path, sel.chat, { user: cloudUser || undefined })} alt={t("wordcloud")} />
       </Section>
 
       {w.chat_top_words.length > 0 && (

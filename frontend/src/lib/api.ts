@@ -392,11 +392,17 @@ export async function browse(
   return res.json()
 }
 
-/** Wordcloud is an image endpoint — build the URL for an <img src>. */
-export function wordcloudUrl(path: string, chat?: string, channel = false): string {
+/** Wordcloud is an image endpoint — build the URL for an <img src>. Pass
+ *  `opts.user` to render one participant's cloud instead of the whole chat. */
+export function wordcloudUrl(
+  path: string,
+  chat?: string,
+  opts: { user?: string; channel?: boolean } = {},
+): string {
   const qs = new URLSearchParams({ path })
   if (chat) qs.set("chat", chat)
-  return `${BASE}/${channel ? "channel/wordcloud" : "wordcloud"}?${qs.toString()}`
+  if (opts.user) qs.set("user", opts.user)
+  return `${BASE}/${opts.channel ? "channel/wordcloud" : "wordcloud"}?${qs.toString()}`
 }
 
 /** A sticker / thumbnail file served from the export folder — URL for <img src>.

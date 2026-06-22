@@ -127,6 +127,7 @@ const ru = {
   // per-user tab
   pickUser: "Участник",
   searchUser: "Поиск участника…",
+  wholeChat: "Весь чат",
   avgWords: "Слов в сообщении",
   questionShare: "С вопросом",
   replyShare: "Цитирует в ответ",
@@ -446,6 +447,7 @@ const en: typeof ru = {
   downloadCsv: "Download CSV (for Gephi)",
   pickUser: "Participant",
   searchUser: "Search participant…",
+  wholeChat: "Whole chat",
   avgWords: "Words per message",
   questionShare: "With a question",
   replyShare: "Quotes in reply",
