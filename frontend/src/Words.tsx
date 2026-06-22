@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BarsH } from "@/components/charts"
 import { RankTable } from "@/components/rank-table"
+import { WordCloud } from "@/components/wordcloud"
 import { TabError, TabLoading } from "@/components/loading"
 import { Section } from "@/components/section"
 import { Collapsible } from "@/components/collapsible"
@@ -40,13 +41,7 @@ export function Words({ path, sel }: { path: string; sel: Sel }) {
   return (
     <div className="space-y-8 pt-2">
       <Section title={t("wordcloud")} hint={t("wordcloudHint")} icon={Cloud}>
-        <Card className="flex min-h-[220px] items-center justify-center border-border bg-card p-3">
-          <img
-            src={wordcloudUrl(path, sel.chat)}
-            alt={t("wordcloud")}
-            className="max-h-[420px] w-full rounded-md object-contain"
-          />
-        </Card>
+        <WordCloud src={wordcloudUrl(path, sel.chat)} alt={t("wordcloud")} />
       </Section>
 
       {w.chat_top_words.length > 0 && (

@@ -160,6 +160,32 @@ def _words_result(path: str, mtime: float, chat: str | None, from_d: str | None,
     return words_mod.analyze(msgs, most_com=most_com)
 
 
+@lru_cache(maxsize=32)
+def _wordcloud_png(path: str, mtime: float, chat: str | None, from_d: str | None, to_d: str | None, seed: int):
+    """Cached word-cloud PNG. Both the word analysis and the image layout are
+    expensive, so without this every tab re-entry re-generated the picture (and
+    the random colour layout meant it looked different each time). Cache it so
+    the first hit is slow but every repeat is instant and visually stable.
+    `seed` lets the UI "shuffle" a new arrangement; each seed is cached on its
+    own, so re-viewing a previous shuffle is instant too."""
+    res = _words_result(path, mtime, chat, from_d, to_d, 200)
+    return render_mod.wordcloud_png(res.chat_top_words, colors=theme.COLORWAY, seed=seed)
+
+
+@lru_cache(maxsize=32)
+def _channel_wordcloud_png(path: str, mtime: float, chat: str | None, from_d: str | None, to_d: str | None, seed: int):
+    """Cached word-cloud PNG for the channel view (see `_wordcloud_png`)."""
+    _, msgs = _messages(path, mtime, chat, from_d, to_d)
+    res = channel_mod.analyze(msgs, most_com=200)
+    return render_mod.wordcloud_png(res.top_words, colors=theme.COLORWAY, seed=seed)
+
+
+# Word-cloud PNGs are deterministic per (file, chat) once cached, so let the
+# browser hold them too — re-entry then needs no request at all. mtime-keyed
+# server cache stays the source of truth if the export is re-generated.
+_WC_HEADERS = {"Cache-Control": "private, max-age=3600"}
+
+
 # common query params
 _P = Query(..., description="Absolute path to result.json / export folder")
 _C = Query(None, description="Chat id, or '__combine__' for the whole archive")
@@ -312,15 +338,11 @@ def anniversaries(path: str = _P, chat: str | None = _C, from_: str | None = _F,
 
 
 @app.get("/api/wordcloud")
-def wordcloud(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T):
-    from analysis import words as words_mod
-
-    _, msgs = _resolve(path, chat, from_, to)
-    res = words_mod.analyze(msgs, most_com=200)
-    png = render_mod.wordcloud_png(res.chat_top_words, colors=theme.COLORWAY)
+def wordcloud(path: str = _P, chat: str | None = _C, from_: str | None = _F, to: str | None = _T, seed: int = Query(0)):
+    png = _wordcloud_png(path, _mtime(path), chat, from_, to, seed)
     if not png:
         raise HTTPException(status_code=404, detail="Not enough text for a wordcloud")
-    return Response(content=png, media_type="image/png")
+    return Response(content=png, media_type="image/png", headers=_WC_HEADERS)
 
 
 @app.get("/api/graph")
@@ -615,13 +637,12 @@ def channel_wordcloud(
     chat: str | None = _C,
     from_: str | None = _F,
     to: str | None = _T,
+    seed: int = Query(0),
 ):
-    _, msgs = _resolve(path, chat, from_, to)
-    res = channel_mod.analyze(msgs, most_com=200)
-    png = render_mod.wordcloud_png(res.top_words, colors=theme.COLORWAY)
+    png = _channel_wordcloud_png(path, _mtime(path), chat, from_, to, seed)
     if not png:
         raise HTTPException(status_code=404, detail="Not enough text for a wordcloud")
-    return Response(content=png, media_type="image/png")
+    return Response(content=png, media_type="image/png", headers=_WC_HEADERS)
 
 
 _UPLOAD_DIR = Path(tempfile.gettempdir()) / "telanalysis_uploads"

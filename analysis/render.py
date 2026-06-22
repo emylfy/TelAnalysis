@@ -13,13 +13,19 @@ def wordcloud_png(
     height: int = 500,
     colormap: str = "viridis",
     colors: list[str] | None = None,
+    seed: int | None = None,
 ) -> bytes | None:
     """Render top words as a wordcloud PNG (transparent background, RGBA).
     Returns raw bytes or None if the input is empty / wordcloud lib fails.
 
     Pass ``colors`` (a palette of hex strings) to colour words by random pick
     from that palette instead of ``colormap`` — useful for staying bright on a
-    dark UI, where viridis' dark end vanishes."""
+    dark UI, where viridis' dark end vanishes.
+
+    ``seed`` makes both layout and colours reproducible (the wordcloud lib turns
+    an int into a ``random.Random`` and threads it through positioning and the
+    colour func) — so the UI can offer a "shuffle" that picks a new, stable
+    arrangement per seed instead of a different picture on every render."""
     if not words_with_counts:
         return None
     freq = {w: int(c) for w, c in words_with_counts[:max_words] if w and c}
@@ -46,6 +52,7 @@ def wordcloud_png(
             max_words=max_words,
             collocations=False,
             prefer_horizontal=0.85,
+            random_state=seed,
         ).generate_from_frequencies(freq)
         buf = BytesIO()
         wc.to_image().save(buf, format="PNG")

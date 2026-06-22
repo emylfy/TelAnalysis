@@ -7,6 +7,7 @@ import { api, wordcloudUrl, type Sel } from "@/lib/api"
 import { fmtInt } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { BarsH } from "@/components/charts"
+import { WordCloud } from "@/components/wordcloud"
 import { TabError, TabLoading } from "@/components/loading"
 import { Section } from "@/components/section"
 import { Collapsible } from "@/components/collapsible"
@@ -36,13 +37,7 @@ export function Channel({ path, sel }: { path: string; sel: Sel }) {
 
       {d.has_wordcloud && (
         <Section title={t("wordcloud")} hint={t("wordcloudHint")} icon={Cloud}>
-          <Card className="flex items-center justify-center border-border bg-card p-3">
-            <img
-              src={wordcloudUrl(path, sel.chat, true)}
-              alt={t("wordcloud")}
-              className="max-h-[420px] w-full rounded-md object-contain"
-            />
-          </Card>
+          <WordCloud src={wordcloudUrl(path, sel.chat, true)} alt={t("wordcloud")} />
         </Section>
       )}
 
