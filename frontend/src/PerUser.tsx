@@ -1,18 +1,16 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { ChevronsUpDown } from "lucide-react"
 
-import { api, stickerFileUrl, type Sel, type SpeakingStyle, type StickerRef, type UserMat } from "@/lib/api"
+import { api, stickerFileUrl, type Sel, type StickerRef, type UserMat } from "@/lib/api"
 import { dayWord, fmtInt, humanizeDuration, personaForLength, personaForTimeOfDay, timeBucketLabel } from "@/lib/i18n"
 import { personColor } from "@/lib/chart-theme"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Bars, BarsH, Box, HourWeekday, Lines, Radar } from "@/components/charts"
 import { RankTable } from "@/components/rank-table"
 import { Collapsible } from "@/components/collapsible"
 import { TabError, TabLoading } from "@/components/loading"
+import { UserCombobox } from "@/components/user-combobox"
 import { ExtremeList } from "@/Sentiment"
 
 // Up to this many participants, overlay them all on the tone radar; beyond it,
@@ -183,48 +181,6 @@ function StickerGrid({
         })}
       </div>
     </Card>
-  )
-}
-
-/** Searchable participant picker. A plain <select> with 200+ options (half of
- *  them anonymous) is unnavigable, so this is a Popover with a filter input over
- *  a scrollable list, sorted by message count (most active first). */
-function UserCombobox({ users, value, onChange }: { users: SpeakingStyle[]; value: string; onChange: (id: string) => void }) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const [q, setQ] = useState("")
-  const current = users.find((u) => u.user_id === value)
-  const ql = q.trim().toLowerCase()
-  const filtered = ql ? users.filter((u) => u.name.toLowerCase().includes(ql)) : users
-  return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQ("") }}>
-      <PopoverTrigger className="flex h-9 w-[280px] items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs transition-colors hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none">
-        <span className="truncate">{current ? `${current.name} · ${fmtInt(current.msg_count)}` : t("pickUser")}</span>
-        <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-[280px] gap-0 p-0">
-        <div className="border-b border-border p-2">
-          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("searchUser")} className="h-8" />
-        </div>
-        <div className="max-h-72 overflow-auto p-1">
-          {filtered.length === 0 ? (
-            <div className="px-2 py-3 text-sm text-muted-foreground">{t("noData")}</div>
-          ) : (
-            filtered.map((u) => (
-              <button
-                key={u.user_id}
-                type="button"
-                onClick={() => { onChange(u.user_id); setOpen(false); setQ("") }}
-                className={`flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted ${u.user_id === value ? "bg-muted/60 font-medium" : ""}`}
-              >
-                <span className="truncate">{u.name}</span>
-                <span className="shrink-0 tabular-nums text-xs text-muted-foreground">{fmtInt(u.msg_count)}</span>
-              </button>
-            ))
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
   )
 }
 
