@@ -617,7 +617,7 @@ export default function App() {
 
             {sel && (
               <Tabs value={tab} onValueChange={setTab} className="pt-2">
-                <TabsList>
+                <TabsList variant="line" className="w-full justify-start gap-6 border-b border-border">
                   {availTabs.map((d) => (
                     <TabsTrigger key={d.id} value={d.id}>
                       {t(d.labelKey)}
