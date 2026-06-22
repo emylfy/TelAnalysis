@@ -285,6 +285,47 @@ const ru = {
   copied: "Скопировано",
   // onboarding
   pathHint: "Или вставь путь к папке экспорта (или к result.json внутри неё) вручную — тоже со стикерами и медиа. Принимается и file://.",
+  // chat manager
+  manageChats: "Менеджер чатов",
+  backToAnalytics: "К аналитике",
+  managerTitle: "Чаты в бэкапе",
+  managerHint: "Все чаты экспорта с размером на диске. Удаляй ненужные, чтобы освободить место — удалённое уходит в корзину и его можно вернуть.",
+  managerReadonly: "Этот источник нельзя редактировать. Управление доступно, только если открыть папку экспорта целиком (с подпапкой chats/), а не загруженную копию result.json или HTML-экспорт.",
+  managerSearch: "Поиск по названию",
+  managerShowLeft: "Покинутые чаты",
+  managerSelected: "Выбрано: {{n}}",
+  managerFreeUp: "Освободится ≈ {{size}}",
+  colChat: "Чат",
+  colType: "Тип",
+  colMessages: "Сообщений",
+  colPeriod: "Период",
+  colSize: "На диске",
+  colFiles: "Файлов",
+  deleteSelected: "Удалить выбранные",
+  slim: "Облегчить",
+  slimTitle: "Облегчить чат: {{name}}",
+  slimHint: "Перенести тяжёлые медиа в корзину, оставив текст переписки. Ссылки на эти файлы в экспорте станут нерабочими.",
+  slimApply: "Перенести в корзину",
+  confirmDeleteTitle: "Удалить {{n}} {{w}}?",
+  confirmDeleteBody: "Будет удалено {{msgs}} {{w}}. Папки медиа переедут в корзину — место освободится после её очистки. Можно вернуть до очистки.",
+  confirm: "Удалить",
+  cancel: "Отмена",
+  trash: "Корзина",
+  trashEmpty: "Корзина пуста.",
+  trashPending: "В корзине ≈ {{size}} — освободятся при очистке.",
+  restore: "Вернуть",
+  emptyTrash: "Очистить корзину",
+  emptyTrashConfirm: "Очистить корзину? Это окончательно удалит {{size}} без возможности восстановления.",
+  managerLeftBadge: "покинут",
+  noChatsFound: "Чаты не найдены.",
+  freedToast: "Освобождено {{size}}",
+  loadingChats: "Считаю размеры чатов…",
+  selectAll: "Выбрать все",
+  tombstonesTitle: "Покинутые каналы без сообщений",
+  tombstonesHint: "Только названия — Telegram хранит их после выхода. Места не занимают.",
+  tombstonesRemove: "Убрать из бэкапа",
+  confirmTombsTitle: "Убрать {{n}} {{w}}?",
+  confirmTombsBody: "Это уберёт их записи из result.json и из HTML-списка экспорта. Место на диске не освобождается — каналы и так пустые. Можно вернуть из корзины до её очистки.",
 }
 
 const en: typeof ru = {
@@ -540,6 +581,47 @@ const en: typeof ru = {
   copied: "Copied",
   // onboarding
   pathHint: "Or paste the path to the export folder (or the result.json inside it) by hand — stickers and media work here too. file:// is accepted.",
+  // chat manager
+  manageChats: "Manage chats",
+  backToAnalytics: "Analytics",
+  managerTitle: "Chats in the backup",
+  managerHint: "Every chat in the export with its size on disk. Delete the ones you don't need to reclaim space — deleted chats go to the trash and can be restored.",
+  managerReadonly: "This source is read-only. Management is available only when you open the whole export folder (with its chats/ subfolder), not an uploaded copy of result.json or an HTML export.",
+  managerSearch: "Search by name",
+  managerShowLeft: "Left chats",
+  managerSelected: "Selected: {{n}}",
+  managerFreeUp: "Frees ≈ {{size}}",
+  colChat: "Chat",
+  colType: "Type",
+  colMessages: "Messages",
+  colPeriod: "Period",
+  colSize: "On disk",
+  colFiles: "Files",
+  deleteSelected: "Delete selected",
+  slim: "Slim down",
+  slimTitle: "Slim chat: {{name}}",
+  slimHint: "Move heavy media to the trash, keeping the chat's text. Links to these files in the export will stop working.",
+  slimApply: "Move to trash",
+  confirmDeleteTitle: "Delete {{n}} {{w}}?",
+  confirmDeleteBody: "This removes {{msgs}} {{w}}. Media folders move to the trash — space is reclaimed when you empty it. Restorable until then.",
+  confirm: "Delete",
+  cancel: "Cancel",
+  trash: "Trash",
+  trashEmpty: "The trash is empty.",
+  trashPending: "≈ {{size}} in trash — reclaimed when emptied.",
+  restore: "Restore",
+  emptyTrash: "Empty trash",
+  emptyTrashConfirm: "Empty the trash? This permanently deletes {{size}} with no way back.",
+  managerLeftBadge: "left",
+  noChatsFound: "No chats found.",
+  freedToast: "Reclaimed {{size}}",
+  loadingChats: "Measuring chat sizes…",
+  selectAll: "Select all",
+  tombstonesTitle: "Left channels with no messages",
+  tombstonesHint: "Names only — Telegram keeps these after you leave. They use no space.",
+  tombstonesRemove: "Remove from backup",
+  confirmTombsTitle: "Remove {{n}} {{w}}?",
+  confirmTombsBody: "This clears their records from result.json and the export's HTML list. It frees no disk space — these channels are already empty. Restorable from the trash until you empty it.",
 }
 
 i18n.use(initReactI18next).init({
@@ -592,6 +674,28 @@ export function participantWord(n: number): string {
   if (m10 === 1) return "участник"
   if (m10 >= 2 && m10 <= 4) return "участника"
   return "участников"
+}
+
+/** Plural form of "chat" — Russian needs чат/чата/чатов. */
+export function chatWord(n: number): string {
+  if (!isRu()) return n === 1 ? "chat" : "chats"
+  const m100 = n % 100
+  const m10 = n % 10
+  if (m100 >= 11 && m100 <= 14) return "чатов"
+  if (m10 === 1) return "чат"
+  if (m10 >= 2 && m10 <= 4) return "чата"
+  return "чатов"
+}
+
+/** Plural form of "message" — Russian needs сообщение/сообщения/сообщений. */
+export function messageWord(n: number): string {
+  if (!isRu()) return n === 1 ? "message" : "messages"
+  const m100 = n % 100
+  const m10 = n % 10
+  if (m100 >= 11 && m100 <= 14) return "сообщений"
+  if (m10 === 1) return "сообщение"
+  if (m10 >= 2 && m10 <= 4) return "сообщения"
+  return "сообщений"
 }
 
 /** Signed score with a fixed sign, but never a "-0.00"/"+0.00" — a rounded zero

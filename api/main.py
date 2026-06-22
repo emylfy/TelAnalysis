@@ -30,9 +30,11 @@ from fastapi import Depends, FastAPI, File, HTTPException, Query, Response, Uplo
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 import i18n
 from analysis import anniversaries as anniversaries_mod
+from analysis import backup as backup_mod
 from analysis import chains as chains_mod
 from analysis import channel as channel_mod
 from analysis import emoji_stats as emoji_mod
@@ -743,6 +745,120 @@ def browse(prompt: str = Query("Choose your Telegram export result.json")):
     if not path.lower().endswith((".json", ".html")):
         raise HTTPException(status_code=400, detail="not-json")
     return {"path": path, "size": os.path.getsize(path)}
+
+
+# backup management (the ONLY mutating endpoints — everything above is read-only)
+#
+# These prune chats / heavy media from a full export to reclaim disk. All file
+# changes are reversible (moved to <root>/.telanalysis_trash) until the trash is
+# emptied; `analysis.backup` enforces the path + capability guards.
+
+
+@lru_cache(maxsize=2)
+def _backup_rows(path: str, mtime: float) -> tuple:
+    """Per-chat metadata (size on disk, media breakdown, …) for the manager
+    table. Cached by (path, mtime); a delete rewrites result.json (new mtime)
+    and slim/empty-trash call `_clear_caches()`, so sizes never go stale."""
+    data = _load(path, mtime)
+    return tuple(backup_mod.chat_rows(data, backup_mod.export_root(path)))
+
+
+# Every analysis result is memoised on (path, mtime, …). A mutation changes the
+# export underneath those keys, so clear them all before the next read.
+def _clear_caches() -> None:
+    for fn in (
+        _load, _chats, _messages, _words_result,
+        _wordcloud_png, _channel_wordcloud_png, _backup_rows,
+    ):
+        fn.cache_clear()
+
+
+def _require_manageable(path: str) -> None:
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="File not found")
+    if not backup_mod.can_manage(path):
+        raise HTTPException(
+            status_code=400,
+            detail="not-manageable",  # needs the on-disk export folder (with chats/)
+        )
+
+
+class _DeleteReq(BaseModel):
+    path: str
+    chat_ids: list[str]
+
+
+class _SlimReq(BaseModel):
+    path: str
+    chat_id: str
+    media_types: list[str]
+
+
+class _TrashReq(BaseModel):
+    path: str
+    trash_id: str
+
+
+class _PathReq(BaseModel):
+    path: str
+
+
+@app.get("/api/backup/chats")
+def backup_chats(path: str = _P):
+    """All chats in a full export with on-disk size, media breakdown and date
+    range. `can_manage` is false for HTML exports / uploaded copies — the SPA
+    then shows the list read-only without delete actions."""
+    mtime = _mtime(path)
+    data = _load(path, mtime)
+    if not loader.is_full_export(data):
+        return {"can_manage": False, "is_full": False, "root": None, "chats": [], "trash_bytes": 0}
+    can = backup_mod.can_manage(path)
+    root = backup_mod.export_root(path)
+    return {
+        "can_manage": can,
+        "is_full": True,
+        "root": str(root),
+        "chats": list(_backup_rows(path, mtime)),
+        "trash_bytes": backup_mod.trash_bytes(root) if can else 0,
+    }
+
+
+@app.get("/api/backup/trash")
+def backup_trash(path: str = _P):
+    _require_manageable(path)
+    return {"entries": backup_mod.trash_entries(backup_mod.export_root(path))}
+
+
+@app.post("/api/backup/delete")
+def backup_delete(req: _DeleteReq):
+    _require_manageable(req.path)
+    res = backup_mod.delete_chats(req.path, req.chat_ids)
+    _clear_caches()
+    return res
+
+
+@app.post("/api/backup/slim")
+def backup_slim(req: _SlimReq):
+    _require_manageable(req.path)
+    res = backup_mod.slim_chat(req.path, req.chat_id, req.media_types)
+    _clear_caches()
+    return res
+
+
+@app.post("/api/backup/restore")
+def backup_restore(req: _TrashReq):
+    _require_manageable(req.path)
+    res = backup_mod.restore(req.path, req.trash_id)
+    _clear_caches()
+    return res
+
+
+@app.post("/api/backup/empty-trash")
+def backup_empty_trash(req: _PathReq):
+    _require_manageable(req.path)
+    res = backup_mod.empty_trash(req.path)
+    _clear_caches()
+    return res
 
 
 @app.get("/api/health")

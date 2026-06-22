@@ -2,10 +2,12 @@ import { Suspense, lazy, useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 import {
+  BarChart3,
   CalendarCheck,
   CalendarDays,
   Clock,
   Flame,
+  FolderCog,
   FolderOpen,
   Link2,
   Mic,
@@ -35,17 +37,18 @@ const Words = lazy(() => import("@/Words").then((m) => ({ default: m.Words })))
 const Network = lazy(() => import("@/Network").then((m) => ({ default: m.Network })))
 const PerUser = lazy(() => import("@/PerUser").then((m) => ({ default: m.PerUser })))
 const Channel = lazy(() => import("@/Channel").then((m) => ({ default: m.Channel })))
+const ChatManager = lazy(() => import("@/ChatManager").then((m) => ({ default: m.ChatManager })))
 
 const LS_PATH = "tla.path"
 const COMBINE = "__combine__"
 
 /** Pull chat/from/to/tab/lang from the current URL on first paint, so a
  *  reload (or shared link) lands on the same view. */
-function readUrlState(): { chat?: string; from?: string; to?: string; tab?: string; lang?: string } {
+function readUrlState(): { chat?: string; from?: string; to?: string; tab?: string; lang?: string; view?: string } {
   if (typeof window === "undefined") return {}
   const q = new URLSearchParams(window.location.search)
-  const out: { chat?: string; from?: string; to?: string; tab?: string; lang?: string } = {}
-  for (const k of ["chat", "from", "to", "tab", "lang"] as const) {
+  const out: { chat?: string; from?: string; to?: string; tab?: string; lang?: string; view?: string } = {}
+  for (const k of ["chat", "from", "to", "tab", "lang", "view"] as const) {
     const v = q.get(k)
     if (v) out[k] = v
   }
@@ -233,10 +236,13 @@ function TopBar(props: {
   onLang: (l: "ru" | "en") => void
   onChangeSource: () => void
   onHome: () => void
+  view: "analyze" | "manager"
+  onToggleManager: () => void
 }) {
   const { t } = useTranslation()
-  const { chats, value, onChat, bounds, from, to, onPeriod, lang, onLang, onChangeSource, onHome } = props
+  const { chats, value, onChat, bounds, from, to, onPeriod, lang, onLang, onChangeSource, onHome, view, onToggleManager } = props
   const multi = chats.length > 1
+  const manager = view === "manager"
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1320px] flex-wrap items-center gap-3 px-6 py-2.5">
@@ -254,6 +260,13 @@ function TopBar(props: {
         </button>
         <div className="ml-auto flex flex-wrap items-center gap-3">
           {multi && (
+            <Button variant="outline" onClick={onToggleManager} title={t(manager ? "backToAnalytics" : "manageChats")}>
+              {manager ? <BarChart3 className="size-4" /> : <FolderCog className="size-4" />}
+              <span className="hidden sm:inline">{t(manager ? "backToAnalytics" : "manageChats")}</span>
+            </Button>
+          )}
+          {/* analysis controls only matter in analytics view */}
+          {!manager && multi && (
             <Select value={value} onValueChange={(v) => v && onChat(v)}>
               <SelectTrigger className="w-[240px]">
                 <SelectValue>
@@ -280,7 +293,7 @@ function TopBar(props: {
               </SelectContent>
             </Select>
           )}
-          <PeriodPicker bounds={bounds} from={from} to={to} onApply={onPeriod} />
+          {!manager && <PeriodPicker bounds={bounds} from={from} to={to} onApply={onPeriod} />}
           <Button variant="outline" size="icon" onClick={onChangeSource} title={t("changeSource")}>
             <FolderOpen className="size-4" />
           </Button>
@@ -436,6 +449,7 @@ export default function App() {
   const [from, setFrom] = useState<string | undefined>(initial.from)
   const [to, setTo] = useState<string | undefined>(initial.to)
   const [tab, setTab] = useState(initial.tab ?? "overview")
+  const [view, setView] = useState<"analyze" | "manager">(initial.view === "manager" ? "manager" : "analyze")
 
   useEffect(() => {
     i18n.changeLanguage(lang)
@@ -443,8 +457,8 @@ export default function App() {
 
   // Mirror state into the URL whenever it changes — supports shared links and F5.
   useEffect(() => {
-    writeUrlState({ chat, from, to, tab, lang })
-  }, [chat, from, to, tab, lang])
+    writeUrlState({ chat, from, to, tab, lang, view: view === "manager" ? "manager" : undefined })
+  }, [chat, from, to, tab, lang, view])
 
   const chatsQ = useQuery({
     queryKey: ["chats", path],
@@ -456,19 +470,23 @@ export default function App() {
   const sel = chat ?? chats[0]?.id
   const selChat = chats.find((c) => c.id === sel)
   const period = { chat: sel, from, to, lang }
+  // The chat manager is a backup-level view; honor ?view=manager only for full
+  // archives (multi-chat). In manager mode the per-chat analytics queries below
+  // are paused so we don't fire ~5 requests for a chat the user isn't viewing.
+  const inManager = view === "manager" && chats.length > 1
 
   const boundsQ = useQuery({
     queryKey: ["bounds", path, sel],
     queryFn: () => api.bounds(path!, sel),
-    enabled: !!path && !!sel,
+    enabled: !!path && !!sel && !inManager,
   })
 
-  const heroQ = useQuery({ queryKey: ["hero", path, sel, from, to, lang], queryFn: () => api.hero(path!, period), enabled: !!sel })
-  const kpisQ = useQuery({ queryKey: ["kpis", path, sel, from, to], queryFn: () => api.kpis(path!, period), enabled: !!sel })
-  const hlQ = useQuery({ queryKey: ["hl", path, sel, from, to, lang], queryFn: () => api.highlights(path!, period), enabled: !!sel })
+  const heroQ = useQuery({ queryKey: ["hero", path, sel, from, to, lang], queryFn: () => api.hero(path!, period), enabled: !!sel && !inManager })
+  const kpisQ = useQuery({ queryKey: ["kpis", path, sel, from, to], queryFn: () => api.kpis(path!, period), enabled: !!sel && !inManager })
+  const hlQ = useQuery({ queryKey: ["hl", path, sel, from, to, lang], queryFn: () => api.highlights(path!, period), enabled: !!sel && !inManager })
   // shares its key with Overview (dedup); only used for the voice KPI card
-  const mediaQ = useQuery({ queryKey: ["media", path, sel, from, to], queryFn: () => api.media(path!, period), enabled: !!sel })
-  const annivQ = useQuery({ queryKey: ["anniv", path, sel, from, to, lang], queryFn: () => api.anniversaries(path!, period), enabled: !!sel })
+  const mediaQ = useQuery({ queryKey: ["media", path, sel, from, to], queryFn: () => api.media(path!, period), enabled: !!sel && !inManager })
+  const annivQ = useQuery({ queryKey: ["anniv", path, sel, from, to, lang], queryFn: () => api.anniversaries(path!, period), enabled: !!sel && !inManager })
   const isHtml = !!chatsQ.data && chatsQ.data.source !== "json"
 
   // One-line relationship recap for the summary card: "N days together · crossed
@@ -508,11 +526,17 @@ export default function App() {
     setFrom(undefined)
     setTo(undefined)
     setTab("overview")
+    setView("analyze")
   }
   const changeSource = () => {
     setPath(null)
     localStorage.removeItem(LS_PATH)
     setChat(undefined)
+    setView("analyze")
+  }
+  const toggleManager = () => {
+    setView((v) => (v === "manager" ? "analyze" : "manager"))
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 })
   }
   const pickChat = (id: string) => {
     setChat(id)
@@ -563,43 +587,53 @@ export default function App() {
         onLang={setLang}
         onChangeSource={changeSource}
         onHome={goHome}
+        view={inManager ? "manager" : "analyze"}
+        onToggleManager={toggleManager}
       />
       <main className="mx-auto max-w-[1320px] space-y-4 px-6 py-5">
-        {isHtml && (
-          <div className="rounded-lg border border-[#F6BD16]/30 bg-[#F6BD16]/10 px-4 py-2.5 text-sm text-[#F6BD16]">
-            {t("htmlWarning")}
-          </div>
-        )}
-        {heroQ.data && kpisQ.data ? (
-          <SummaryCard
-            hero={heroQ.data}
-            kpis={kpisQ.data}
-            voiceSeconds={mediaQ.data?.voice_total_seconds}
-            annivLine={annivLine}
-            compact={tab !== "overview"}
-          />
+        {inManager ? (
+          <Suspense fallback={<TabLoading />}>
+            <ChatManager path={path!} />
+          </Suspense>
         ) : (
-          <HeaderSkeleton />
-        )}
-        {tab === "overview" && hlQ.data && <HighlightsRow items={hlQ.data.highlights} />}
+          <>
+            {isHtml && (
+              <div className="rounded-lg border border-[#F6BD16]/30 bg-[#F6BD16]/10 px-4 py-2.5 text-sm text-[#F6BD16]">
+                {t("htmlWarning")}
+              </div>
+            )}
+            {heroQ.data && kpisQ.data ? (
+              <SummaryCard
+                hero={heroQ.data}
+                kpis={kpisQ.data}
+                voiceSeconds={mediaQ.data?.voice_total_seconds}
+                annivLine={annivLine}
+                compact={tab !== "overview"}
+              />
+            ) : (
+              <HeaderSkeleton />
+            )}
+            {tab === "overview" && hlQ.data && <HighlightsRow items={hlQ.data.highlights} />}
 
-        {sel && (
-          <Tabs value={tab} onValueChange={setTab} className="pt-2">
-            <TabsList>
-              {availTabs.map((d) => (
-                <TabsTrigger key={d.id} value={d.id}>
-                  {t(d.labelKey)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-            {/* Render only the active tab — mounting every tab's panel triggers
-                its own useQuery calls, so rendering all of them on chat-load fired
-                ~15 requests up front. react-query still caches by key on return.
-                Suspense covers the lazy chunk download for that tab. */}
-            <div className="mt-2" key={tab}>
-              <Suspense fallback={<TabLoading />}>{renderTab(tab)}</Suspense>
-            </div>
-          </Tabs>
+            {sel && (
+              <Tabs value={tab} onValueChange={setTab} className="pt-2">
+                <TabsList>
+                  {availTabs.map((d) => (
+                    <TabsTrigger key={d.id} value={d.id}>
+                      {t(d.labelKey)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {/* Render only the active tab — mounting every tab's panel triggers
+                    its own useQuery calls, so rendering all of them on chat-load fired
+                    ~15 requests up front. react-query still caches by key on return.
+                    Suspense covers the lazy chunk download for that tab. */}
+                <div className="mt-2" key={tab}>
+                  <Suspense fallback={<TabLoading />}>{renderTab(tab)}</Suspense>
+                </div>
+              </Tabs>
+            )}
+          </>
         )}
       </main>
     </div>

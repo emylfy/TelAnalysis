@@ -15,6 +15,16 @@ async function get<T>(
   return res.json() as Promise<T>
 }
 
+async function post<T>(endpoint: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}/${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`${endpoint} → ${res.status}`)
+  return res.json() as Promise<T>
+}
+
 export interface Chat {
   id: string
   name: string
@@ -259,6 +269,46 @@ export interface Anniversaries {
   upcoming_count: Milestone | null
 }
 
+// backup manager (full-export only)
+export interface BackupChat {
+  id: string
+  name: string
+  type: string
+  msg_count: number
+  first_date: string | null
+  last_date: string | null
+  /** "chats/chat_XXX" on disk, or null for chats with no media folder */
+  folder: string | null
+  disk_bytes: number
+  file_count: number
+  /** bytes per media subdir: photos, video_files, voice_messages, … */
+  media: Record<string, number>
+  /** a chat you've left — text only, no folder */
+  is_left: boolean
+}
+export interface BackupChats {
+  can_manage: boolean
+  is_full: boolean
+  root: string | null
+  chats: BackupChat[]
+  trash_bytes: number
+}
+export interface TrashEntry {
+  id: string
+  ts: number
+  kind: string
+  label: string
+  chat_names: string[]
+  chat_count: number
+  bytes: number
+}
+export interface DeleteResult {
+  trash_id: string
+  removed_chats: number
+  removed_messages: number
+  bytes: number
+}
+
 // chat / period selector passed to every analysis call
 type Sel = { chat?: string; from?: string; to?: string; lang?: string }
 const p = (path: string, s: Sel = {}) => ({ path, chat: s.chat, from: s.from, to: s.to, lang: s.lang })
@@ -303,6 +353,16 @@ export const api = {
   mat: (path: string, s?: Sel) => get<MatStats>("mat", p(path, s)),
   stickers: (path: string, s?: Sel) => get<Record<string, UserStickers>>("stickers", p(path, s)),
   anniversaries: (path: string, s?: Sel) => get<Anniversaries>("anniversaries", p(path, s)),
+  // backup manager
+  backupChats: (path: string) => get<BackupChats>("backup/chats", { path }),
+  backupTrash: (path: string) => get<{ entries: TrashEntry[] }>("backup/trash", { path }),
+  deleteChats: (path: string, chat_ids: string[]) =>
+    post<DeleteResult>("backup/delete", { path, chat_ids }),
+  slimChat: (path: string, chat_id: string, media_types: string[]) =>
+    post<{ trash_id: string | null; bytes: number }>("backup/slim", { path, chat_id, media_types }),
+  restoreTrash: (path: string, trash_id: string) =>
+    post<{ restored_chats: number }>("backup/restore", { path, trash_id }),
+  emptyTrash: (path: string) => post<{ freed_bytes: number }>("backup/empty-trash", { path }),
 }
 
 /** Upload a local file (the browser hides its filesystem path for privacy);
