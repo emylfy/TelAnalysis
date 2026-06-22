@@ -6,11 +6,11 @@ return primitive structures the API serialises to JSON. No UI.
 
 from __future__ import annotations
 
-from .utils import display_name
-
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
+
+from .utils import display_name
 
 
 @dataclass

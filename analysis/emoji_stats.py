@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from .utils import display_name
-
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 
 import emoji as _emoji
 import jmespath
+
+from .utils import display_name
 
 
 @dataclass

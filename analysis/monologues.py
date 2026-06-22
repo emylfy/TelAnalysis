@@ -9,10 +9,10 @@ Pure functions; no UI."""
 
 from __future__ import annotations
 
-from .utils import display_name
-
 from dataclasses import dataclass, field
 from datetime import datetime
+
+from .utils import display_name
 
 
 @dataclass

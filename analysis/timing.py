@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from .utils import display_name
-
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
+
+from .utils import display_name
 
 
 @dataclass

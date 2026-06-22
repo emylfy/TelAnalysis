@@ -6,11 +6,11 @@ Pure functions. Counts characters/words, message extremes, and tone signals
 
 from __future__ import annotations
 
-from .utils import display_name
-
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
+
+from .utils import display_name
 
 # 4-way time-of-day buckets
 _TIME_BUCKETS = [

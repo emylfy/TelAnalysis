@@ -897,9 +897,9 @@ def backup_reveal(req: _RevealReq):
     try:
         return backup_mod.reveal_folder(req.path, req.folder)
     except ValueError:
-        raise HTTPException(status_code=400, detail="unsafe-path")
+        raise HTTPException(status_code=400, detail="unsafe-path") from None
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="folder-not-found")
+        raise HTTPException(status_code=404, detail="folder-not-found") from None
 
 
 @app.get("/api/health")

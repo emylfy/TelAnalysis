@@ -3,8 +3,6 @@ Pure functions: take messages, return structured results."""
 
 from __future__ import annotations
 
-from .utils import DEDUP_MIN_CHARS, display_name, is_bot_name
-
 import math as _math
 import re
 from collections import defaultdict
@@ -17,6 +15,7 @@ from validate_email import validate_email
 
 from . import nltk_analyse
 from . import sentiment as _sentiment_mod
+from .utils import DEDUP_MIN_CHARS, display_name, is_bot_name
 
 _action_map = {
     "invite_members": "Invite Member",

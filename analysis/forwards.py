@@ -8,10 +8,10 @@ Pure functions; no UI."""
 
 from __future__ import annotations
 
-from .utils import display_name
-
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+
+from .utils import display_name
 
 
 @dataclass

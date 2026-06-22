@@ -13,12 +13,12 @@ Pure functions; no UI."""
 
 from __future__ import annotations
 
-from .utils import display_name
-
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
+
+from .utils import display_name
 
 # Canonical roots. Substring match is intentional — `хуй`, `охуенно`,
 # `хуёво`, `хуйня` all share `хуй` so one entry covers them. Adding

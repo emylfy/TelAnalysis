@@ -426,8 +426,10 @@ def _split_specs(removed: list[dict]) -> tuple[tuple[set, Counter], tuple[set, C
     """Partition removal targets into (active, left) → ((folders, names), …),
     keyed off each chat's `is_left`, so each is matched only within its own
     container."""
-    af: set[str] = set(); an: Counter = Counter()
-    lf: set[str] = set(); ln: Counter = Counter()
+    af: set[str] = set()
+    an: Counter = Counter()
+    lf: set[str] = set()
+    ln: Counter = Counter()
     for r in removed:
         folder, name, left = r.get("folder"), r.get("name"), r.get("is_left")
         fset, nctr = (lf, ln) if left else (af, an)

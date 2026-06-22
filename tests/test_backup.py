@@ -220,13 +220,13 @@ def _entry(kind: str, name: str, folder: str | None) -> str:
 def _two_container_html(active: list, left: list) -> str:
     """A chats.html with the real two-section layout: active chats, then left."""
     a = "\n\n     ".join(_entry(*e) for e in active)
-    l = "\n\n     ".join(_entry(*e) for e in left)
+    left_html = "\n\n     ".join(_entry(*e) for e in left)
     return (
         "<html><body>\n   <div class=\"page_body list_page\">\n"
         '    <div class="page_about details">This page lists all chats.</div>\n'
         f'    <div class="entry_list">\n\n     {a}\n\n    </div>\n'
         '    <div class="page_about details">Left chats — you can rejoin later.</div>\n'
-        f'    <div class="entry_list">\n\n     {l}\n\n    </div>\n'
+        f'    <div class="entry_list">\n\n     {left_html}\n\n    </div>\n'
         "   </div>\n  </body></html>\n"
     )
 
