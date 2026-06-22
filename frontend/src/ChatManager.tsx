@@ -143,7 +143,7 @@ export function ChatManager({ path }: { path: string }) {
     },
   })
 
-  const rows = chatsQ.data?.chats ?? []
+  const rows = useMemo(() => chatsQ.data?.chats ?? [], [chatsQ.data])
   const maxDisk = useMemo(() => Math.max(1, ...rows.map((r) => r.disk_bytes)), [rows])
 
   // A "tombstone" is a left channel/group Telegram kept by name only: no
@@ -180,7 +180,8 @@ export function ChatManager({ path }: { path: string }) {
   const toggleFam = (f: ChatFamily) =>
     setHiddenFam((prev) => {
       const next = new Set(prev)
-      next.has(f) ? next.delete(f) : next.add(f)
+      if (next.has(f)) next.delete(f)
+      else next.add(f)
       return next
     })
 
@@ -202,7 +203,8 @@ export function ChatManager({ path }: { path: string }) {
   const toggle = (id: string) =>
     setSelected((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   const toggleAll = () =>
@@ -215,7 +217,8 @@ export function ChatManager({ path }: { path: string }) {
   const toggleTomb = (id: string) =>
     setTombSel((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   const toggleAllTombs = () =>
@@ -711,7 +714,8 @@ function SlimModal({
   const toggle = (k: string) =>
     setPicked((prev) => {
       const next = new Set(prev)
-      next.has(k) ? next.delete(k) : next.add(k)
+      if (next.has(k)) next.delete(k)
+      else next.add(k)
       return next
     })
   return (
