@@ -328,6 +328,11 @@ const ru = {
   tombstonesRemove: "Убрать из бэкапа",
   confirmTombsTitle: "Убрать {{n}} {{w}}?",
   confirmTombsBody: "Это уберёт их записи из result.json и из HTML-списка экспорта. Место на диске не освобождается — каналы и так пустые. Можно вернуть из корзины до её очистки.",
+  familyChannels: "Каналы",
+  familyGroups: "Группы",
+  familyPersonal: "Личные",
+  familyBots: "Боты",
+  tombSortName: "Имя",
 }
 
 const en: typeof ru = {
@@ -626,6 +631,11 @@ const en: typeof ru = {
   tombstonesRemove: "Remove from backup",
   confirmTombsTitle: "Remove {{n}} {{w}}?",
   confirmTombsBody: "This clears their records from result.json and the export's HTML list. It frees no disk space — these channels are already empty. Restorable from the trash until you empty it.",
+  familyChannels: "Channels",
+  familyGroups: "Groups",
+  familyPersonal: "Personal",
+  familyBots: "Bots",
+  tombSortName: "Name",
 }
 
 i18n.use(initReactI18next).init({
@@ -640,6 +650,26 @@ const isRu = () => i18n.language === "ru"
 export function chatTypeLabel(t: string): string {
   const v = i18n.t(`type_${t}`)
   return v === `type_${t}` ? t : v
+}
+
+export type ChatFamily = "channel" | "group" | "personal" | "bot"
+
+/** Coarse family of a chat type, for filter chips and grouping. Telegram's raw
+ *  types collapse to four buckets: `*_channel` → channel, `*_group`/
+ *  `*_supergroup` → group, `*bot*` → bot, everything else (personal_chat,
+ *  saved_messages, …) → personal. */
+export function chatTypeFamily(t: string): ChatFamily {
+  if (t.includes("channel")) return "channel"
+  if (t.includes("group")) return "group"
+  if (t.includes("bot")) return "bot"
+  return "personal"
+}
+
+/** Plural-aware family label for chips/headers (Каналы / Группы / Личные / Боты). */
+export function chatFamilyLabel(f: ChatFamily): string {
+  return i18n.t(
+    { channel: "familyChannels", group: "familyGroups", personal: "familyPersonal", bot: "familyBots" }[f],
+  )
 }
 
 const KIND_RU: Record<string, string> = {

@@ -11,7 +11,16 @@ import {
 } from "lucide-react"
 
 import { api, type BackupChat } from "@/lib/api"
-import { chatTypeLabel, chatWord, fmtBytes, fmtInt, messageWord } from "@/lib/i18n"
+import {
+  chatFamilyLabel,
+  chatTypeFamily,
+  chatTypeLabel,
+  chatWord,
+  fmtBytes,
+  fmtInt,
+  messageWord,
+  type ChatFamily,
+} from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -36,6 +45,9 @@ const MEDIA_LABELS: Record<"ru" | "en", Record<string, string>> = {
 }
 
 type SortKey = "name" | "type" | "msg_count" | "disk_bytes" | "file_count"
+
+// Fixed display order for type-family filter chips and tombstone sub-sections.
+const FAMILY_ORDER: ChatFamily[] = ["channel", "group", "personal", "bot"]
 
 function yearRange(first: string | null, last: string | null): string {
   const a = first?.slice(0, 4)
@@ -90,6 +102,10 @@ export function ChatManager({ path }: { path: string }) {
   const [tombsOpen, setTombsOpen] = useState(false)
   const [tombSel, setTombSel] = useState<Set<string>>(new Set())
   const [confirmTombs, setConfirmTombs] = useState<BackupChat[] | null>(null)
+  // main-table type filter (families in the set are HIDDEN; empty = show all)
+  const [hiddenFam, setHiddenFam] = useState<Set<ChatFamily>>(new Set())
+  // tombstone name sort within each type sub-section (1 = A→Я, -1 = Я→A)
+  const [tombSortDir, setTombSortDir] = useState<1 | -1>(1)
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["backup-chats", path] })
@@ -139,6 +155,7 @@ export function ChatManager({ path }: { path: string }) {
     const q = search.trim().toLowerCase()
     const out = rows.filter((r) => {
       if (isTomb(r)) return false
+      if (hiddenFam.has(chatTypeFamily(r.type))) return false
       if (q && !r.name.toLowerCase().includes(q)) return false
       return true
     })
@@ -150,7 +167,22 @@ export function ChatManager({ path }: { path: string }) {
       return d * sortDir
     })
     return out
-  }, [rows, search, sortKey, sortDir])
+  }, [rows, search, sortKey, sortDir, hiddenFam])
+
+  // type-family chip data for the main table: counts over non-tombstone rows
+  // (stable as you search), only families actually present.
+  const famCounts = useMemo(() => {
+    const c = { channel: 0, group: 0, personal: 0, bot: 0 } as Record<ChatFamily, number>
+    rows.forEach((r) => { if (!isTomb(r)) c[chatTypeFamily(r.type)]++ })
+    return c
+  }, [rows])
+  const presentFamilies = FAMILY_ORDER.filter((f) => famCounts[f] > 0)
+  const toggleFam = (f: ChatFamily) =>
+    setHiddenFam((prev) => {
+      const next = new Set(prev)
+      next.has(f) ? next.delete(f) : next.add(f)
+      return next
+    })
 
   const selectedRows = rows.filter((r) => selected.has(r.id))
   const selBytes = selectedRows.reduce((s, r) => s + r.disk_bytes, 0)
@@ -191,6 +223,20 @@ export function ChatManager({ path }: { path: string }) {
       const next = new Set(prev)
       if (allTombsSelected) tombs.forEach((r) => next.delete(r.id))
       else tombs.forEach((r) => next.add(r.id))
+      return next
+    })
+  // tombstones split into type sub-sections (channels / groups / …), each name-sorted
+  const tombFamilies = FAMILY_ORDER.filter((f) => allTombs.some((r) => chatTypeFamily(r.type) === f))
+  const famTombRows = (f: ChatFamily) =>
+    tombs
+      .filter((r) => chatTypeFamily(r.type) === f)
+      .sort((a, b) => a.name.localeCompare(b.name) * tombSortDir)
+  const toggleFamAll = (f: ChatFamily) =>
+    setTombSel((prev) => {
+      const next = new Set(prev)
+      const fam = famTombRows(f)
+      const allOn = fam.length > 0 && fam.every((r) => next.has(r.id))
+      fam.forEach((r) => (allOn ? next.delete(r.id) : next.add(r.id)))
       return next
     })
   const sortBy = (k: SortKey) => {
@@ -246,6 +292,29 @@ export function ChatManager({ path }: { path: string }) {
           placeholder={t("managerSearch")}
           className="h-8 w-56"
         />
+        {presentFamilies.length >= 2 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {presentFamilies.map((f) => {
+              const shown = !hiddenFam.has(f)
+              return (
+                <button
+                  key={f}
+                  onClick={() => toggleFam(f)}
+                  aria-pressed={shown}
+                  className={cn(
+                    "flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-sm transition-colors",
+                    shown
+                      ? "border-primary/40 bg-primary/10 text-foreground"
+                      : "border-border bg-card text-muted-foreground opacity-60 hover:opacity-100",
+                  )}
+                >
+                  {chatFamilyLabel(f)}
+                  <span className="text-xs tabular-nums text-muted-foreground">{famCounts[f]}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
         <div className="ml-auto flex items-center gap-2">
           {selected.size > 0 && (
             <>
@@ -404,6 +473,13 @@ export function ChatManager({ path }: { path: string }) {
                 <span className="text-xs text-muted-foreground">
                   {tombSel.size > 0 ? t("managerSelected", { n: tombSel.size }) : t("selectAll")}
                 </span>
+                <button
+                  onClick={() => setTombSortDir((d) => (d === 1 ? -1 : 1))}
+                  className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {t("tombSortName")}
+                  <span className="text-[0.6rem]">{tombSortDir === 1 ? "▲" : "▼"}</span>
+                </button>
                 {tombSel.size > 0 && (
                   <Button
                     variant="destructive"
@@ -420,28 +496,51 @@ export function ChatManager({ path }: { path: string }) {
               {tombs.length === 0 ? (
                 <div className="border-t border-border/50 px-4 py-6 text-center text-sm text-muted-foreground">{t("noChatsFound")}</div>
               ) : (
-                <ol className="max-h-80 overflow-auto">
-                  {tombs.map((r) => {
-                    const sel = tombSel.has(r.id)
+                <div className="max-h-80 overflow-auto">
+                  {tombFamilies.map((f) => {
+                    const fam = famTombRows(f)
+                    if (fam.length === 0) return null
+                    const allSel = fam.every((r) => tombSel.has(r.id))
+                    const someSel = fam.some((r) => tombSel.has(r.id))
                     return (
-                      <li key={r.id} className="border-t border-border/40">
-                        <button
-                          type="button"
-                          onClick={() => canManage && toggleTomb(r.id)}
-                          className={cn(
-                            "flex w-full items-center gap-3 px-4 py-1.5 text-left transition-colors",
-                            sel ? "bg-primary/[0.05]" : "hover:bg-muted/20",
-                            !canManage && "cursor-not-allowed",
-                          )}
-                        >
-                          <Checkbox checked={sel} disabled={!canManage} tabIndex={-1} className="pointer-events-none shrink-0" aria-label={r.name} />
-                          <span className="min-w-0 flex-1 truncate text-sm" title={r.name}>{r.name}</span>
-                          <span className="shrink-0 text-xs text-muted-foreground">{chatTypeLabel(r.type)}</span>
-                        </button>
-                      </li>
+                      <div key={f}>
+                        {/* sticky type header so it stays visible while scrolling 377 channels */}
+                        <div className="sticky top-0 z-10 flex items-center gap-3 border-t border-border bg-card/95 px-4 py-1.5 backdrop-blur">
+                          <Checkbox
+                            checked={allSel}
+                            indeterminate={someSel && !allSel}
+                            onCheckedChange={() => toggleFamAll(f)}
+                            disabled={!canManage}
+                            aria-label={`select all ${f}`}
+                          />
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{chatFamilyLabel(f)}</span>
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.65rem] font-medium tabular-nums text-muted-foreground">{fmtInt(fam.length)}</span>
+                        </div>
+                        <ol>
+                          {fam.map((r) => {
+                            const sel = tombSel.has(r.id)
+                            return (
+                              <li key={r.id}>
+                                <button
+                                  type="button"
+                                  onClick={() => canManage && toggleTomb(r.id)}
+                                  className={cn(
+                                    "flex w-full items-center gap-3 border-t border-border/30 px-4 py-1.5 text-left transition-colors",
+                                    sel ? "bg-primary/[0.05]" : "hover:bg-muted/20",
+                                    !canManage && "cursor-not-allowed",
+                                  )}
+                                >
+                                  <Checkbox checked={sel} disabled={!canManage} tabIndex={-1} className="pointer-events-none shrink-0" aria-label={r.name} />
+                                  <span className="min-w-0 flex-1 truncate text-sm" title={r.name}>{r.name}</span>
+                                </button>
+                              </li>
+                            )
+                          })}
+                        </ol>
+                      </div>
                     )
                   })}
-                </ol>
+                </div>
               )}
             </>
           )}
