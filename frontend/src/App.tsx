@@ -1,10 +1,23 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
-import { CalendarDays, FolderOpen } from "lucide-react"
+import {
+  CalendarCheck,
+  CalendarDays,
+  Clock,
+  Flame,
+  FolderOpen,
+  Link2,
+  Mic,
+  MoonStar,
+  Reply,
+  Smile,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react"
 
 import { api, type Chat, type Hero, type Highlight, type Kpis } from "@/lib/api"
-import i18n, { chatTypeLabel, dayWord, fmtInt, humanizeDuration } from "@/lib/i18n"
+import i18n, { chatTypeLabel, dayWord, fmtInt, humanizeDuration, participantWord } from "@/lib/i18n"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -41,7 +54,7 @@ function readUrlState(): { chat?: string; from?: string; to?: string; tab?: stri
 
 /** Sync a subset of the app state into the URL. `replaceState` (not push) keeps
  *  the back-button useful — every chat-switch shouldn't create a history entry. */
-function writeUrlState(s: { chat?: string; from?: string; to?: string; tab?: string; lang?: string }) {
+function writeUrlState(s: { chat?: string; from?: string; to?: string; tab?: string; lang?: string; view?: string }) {
   if (typeof window === "undefined") return
   const q = new URLSearchParams()
   for (const [k, v] of Object.entries(s)) {
@@ -300,8 +313,8 @@ function SummaryCard({
   const { t } = useTranslation()
   const figures = [
     { label: t("messages"), value: fmtInt(kpis.total_messages) },
-    { label: t("daysActive"), value: fmtInt(kpis.days_active) },
-    { label: t("participants"), value: fmtInt(kpis.unique_users) },
+    { label: t("daysActive"), value: fmtInt(kpis.active_days) },
+    { label: participantWord(kpis.unique_users), value: fmtInt(kpis.unique_users) },
     { label: t("media"), value: fmtInt(kpis.media_messages) },
   ]
   if (voiceSeconds && voiceSeconds > 0) figures.push({ label: t("voice"), value: humanizeDuration(voiceSeconds) })
@@ -360,6 +373,19 @@ function SummaryCard({
   )
 }
 
+// stable highlight kind (from the backend) → lucide icon, so the cards match the
+// icon language of the section headers instead of mixing in emoji.
+const HIGHLIGHT_ICONS: Record<string, LucideIcon> = {
+  peak_hour: Clock,
+  loudest_day: Flame,
+  top_emoji: Smile,
+  voice: Mic,
+  streak: CalendarCheck,
+  silence: MoonStar,
+  latency: Reply,
+  links: Link2,
+}
+
 function HighlightsRow({ items }: { items: Highlight[] }) {
   const { t } = useTranslation()
   if (!items.length) return null
@@ -367,20 +393,22 @@ function HighlightsRow({ items }: { items: Highlight[] }) {
     <section className="space-y-2">
       <h2 className="text-sm font-semibold">{t("highlights")}</h2>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((h) => (
+        {items.map((h) => {
+          // map kind → lucide; Sparkles is a neutral fallback for unknown kinds.
+          const Icon = (h.kind && HIGHLIGHT_ICONS[h.kind]) || Sparkles
+          return (
           <Card key={h.label} className="flex-row items-center gap-3 border-border bg-card px-4 py-3">
-            {h.icon && (
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04] text-xl ring-1 ring-foreground/10">
-                {h.icon}
-              </span>
-            )}
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04] ring-1 ring-foreground/10">
+              <Icon className="size-5 text-muted-foreground" />
+            </span>
             <div className="min-w-0">
               <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{h.label}</div>
               <div className="text-lg font-semibold leading-tight">{h.value}</div>
               <div className="truncate text-xs text-muted-foreground" title={h.sub}>{h.sub}</div>
             </div>
           </Card>
-        ))}
+          )
+        })}
       </div>
     </section>
   )

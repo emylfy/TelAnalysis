@@ -17,7 +17,8 @@ class Kpis:
     unique_users: int
     first_date: str | None
     last_date: str | None
-    days_active: int
+    days_active: int  # calendar span first→last (used by the hero prose)
+    active_days: int  # distinct days that actually have ≥1 message
     media_messages: int
 
 
@@ -33,6 +34,7 @@ def _parse_date(s: str) -> datetime | None:
 def compute_kpis(messages: list[dict]) -> Kpis:
     total = len(messages)
     users = set()
+    active_dates: set[str] = set()
     media = 0
     first = None
     last = None
@@ -46,6 +48,7 @@ def compute_kpis(messages: list[dict]) -> Kpis:
             users.add(uid)
         d = _parse_date(m.get("date"))
         if d:
+            active_dates.add(d.strftime("%Y-%m-%d"))
             if first is None or d < first:
                 first = d
             if last is None or d > last:
@@ -59,6 +62,7 @@ def compute_kpis(messages: list[dict]) -> Kpis:
         first_date=first.strftime("%Y-%m-%d") if first else None,
         last_date=last.strftime("%Y-%m-%d") if last else None,
         days_active=days_active,
+        active_days=len(active_dates),
         media_messages=media,
     )
 

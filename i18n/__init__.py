@@ -351,6 +351,7 @@ EN: dict[str, str] = {
     "Отвечают обычно за {m}, в 90% случаев — быстрее {p}.": "Usually reply in {m}, 90% of the time within {p}.",
     # highlight cards (top_highlights) — labels also reused by other tabs
     "Пиковый час": "Peak Hour",
+    "за всё время": "all-time",
     "Самый громкий день": "Loudest Day",
     "Любимая эмоджи": "Favorite Emoji",
     # "Самый длинный стрик" / "Самое долгое молчание" already defined above (per-user streaks block)

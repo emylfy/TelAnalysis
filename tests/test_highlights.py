@@ -18,6 +18,7 @@ def _kpis(**overrides):
         first_date="2023-01-01",
         last_date="2024-12-31",
         days_active=731,
+        active_days=500,
         media_messages=400,
     )
     base.update(overrides)

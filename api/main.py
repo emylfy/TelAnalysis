@@ -210,6 +210,28 @@ _TYPE_RANK = {
 }
 
 
+def _distinct_authors(messages: list[dict]) -> int:
+    """Count distinct message authors (same rule as overview.compute_kpis)."""
+    users: set = set()
+    for m in messages:
+        if not isinstance(m, dict):
+            continue
+        uid = m.get("from_id") or m.get("actor_id")
+        if uid:
+            users.add(uid)
+    return len(users)
+
+
+def _chat_sections(c) -> list[str]:
+    """Sections to expose for a chat. Drop the participant-comparison tabs
+    (network graph, per-user) for chats with <2 distinct authors — otherwise
+    «Сеть» renders empty and «По участникам» just mirrors the overview."""
+    secs = loader.sections_for_type(c.type)
+    if _distinct_authors(c.messages) < 2:
+        secs = secs - {"graph", "perusers"}
+    return sorted(secs)
+
+
 @app.get("/api/chats")
 def chats(path: str = _P):
     mtime = _mtime(path)
@@ -227,7 +249,7 @@ def chats(path: str = _P):
                 "name": c.name,
                 "type": c.type,
                 "count": len(c.messages),
-                "sections": sorted(loader.sections_for_type(c.type)),
+                "sections": _chat_sections(c),
             }
             for c in ordered
         ],

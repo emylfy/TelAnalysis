@@ -1,11 +1,12 @@
 import ReactECharts from "echarts-for-react"
 
-import { fmtDateTick, fmtInt, mediaKindLabel, monthShort, weekdayShort } from "@/lib/i18n"
+import i18n, { fmtDateTick, fmtInt, mediaKindLabel, monthShort, weekdayShort } from "@/lib/i18n"
 import {
   base,
   brand,
   DATA,
   heat,
+  heatBinary,
   ink,
   neg,
   personColor,
@@ -86,6 +87,13 @@ export function Calendar({
   const activeYear = year && years.includes(year) ? year : years[years.length - 1]
   let max = 1
   for (const [, v] of display) if (v > max) max = v
+  // Only this year's days, and trim the calendar to the real data span so a
+  // partial current year (e.g. Jan–May) doesn't render half a grid of empty
+  // future months. ISO dates sort lexicographically = chronologically.
+  const yearData = display.filter((d) => d[0].startsWith(activeYear))
+  const sortedDates = yearData.map((d) => d[0]).sort()
+  const range: string | [string, string] =
+    sortedDates.length > 0 ? [sortedDates[0], sortedDates[sortedDates.length - 1]] : activeYear
   // All 7 weekday labels, localized. ECharts' nameMap is indexed by day-of-week
   // (0 = Sunday), but weekdayShort() is Monday-first — reorder to Sun-first.
   const wd = weekdayShort()
@@ -108,9 +116,9 @@ export function Calendar({
             return `${Number(d)} ${months[Number(m) - 1]} · ${fmtInt(p.value[1])}`
           },
         },
-        visualMap: { min: 0, max, show: false, inRange: { color: [...heat] } },
+        visualMap: { min: 0, max, show: false, inRange: { color: binary ? [...heatBinary] : [...heat] } },
         calendar: {
-          range: activeYear,
+          range,
           top: TOP,
           left: 44,
           right: 16,
@@ -124,7 +132,7 @@ export function Calendar({
         series: {
           type: "heatmap",
           coordinateSystem: "calendar",
-          data: display.filter((d) => d[0].startsWith(activeYear)),
+          data: yearData,
         },
       }}
     />
@@ -143,9 +151,18 @@ export function HeatLegend({ less, more }: { less: string; more: string }) {
 }
 
 export function MediaPie({ byKind }: { byKind: Record<string, number> }) {
-  const data = Object.entries(byKind)
-    .sort((a, b) => b[1] - a[1])
-    .map(([k, v]) => ({ name: mediaKindLabel(k), value: v }))
+  const entries = Object.entries(byKind).sort((a, b) => b[1] - a[1])
+  // Fold the long tail of tiny media kinds (<2% of total) into a single
+  // «Прочие» slice so the legend stays short instead of a column of 0.x% rows.
+  const total = entries.reduce((s, [, v]) => s + v, 0)
+  const big = entries.filter(([, v]) => total > 0 && v / total >= 0.02)
+  const tail = entries.filter(([, v]) => !(total > 0 && v / total >= 0.02))
+  const data = big.map(([k, v]) => ({ name: mediaKindLabel(k), value: v }))
+  if (tail.length > 1) {
+    data.push({ name: i18n.t("other"), value: tail.reduce((s, [, v]) => s + v, 0) })
+  } else if (tail.length === 1) {
+    data.push({ name: mediaKindLabel(tail[0][0]), value: tail[0][1] })
+  }
   return (
     <Chart
       height={300}

@@ -3,11 +3,12 @@ import { useTranslation } from "react-i18next"
 import { Smile } from "lucide-react"
 
 import { api, type Sel, type SentimentPoint } from "@/lib/api"
-import { weekdayShort } from "@/lib/i18n"
+import { fmtScore, fmtSigned, weekdayShort } from "@/lib/i18n"
 import { Card } from "@/components/ui/card"
 import { DivergingBars, Lines } from "@/components/charts"
 import { personPalette } from "@/lib/chart-theme"
 import { Section } from "@/components/section"
+import { Collapsible } from "@/components/collapsible"
 
 /** Sub-section header inside the sentiment block (smaller than a tab Section). */
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -27,7 +28,7 @@ export function ExtremeList({ title, rows, tone }: { title: string; rows: [strin
       <Card className="divide-y divide-border/60 border-border bg-card p-0">
         {rows.map(([text, score, name], i) => (
           <div key={i} className="flex items-start gap-3 px-4 py-2.5">
-            <span className={`shrink-0 tabular-nums text-sm font-semibold ${color}`}>{score.toFixed(2)}</span>
+            <span className={`shrink-0 tabular-nums text-sm font-semibold ${color}`}>{fmtScore(score)}</span>
             <div className="min-w-0">
               <div className="truncate text-sm" title={text}>{text}</div>
               <div className="text-xs text-muted-foreground">{name}</div>
@@ -80,9 +81,8 @@ export function SentimentBlock({ path, sel }: { path: string; sel: Sel }) {
 
   const avgBadge =
     d.avg != null ? (
-      <span className={`tabular-nums text-lg font-semibold ${d.avg >= 0 ? "text-pos" : "text-neg"}`}>
-        {d.avg >= 0 ? "+" : ""}
-        {d.avg.toFixed(2)}
+      <span className={`tabular-nums text-lg font-semibold ${Number(d.avg.toFixed(2)) < 0 ? "text-neg" : "text-pos"}`}>
+        {fmtSigned(d.avg)}
       </span>
     ) : undefined
 
@@ -101,18 +101,24 @@ export function SentimentBlock({ path, sel }: { path: string; sel: Sel }) {
           </SubSection>
         )}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {hourData.length > 0 && (
-            <SubSection title={t("sentimentByHour")}>
-              <Card className="border-border bg-card p-3"><DivergingBars data={hourData} /></Card>
-            </SubSection>
-          )}
-          {wdData.length > 0 && (
-            <SubSection title={t("sentimentByWeekday")}>
-              <Card className="border-border bg-card p-3"><DivergingBars data={wdData} /></Card>
-            </SubSection>
-          )}
-        </div>
+        {(hourData.length > 0 || wdData.length > 0) && (
+          // secondary cuts — tucked behind a disclosure so the block isn't four
+          // charts deep by default
+          <Collapsible label={t("sentimentBreakdown")}>
+            <div className="grid grid-cols-1 gap-6 pt-2 lg:grid-cols-2">
+              {hourData.length > 0 && (
+                <SubSection title={t("sentimentByHour")}>
+                  <Card className="border-border bg-card p-3"><DivergingBars data={hourData} /></Card>
+                </SubSection>
+              )}
+              {wdData.length > 0 && (
+                <SubSection title={t("sentimentByWeekday")}>
+                  <Card className="border-border bg-card p-3"><DivergingBars data={wdData} /></Card>
+                </SubSection>
+              )}
+            </div>
+          </Collapsible>
+        )}
 
         {((d.positive?.length ?? 0) > 0 || (d.negative?.length ?? 0) > 0) && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

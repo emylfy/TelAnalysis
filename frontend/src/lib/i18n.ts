@@ -33,7 +33,9 @@ const ru = {
   // sessions
   conversations: "Разговоров",
   perConvAvg: "Сообщ./разговор (среднее)",
+  convMedian: "Медиана",
   longestConv: "Самый долгий",
+  mostMessagesConv: "Больше всего сообщений",
   convLength: "Длина разговоров",
   longestConvs: "Самые долгие разговоры",
   // latency caveats
@@ -51,6 +53,7 @@ const ru = {
   voiceMessages: "Голосовые",
   voiceTotal: "Суммарно",
   voiceAvg: "В среднем",
+  voiceShare: "Доля сообщений",
   // period
   period: "Период",
   allHistory: "Вся история",
@@ -78,7 +81,9 @@ const ru = {
   loading: "Загрузка…",
   // empty
   noData: "Нет данных для этого чата.",
+  networkTooSmall: "Граф связей доступен для чатов с 2+ участниками.",
   tabError: "Не удалось загрузить данные.",
+  other: "Прочие",
   retry: "Повторить",
   // tables
   user: "Участник",
@@ -101,6 +106,7 @@ const ru = {
   sentimentPerUser: "Тон по участникам",
   sentimentByHour: "Тон по часам",
   sentimentByWeekday: "Тон по дням недели",
+  sentimentBreakdown: "По часам и дням недели",
   mostPositive: "Самые позитивные",
   mostNegative: "Самые негативные",
   totalTokens: "Слов всего",
@@ -306,7 +312,9 @@ const en: typeof ru = {
   qWithAnswer: "Questions with a reply",
   conversations: "Conversations",
   perConvAvg: "Msgs/conversation (avg)",
+  convMedian: "Median",
   longestConv: "Longest",
+  mostMessagesConv: "Most messages",
   convLength: "Conversation length",
   longestConvs: "Longest conversations",
   droppedCap: "{{n}} replies slower than {{h}}h excluded",
@@ -321,6 +329,7 @@ const en: typeof ru = {
   voiceMessages: "Voice messages",
   voiceTotal: "Total",
   voiceAvg: "Average",
+  voiceShare: "Share of messages",
   period: "Period",
   allHistory: "All history",
   allChats: "★ All chats",
@@ -345,7 +354,9 @@ const en: typeof ru = {
   changeSource: "Change file",
   loading: "Loading…",
   noData: "No data for this chat.",
+  networkTooSmall: "The relationship graph needs at least 2 participants.",
   tabError: "Couldn't load this data.",
+  other: "Other",
   retry: "Retry",
   user: "User",
   count: "Messages",
@@ -366,6 +377,7 @@ const en: typeof ru = {
   sentimentPerUser: "Sentiment by participant",
   sentimentByHour: "Sentiment by hour",
   sentimentByWeekday: "Sentiment by weekday",
+  sentimentBreakdown: "By hour & weekday",
   mostPositive: "Most positive",
   mostNegative: "Most negative",
   totalTokens: "Words total",
@@ -571,6 +583,33 @@ export function dayWord(n: number): string {
   return "дней"
 }
 
+/** Plural form of "participant" — Russian needs участник/участника/участников. */
+export function participantWord(n: number): string {
+  if (!isRu()) return n === 1 ? "participant" : "participants"
+  const m100 = n % 100
+  const m10 = n % 10
+  if (m100 >= 11 && m100 <= 14) return "участников"
+  if (m10 === 1) return "участник"
+  if (m10 >= 2 && m10 <= 4) return "участника"
+  return "участников"
+}
+
+/** Signed score with a fixed sign, but never a "-0.00"/"+0.00" — a rounded zero
+ *  is plain. Used for sentiment averages where the sign carries meaning. */
+export function fmtSigned(v: number, digits = 2): string {
+  const r = v.toFixed(digits)
+  const n = Number(r)
+  if (n > 0) return `+${r}`
+  if (n === 0) return (0).toFixed(digits)
+  return r
+}
+
+/** Same as toFixed but collapses a rounded "-0.00" to "0.00" (no forced sign). */
+export function fmtScore(v: number, digits = 2): string {
+  const r = v.toFixed(digits)
+  return Number(r) === 0 ? (0).toFixed(digits) : r
+}
+
 export function timeBucketLabel(code: string): string {
   const v = i18n.t(`tod_${code}`)
   return v === `tod_${code}` ? code : v
@@ -639,6 +678,22 @@ export function fmtDateTick(v: string): string {
 
 export function fmtInt(n: number): string {
   return new Intl.NumberFormat(isRu() ? "ru-RU" : "en-US").format(n)
+}
+
+/** Human-readable byte size: 6.8 GB / 391 MB / 0 B. Binary (1024) units, the
+ *  decimal kept only below 10 of a unit so big figures stay compact. */
+export function fmtBytes(n: number): string {
+  if (!n || n < 1) return isRu() ? "0 Б" : "0 B"
+  const units = isRu()
+    ? ["Б", "КБ", "МБ", "ГБ", "ТБ"]
+    : ["B", "KB", "MB", "GB", "TB"]
+  const i = Math.min(units.length - 1, Math.floor(Math.log(n) / Math.log(1024)))
+  const v = n / Math.pow(1024, i)
+  const digits = i === 0 ? 0 : v < 10 ? 1 : 0
+  return `${new Intl.NumberFormat(isRu() ? "ru-RU" : "en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(v)} ${units[i]}`
 }
 
 /** Humanized duration, mirrors analysis humanize_seconds (ч/м/с/д vs h/m/s/d). */

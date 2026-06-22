@@ -82,9 +82,16 @@ export function personPalette(names: string[]): Record<string, string> {
   return out
 }
 
-// Heatmap ramp (deep ink → indigo → brand → warm), shared by the calendar and
-// the hour×weekday grid. The single warmest spot reads as the peak at a glance.
-export const heat = ["#171c28", "#3b54c9", "#ff6b6b", "#ffd166"] as const
+// Heatmap ramp (dark indigo → indigo → violet → brand coral), shared by the
+// calendar and the hour×weekday grid. Stays in the app's cool→warm family (no
+// out-of-palette gold), and the low end (#1b2740) sits clearly above the card
+// background so small-but-nonzero days don't vanish into it.
+export const heat = ["#1b2740", "#3b54c9", "#8b5cf6", "#ff6b6b"] as const
+
+// Two-tone scale for the calendar's binary "wrote / didn't" mode — a single
+// brand-indigo against near-background, so it reads as a calm presence map
+// instead of the loud full heat ramp.
+export const heatBinary = ["#1b2740", "#6a8efb"] as const
 
 // Tooltip — rounded, soft shadow, faint blur. Consistent everywhere.
 export const tooltip = {

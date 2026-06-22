@@ -33,6 +33,7 @@ export interface Kpis {
   first_date: string | null
   last_date: string | null
   days_active: number
+  active_days: number
   media_messages: number
 }
 export interface Hero {
@@ -44,6 +45,7 @@ export interface Hero {
 }
 export interface Highlight {
   icon: string
+  kind?: string
   label: string
   value: string
   sub: string

@@ -24,6 +24,9 @@ class Highlight:
     label: str
     value: str
     sub: str = ""
+    # stable type key — the frontend maps it to a lucide icon (icon stays as a
+    # fallback for older builds / unknown kinds).
+    kind: str = ""
 
 
 @dataclass
@@ -184,9 +187,13 @@ def top_highlights(
                 math.log10(max(count, 1) + 1),
                 Highlight(
                     icon="⏰",
+                    kind="peak_hour",
                     label=i18n.t("Пиковый час"),
                     value=f"{i18n.weekday_name_cap(wd)}, {h:02d}:00",
-                    sub=f"{_fmt_int(count)} {times_word}",
+                    # "за всё время" distinguishes this cumulative weekday×hour
+                    # total from the single-day count on the loudest-day card,
+                    # which can otherwise read as a duplicate when they coincide.
+                    sub=f"{_fmt_int(count)} {times_word} {i18n.t('за всё время')}",
                 ),
             )
         )
@@ -204,6 +211,7 @@ def top_highlights(
                 math.log10(max(n, 1) + 1) * 1.1,  # slightly heavier than peak hour
                 Highlight(
                     icon="🔥",
+                    kind="loudest_day",
                     label=i18n.t("Самый громкий день"),
                     value=day_str,
                     sub=i18n.n_messages(n),
@@ -219,6 +227,7 @@ def top_highlights(
                 math.log10(max(em_count, 1) + 1) * 0.7,
                 Highlight(
                     icon="😄",
+                    kind="top_emoji",
                     label=i18n.t("Любимая эмоджи"),
                     value=top_em,
                     sub=f"{_fmt_int(em_count)} {times_word}",
@@ -234,6 +243,7 @@ def top_highlights(
                 math.log10(max(media.voice_total_seconds // 60, 1) + 1),
                 Highlight(
                     icon="🎙️",
+                    kind="voice",
                     label=i18n.t("Голосовые"),
                     value=media_mod.humanize_duration(media.voice_total_seconds),
                     sub=i18n.n_messages(media.voice_count),
@@ -247,6 +257,7 @@ def top_highlights(
                 streaks.longest_streak_days / 20,  # 30 days = score 1.5
                 Highlight(
                     icon="🏃",
+                    kind="streak",
                     label=i18n.t("Самый длинный стрик"),
                     value=i18n.n_days(streaks.longest_streak_days),
                     sub=f"{streaks.longest_streak_start} → {streaks.longest_streak_end}",
@@ -261,6 +272,7 @@ def top_highlights(
                 days / 30,  # longer silences interesting; 30 days = score 1
                 Highlight(
                     icon="🤫",
+                    kind="silence",
                     label=i18n.t("Самое долгое молчание"),
                     value=i18n.n_days(days),
                     sub=f"{gap_start} → {gap_end}",
@@ -279,6 +291,7 @@ def top_highlights(
                 score,
                 Highlight(
                     icon="↩️",
+                    kind="latency",
                     label=i18n.t("Медиана ответа"),
                     value=media_mod.humanize_duration(int(latency.median_seconds)),
                     sub=i18n.t("между сообщениями"),
@@ -292,6 +305,7 @@ def top_highlights(
                 math.log10(max(media.total_links, 1) + 1) * 0.6,
                 Highlight(
                     icon="🔗",
+                    kind="links",
                     label=i18n.t("Ссылок"),
                     value=_fmt_int(media.total_links),
                     sub=(media.top_domains[0][0] if media.top_domains else ""),

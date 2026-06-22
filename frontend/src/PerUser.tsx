@@ -284,9 +284,9 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
 
       <PersonaLead name={s.name} color={personaColor} shareLabel={personaShare} chips={personaChips} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      {/* share of chat is already shown in the persona chip above — don't repeat it here */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label={t("messages")} value={fmtInt(s.msg_count)} />
-        <Stat label={t("shareOfChat")} value={pct(total ? s.msg_count / total : 0)} />
         <Stat
           label={t("msgLengthMedian")}
           value={`${fmtInt(s.median_chars)} ${t("charsShort")}`}
@@ -451,9 +451,14 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         <section className="space-y-3">
           <H3>{t("latencyHist")}</H3>
           <p className="-mt-1 text-sm text-muted-foreground">{t("latencyHistHint")}</p>
-          <div className="text-sm text-muted-foreground">
-            {t("medianReply")}: {humanizeDuration(median(userLat))} · {fmtInt(userLat.length)}
-          </div>
+          {/* median is already shown in the reciprocity block above when it
+              renders (2-person chats); only repeat it here as a fallback for
+              group per-user views where reciprocity is hidden */}
+          {!dir && (
+            <div className="text-sm text-muted-foreground">
+              {t("medianReply")}: {humanizeDuration(median(userLat))} · {fmtInt(userLat.length)}
+            </div>
+          )}
           <Card className="border-border bg-card p-3"><Bars data={latData} height={240} color="var(--chart-1)" /></Card>
         </section>
       )}

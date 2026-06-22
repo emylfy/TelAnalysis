@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 
-import { Activity, Clock, MessageSquareText, Sparkles, Timer } from "lucide-react"
+import { Activity, Clock, MessageSquareText, Mic, Sparkles, Timer } from "lucide-react"
 
 import { api, type LatencyStats, type SessionsStats, type Sel } from "@/lib/api"
 import { fmtInt, humanizeDuration } from "@/lib/i18n"
@@ -44,7 +44,9 @@ function LatencyBlock({ l }: { l: LatencyStats }) {
       {l.dropped_over_cap > 0 && (
         <p className="text-xs text-muted-foreground">{t("droppedCap", { n: fmtInt(l.dropped_over_cap), h: l.cap_hours })}</p>
       )}
-      {l.qa_seconds?.length > 0 && (
+      {/* needs a few answered questions: at ≤2 the median equals p90 and the two
+          stats read as the same number twice */}
+      {l.qa_seconds?.length > 2 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm font-semibold">
             {t("qSection")}
@@ -71,10 +73,13 @@ function SessionsBlock({ s }: { s: SessionsStats }) {
     .slice(0, 10)
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label={t("conversations")} value={fmtInt(s.sessions.length)} />
         <Stat label={t("perConvAvg")} value={s.avg_messages.toFixed(1)} />
-        {s.longest && <Stat label={t("longestConv")} value={`${fmtInt(s.longest.msg_count)}`} sub={s.longest.start.slice(0, 10)} />}
+        <Stat label={t("convMedian")} value={s.median_messages.toFixed(1)} />
+        {/* "most messages" (by count) — the longest-by-duration list below ranks
+            differently, so this card no longer calls itself "longest" */}
+        {s.longest && <Stat label={t("mostMessagesConv")} value={`${fmtInt(s.longest.msg_count)}`} sub={s.longest.start.slice(0, 10)} />}
       </div>
       {buckets.length > 0 && (
         <div className="space-y-2">
@@ -113,6 +118,8 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
   const hw = useQuery({ queryKey: ["hw", ...k], queryFn: () => api.hourWeekday(path, sel), enabled: on })
   const hbu = useQuery({ queryKey: ["hbu", ...k], queryFn: () => api.hourByUser(path, sel), enabled: on })
   const media = useQuery({ queryKey: ["media", ...k], queryFn: () => api.media(path, sel), enabled: on })
+  // shares its key with the App shell (dedup) — used only for the voice share %
+  const kpis = useQuery({ queryKey: ["kpis", ...k], queryFn: () => api.kpis(path, sel), enabled: on })
   const emojis = useQuery({ queryKey: ["emojis", ...k], queryFn: () => api.emojis(path, sel), enabled: on })
   const lat = useQuery({ queryKey: ["lat", ...k], queryFn: () => api.latency(path, sel), enabled: on })
   const sess = useQuery({ queryKey: ["sess", ...k], queryFn: () => api.sessions(path, sel), enabled: on })
@@ -170,7 +177,13 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
                 {calMode === "count" && <HeatLegend less={t("calendarLess")} more={t("calendarMore")} />}
               </div>
               <Card className="border-border bg-card p-3">
-                <Calendar perDay={pd.data.per_day} binary={calMode === "binary"} year={activeYear} />
+                {/* keep cells at full size on narrow screens — scroll sideways
+                    instead of squishing the year grid into an unreadable strip */}
+                <div className="overflow-x-auto">
+                  <div className="min-w-[680px]">
+                    <Calendar perDay={pd.data.per_day} binary={calMode === "binary"} year={activeYear} />
+                  </div>
+                </div>
               </Card>
               {calMode === "binary" && (
                 <p className="text-xs text-muted-foreground">
@@ -265,13 +278,35 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
         {media.data && Object.keys(media.data.by_kind).length > 0 && (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             <Card className="border-border bg-card p-3 lg:col-span-2"><MediaPie byKind={media.data.by_kind} /></Card>
-            {media.data.voice_count > 0 && (
-              <div className="grid grid-cols-1 gap-3">
-                <Stat label={t("voiceMessages")} value={fmtInt(media.data.voice_count)} />
-                <Stat label={t("voiceTotal")} value={humanizeDuration(media.data.voice_total_seconds)} />
-                <Stat label={t("voiceAvg")} value={humanizeDuration(Math.floor(media.data.voice_total_seconds / media.data.voice_count))} />
-              </div>
-            )}
+            {media.data.voice_count > 1 && (() => {
+              // need >1: a single voice note makes «суммарно» == «в среднем»,
+              // two identical numbers in one card.
+              // one compact card (not three stacked) so it doesn't read as
+              // "tacked on" beside the pie; share added when KPIs are loaded.
+              const v = media.data
+              const total = kpis.data?.total_messages ?? 0
+              const cells: [string, string][] = [
+                [fmtInt(v.voice_count), t("voiceMessages")],
+                [humanizeDuration(v.voice_total_seconds), t("voiceTotal")],
+                [humanizeDuration(Math.floor(v.voice_total_seconds / v.voice_count)), t("voiceAvg")],
+              ]
+              if (total > 0) cells.push([`${((v.voice_count * 100) / total).toFixed(1)}%`, t("voiceShare")])
+              return (
+                <Card className="flex flex-col justify-center gap-4 border-border bg-card p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Mic className="size-4 text-muted-foreground" /> {t("voice")}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                    {cells.map(([value, label]) => (
+                      <div key={label}>
+                        <div className="text-xl font-semibold tabular-nums">{value}</div>
+                        <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )
+            })()}
           </div>
         )}
         {media.data && media.data.top_domains.length > 0 && (
