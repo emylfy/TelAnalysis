@@ -328,7 +328,7 @@ EN: dict[str, str] = {
     "Нет сообщений с датами.": "No dated messages.",
     "👆 Клик по точке на графике раскрывает день.": "👆 Click a point on the chart to drill into that day.",
     # hero prose templates
-    "За {days} здесь написали {messages} — это в среднем {avg} в день.": "Over {days} here wrote {messages} — that's {avg} a day on average.",
+    "За {days} здесь — в среднем {avg} сообщений в день.": "Over {days} here — {avg} messages a day on average.",
     "Самый шумный день — {date}, {messages} за сутки.": "Loudest day — {date}, {messages} in 24 hours.",
     "Чаще всего пишут в {weekday} около {hour}.": "Most active on {weekday} around {hour}.",
     "Самое долгое молчание — {days} в {when}.": "Longest silence — {days} in {when}.",

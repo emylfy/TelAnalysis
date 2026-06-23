@@ -609,7 +609,19 @@ export function HourOverlap({
       height={260}
       option={{
         ...base,
-        tooltip: { ...TOOLTIP, trigger: "axis" },
+        tooltip: {
+          ...TOOLTIP,
+          trigger: "axis",
+          // raw normalised fractions read as "0.107…" — show clean percentages and
+          // the hour in the header so it's actually human-readable.
+          formatter: (ps: { axisValue: number | string; seriesName: string; value: number; marker: string }[]) => {
+            const h = String(ps[0]?.axisValue ?? "").padStart(2, "0")
+            const rows = ps
+              .map((p) => `${p.marker}${p.seriesName} <b>${(p.value * 100).toFixed(1)}%</b>`)
+              .join("<br/>")
+            return `<div style="margin-bottom:2px;font-weight:600">${h}:00</div>${rows}`
+          },
+        },
         legend: { top: 0, textStyle: { color: ink.tick } },
         grid: { left: 8, right: 8, top: 32, bottom: 24, containLabel: true },
         xAxis: {

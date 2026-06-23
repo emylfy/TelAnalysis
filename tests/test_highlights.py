@@ -28,7 +28,7 @@ def _kpis(**overrides):
 # build_hero
 
 
-def test_build_hero_includes_count_and_avg():
+def test_build_hero_includes_days_and_avg_not_total():
     hero = highlights.build_hero(
         chat_name="Alice",
         kpis=_kpis(total_messages=23_000, days_active=100),
@@ -37,9 +37,9 @@ def test_build_hero_includes_count_and_avg():
     )
     assert hero.title == "Alice"
     # 23 000 messages / 100 days = 230/day avg
-    assert "23 000" in hero.prose_html
-    assert "230" in hero.prose_html
-    assert "100 дней" in hero.prose_html
+    assert "230" in hero.prose_html  # the per-day average is shown
+    assert "100 дней" in hero.prose_html  # and the span
+    assert "23 000" not in hero.prose_html  # but NOT the total (that's the KPI tile)
 
 
 def test_build_hero_prose_is_recap_only():
@@ -51,7 +51,7 @@ def test_build_hero_prose_is_recap_only():
         per_day=[("2024-03-08", 999)],
         grid=_make_grid(0, 12, 1),
     )
-    assert "23 000" in hero.prose_html  # the recap is present
+    assert "230" in hero.prose_html  # the recap (per-day average) is present
     assert "8 март" not in hero.prose_html  # but the loudest-day sentence is gone
     assert "999" not in hero.prose_html
 

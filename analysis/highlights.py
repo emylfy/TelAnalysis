@@ -81,10 +81,12 @@ def build_hero(
     if kpis.days_active and kpis.total_messages:
         avg = _avg_per_active_day(kpis.total_messages, kpis.days_active)
         parts.append(
-            i18n.t("За {days} здесь написали {messages} — это в среднем {avg} в день.").format(
+            # The message total used to be narrated here too, but it duplicates the
+            # "Messages" KPI tile right below — so the recap keeps only the span and
+            # the per-day average (which isn't shown anywhere else).
+            i18n.t("За {days} здесь — в среднем {avg} сообщений в день.").format(
                 days=i18n.n_days(kpis.days_active),
-                messages=_bold(i18n.n_messages(kpis.total_messages)),
-                avg=f"{avg:.0f}",
+                avg=_bold(f"{avg:.0f}"),
             )
         )
 
