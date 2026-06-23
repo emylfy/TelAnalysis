@@ -6,42 +6,24 @@ import { api, stickerFileUrl, type Sel, type StickerRef, type UserMat } from "@/
 import { dayWord, fmtInt, humanizeDuration, personaForLength, personaForTimeOfDay, timeBucketLabel } from "@/lib/i18n"
 import { personColor } from "@/lib/chart-theme"
 import { Card } from "@/components/ui/card"
-import { Bars, BarsH, Box, HourWeekday, Lines, Radar } from "@/components/charts"
+import { Bars, BarsH, HourWeekday, Lines, Radar } from "@/components/charts"
 import { RankTable } from "@/components/rank-table"
 import { Collapsible } from "@/components/collapsible"
 import { TabError, TabLoading } from "@/components/loading"
 import { UserCombobox } from "@/components/user-combobox"
+import { Stat } from "@/components/stat"
 import { ExtremeList } from "@/Sentiment"
+import { Flag, Flame, Forward, HelpCircle, MessageSquare, Quote, Ruler, Timer, Type } from "lucide-react"
 
 // Up to this many participants, overlay them all on the tone radar; beyond it,
 // show just the selected user vs. the chat average.
 const RADAR_MAX_OVERLAY = 6
-// Cap the wakeup box plot — beyond this the boxes turn to mush in big groups.
-const WAKE_TOP = 8
 // Swearing leaderboard: hide tiny-sample rows from the headline view (per-100 is
 // noise below this) and cap how many rows show before "Show all".
 const MAT_MIN_MSGS = 30
 const MAT_TOP = 20
 const TIME_ORDER = ["night", "morning", "day", "evening"]
 const LEN_ORDER = ["<30", "30-100", "100-300", "300+"]
-const LAT_BUCKETS: [string, number][] = [
-  ["<1m", 60],
-  ["1–5m", 300],
-  ["5–15m", 900],
-  ["15–60m", 3600],
-  ["1–6h", 21600],
-  ["6–24h", 86400],
-]
-
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <Card className="gap-1 border-border bg-card px-4 py-3">
-      <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="text-2xl font-semibold tabular-nums">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
-    </Card>
-  )
-}
 
 function H3({ children }: { children: React.ReactNode }) {
   return <h3 className="text-lg font-semibold tracking-tight">{children}</h3>
@@ -231,6 +213,13 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
   const total = ordered.reduce((a, u) => a + u.msg_count, 0)
   const twoUsers = ordered.length === 2
 
+  // chat-wide baselines for the KPI meters — answers "is 20% questions a lot?".
+  // Only meaningful with peers to compare against, so gated on ≥2 participants.
+  const hasPeers = ordered.length >= 2
+  const avgQuestion = hasPeers ? ordered.reduce((a, u) => a + u.question_ratio, 0) / ordered.length : 0
+  const avgReply = hasPeers ? ordered.reduce((a, u) => a + (u.msg_count ? u.reply_count / u.msg_count : 0), 0) / ordered.length : 0
+  const avgWordsChat = hasPeers ? ordered.reduce((a, u) => a + u.avg_words, 0) / ordered.length : 0
+
   const tod: [string, number][] = TIME_ORDER.filter((b) => s.time_of_day[b] != null).map((b) => [timeBucketLabel(b), s.time_of_day[b] ?? 0])
   const len: [string, number][] = LEN_ORDER.filter((b) => s.length_buckets[b] != null).map((b) => [b, s.length_buckets[b] ?? 0])
   const userWords = words.data?.users.find((u) => u.user_id === id)
@@ -273,30 +262,9 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         ]
   const indicators = [t("axisQuestion"), t("axisExcl"), t("axisCaps"), t("axisReply")].map((name, i) => ({ name, max: axisMax[i] }))
 
-  // wakeup — the box plot compares distributions, but 200 boxes is mush, so cap
-  // to the most active participants (ordered is msg_count desc) and make sure the
-  // selected user is always among them.
+  // wakeup — surfaced as a persona chip ("first online ~HH:MM"), not its own
+  // box-plot section
   const wakeMin = median(s.first_msg_minutes ?? [])
-  const wakeQualifying = ordered.filter((u) => (u.first_msg_minutes?.length ?? 0) > 3)
-  const wakeGroups = (() => {
-    const top = wakeQualifying.slice(0, WAKE_TOP)
-    if ((s.first_msg_minutes?.length ?? 0) > 3 && !top.some((u) => u.user_id === id) && top.length) {
-      top[top.length - 1] = s // swap the selected user in so they can compare
-    }
-    return top.map((u) => ({ name: u.name, values: u.first_msg_minutes }))
-  })()
-
-  // latency histogram (cumulative bucket match)
-  const latData: [string, number][] = (() => {
-    if (!userLat.length) return []
-    const counts = new Array(LAT_BUCKETS.length + 1).fill(0)
-    for (const sec of userLat) {
-      const idx = LAT_BUCKETS.findIndex(([, cap]) => sec < cap)
-      counts[idx === -1 ? LAT_BUCKETS.length : idx]++
-    }
-    const labels = [...LAT_BUCKETS.map((b) => b[0]), ">24h"]
-    return labels.map((l, i) => [l, counts[i]] as [string, number]).filter((d) => d[1] > 0)
-  })()
 
   // reciprocity: direction where the selected user is the responder
   const recip = recipQ.data
@@ -322,6 +290,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
   const personaChips = [
     personaForTimeOfDay(s.time_of_day),
     personaForLength(s.length_buckets),
+    ...(s.first_msg_minutes?.length ? [t("chipFirstOnline", { time: hhmm(wakeMin) })] : []),
     ...(initRow && initRow.share >= 0.55 ? [t("traitInitiator")] : []),
     ...(dir && dir.median_seconds <= 120 ? [t("traitFastReplier")] : []),
   ].filter((c) => c && c !== "—")
@@ -338,15 +307,41 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
 
       {/* share of chat is already shown in the persona chip above — don't repeat it here */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Stat label={t("messages")} value={fmtInt(s.msg_count)} />
+        <Stat icon={MessageSquare} label={t("messages")} value={fmtInt(s.msg_count)} />
         <Stat
+          icon={Ruler}
           label={t("msgLengthMedian")}
           value={`${fmtInt(s.median_chars)} ${t("charsShort")}`}
           sub={`avg ${s.avg_chars.toFixed(0)} · max ${fmtInt(s.longest_chars)}`}
         />
-        <Stat label={t("avgWords")} value={s.avg_words.toFixed(1)} />
-        <Stat label={t("questionShare")} value={pct(s.question_ratio)} />
-        <Stat label={t("replyShare")} value={pct(s.msg_count ? s.reply_count / s.msg_count : 0)} />
+        <Stat
+          icon={Type}
+          label={t("avgWords")}
+          value={s.avg_words.toFixed(1)}
+          sub={hasPeers ? `${t("avgShort")} ${avgWordsChat.toFixed(1)}` : undefined}
+        />
+        <Stat
+          icon={HelpCircle}
+          label={t("questionShare")}
+          value={pct(s.question_ratio)}
+          meter={{
+            value: s.question_ratio,
+            baseline: hasPeers ? avgQuestion : undefined,
+            label: hasPeers ? `${t("avgShort")} ${pct(avgQuestion)}` : undefined,
+            color: "var(--chart-2)",
+          }}
+        />
+        <Stat
+          icon={Quote}
+          label={t("replyShare")}
+          value={pct(s.msg_count ? s.reply_count / s.msg_count : 0)}
+          meter={{
+            value: s.msg_count ? s.reply_count / s.msg_count : 0,
+            baseline: hasPeers ? avgReply : undefined,
+            label: hasPeers ? `${t("avgShort")} ${pct(avgReply)}` : undefined,
+            color: "var(--chart-4)",
+          }}
+        />
       </div>
 
       {ordered.length >= 2 && (
@@ -354,34 +349,6 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
           <H3>{t("toneRadar")}</H3>
           <p className="-mt-1 text-sm text-muted-foreground">{t("toneRadarHint")}</p>
           <Card className="border-border bg-card p-3"><Radar indicators={indicators} series={radarSeries} /></Card>
-        </section>
-      )}
-
-      {(s.first_msg_minutes?.length ?? 0) > 0 && (
-        <section className="space-y-3">
-          <H3>{t("wakeup")}</H3>
-          <p className="-mt-1 text-sm text-muted-foreground">{t("wakeupHint")}</p>
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-            <Stat label={t("wakeupMedian")} value={hhmm(wakeMin)} />
-            {wakeGroups.length >= 2 && (
-              <Card className="border-border bg-card p-3 lg:col-span-2"><Box groups={wakeGroups} asTime /></Card>
-            )}
-          </div>
-          {/* The box plot already compares everyone shown; only fall back to a
-              text list when it can't render (too few qualifying users), and cap
-              it so a 200-person chat never dumps a wall of names. */}
-          {wakeGroups.length < 2 && (() => {
-            const others = ordered
-              .filter((u) => u.user_id !== id && (u.first_msg_minutes?.length ?? 0) > 0)
-              .slice(0, 12)
-              .map((u) => ({ name: u.name, hhmm: hhmm(median(u.first_msg_minutes)) }))
-            if (!others.length) return null
-            return (
-              <p className="text-xs text-muted-foreground">
-                {t("wakeupOthers")} {others.map((o) => `${o.name} — ${o.hhmm}`).join(", ")}
-              </p>
-            )
-          })()}
         </section>
       )}
 
@@ -428,10 +395,10 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
           <H3>{t("reciprocity")}</H3>
           <p className="-mt-1 text-sm text-muted-foreground">{t("reciprocityHint")}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label={t("medianReply")} value={humanizeDuration(dir.median_seconds)} />
-            <Stat label={t("within5")} value={pct(dir.within_5m)} />
-            <Stat label={t("within30")} value={pct(dir.within_30m)} />
-            <Stat label={t("within60")} value={pct(dir.within_60m)} />
+            <Stat icon={Timer} label={t("medianReply")} value={humanizeDuration(dir.median_seconds)} />
+            <Stat label={t("within5")} value={pct(dir.within_5m)} meter={{ value: dir.within_5m, color: "var(--chart-2)" }} />
+            <Stat label={t("within30")} value={pct(dir.within_30m)} meter={{ value: dir.within_30m, color: "var(--chart-2)" }} />
+            <Stat label={t("within60")} value={pct(dir.within_60m)} meter={{ value: dir.within_60m, color: "var(--chart-2)" }} />
           </div>
           {(() => {
             const other = recip?.a_to_b === dir ? recip?.b_to_a : recip?.a_to_b
@@ -457,7 +424,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
           <H3>{t("streaks")}</H3>
           <p className="-mt-1 text-sm text-muted-foreground">{t("streaksHint")}</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Stat label={t("longestStreak")} value={`${fmtInt(streakQ.data.longest_streak_days)} ${dayWord(streakQ.data.longest_streak_days)}`} sub={streakQ.data.longest_streak_start ?? undefined} />
+            <Stat icon={Flame} label={t("longestStreak")} value={`${fmtInt(streakQ.data.longest_streak_days)} ${dayWord(streakQ.data.longest_streak_days)}`} sub={streakQ.data.longest_streak_start ?? undefined} />
             <Stat label={t("currentStreak")} value={`${fmtInt(streakQ.data.current_streak_days)} ${dayWord(streakQ.data.current_streak_days)}`} />
             <Stat label={t("activeDays")} value={fmtInt(streakQ.data.total_active_days)} />
           </div>
@@ -478,9 +445,19 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
         <section className="space-y-3">
           <H3>{t("initiator")}</H3>
           <p className="-mt-1 text-sm text-muted-foreground">{t("initiatorHint")}</p>
-          <div className="grid grid-cols-2 gap-3 sm:max-w-md">
-            <Stat label={t("initiations")} value={fmtInt(initRow.initiations)} />
-            <Stat label={t("initiatorShare")} value={pct(initRow.share)} />
+          <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
+            <Stat
+              icon={Flag}
+              label={t("initiatorShare")}
+              value={pct(initRow.share)}
+              sub={`${fmtInt(initRow.initiations)} ${t("initiations").toLowerCase()}`}
+              meter={{
+                value: initRow.share,
+                baseline: hasPeers ? 1 / ordered.length : undefined,
+                label: hasPeers ? `${t("avgShort")} ${pct(1 / ordered.length)}` : undefined,
+                color: "var(--chart-3)",
+              }}
+            />
           </div>
           {initQ.data && initQ.data.total_initiations < 30 && (
             <p className="text-xs text-muted-foreground">
@@ -495,27 +472,27 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
           <H3>{t("forwards")}</H3>
           <p className="-mt-1 text-sm text-muted-foreground">{t("forwardsHint")}</p>
           <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
-            <Stat label={t("forwardShare")} value={pct(fwd.total_messages ? fwd.forwarded_count / fwd.total_messages : 0)} sub={`${fmtInt(fwd.forwarded_count)} / ${fmtInt(fwd.total_messages)}`} />
+            <Stat
+              icon={Forward}
+              label={t("forwardShare")}
+              value={pct(fwd.total_messages ? fwd.forwarded_count / fwd.total_messages : 0)}
+              sub={`${fmtInt(fwd.forwarded_count)} / ${fmtInt(fwd.total_messages)}`}
+              meter={{ value: fwd.total_messages ? fwd.forwarded_count / fwd.total_messages : 0, color: "var(--chart-5)" }}
+            />
           </div>
-          {fwd.top_sources.length > 0 && (
-            <Card className="border-border bg-card p-3"><BarsH data={fwd.top_sources} color="var(--chart-5)" /></Card>
-          )}
         </section>
       )}
 
-      {latData.length > 0 && (
+      {/* reply speed for group per-user views (2-person chats already get the
+          richer reciprocity block above, so only show this when that's hidden) */}
+      {!dir && userLat.length > 0 && (
         <section className="space-y-3">
-          <H3>{t("latencyHist")}</H3>
-          <p className="-mt-1 text-sm text-muted-foreground">{t("latencyHistHint")}</p>
-          {/* median is already shown in the reciprocity block above when it
-              renders (2-person chats); only repeat it here as a fallback for
-              group per-user views where reciprocity is hidden */}
-          {!dir && (
-            <div className="text-sm text-muted-foreground">
-              {t("medianReply")}: {humanizeDuration(median(userLat))} · {fmtInt(userLat.length)}
-            </div>
-          )}
-          <Card className="border-border bg-card p-3"><Bars data={latData} height={240} color="var(--chart-1)" /></Card>
+          <H3>{t("reciprocity")}</H3>
+          <p className="-mt-1 text-sm text-muted-foreground">{t("reciprocityHint")}</p>
+          <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
+            <Stat icon={Timer} label={t("medianReply")} value={humanizeDuration(median(userLat))} />
+            <Stat icon={MessageSquare} label={t("repliesCounted")} value={fmtInt(userLat.length)} />
+          </div>
         </section>
       )}
 
@@ -552,17 +529,6 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
             total={userStickerData.total_stickers}
             emojiFallback={userStickerData.top_emojis}
           />
-        </section>
-      )}
-
-      {userWords && userWords.total_tokens > 0 && (
-        <section className="space-y-3">
-          <H3>{t("vocabUser")}</H3>
-          <div className="grid grid-cols-3 gap-3 sm:max-w-lg">
-            <Stat label={t("totalTokens")} value={fmtInt(userWords.total_tokens)} />
-            <Stat label={t("uniqueTokens")} value={fmtInt(userWords.unique_tokens)} />
-            <Stat label={t("mtld")} value={userWords.mtld.toFixed(1)} />
-          </div>
         </section>
       )}
 

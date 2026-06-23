@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useTranslation } from "react-i18next"
 
-import { Cloud, Type } from "lucide-react"
+import { Cloud, Hash, Type } from "lucide-react"
 
 import { api, wordcloudUrl, type Sel } from "@/lib/api"
 import { fmtInt } from "@/lib/i18n"
@@ -11,6 +11,7 @@ import { WordCloud } from "@/components/wordcloud"
 import { TabError, TabLoading } from "@/components/loading"
 import { Section } from "@/components/section"
 import { Collapsible } from "@/components/collapsible"
+import { Stat } from "@/components/stat"
 
 export function Channel({ path, sel }: { path: string; sel: Sel }) {
   const { t } = useTranslation()
@@ -25,14 +26,8 @@ export function Channel({ path, sel }: { path: string; sel: Sel }) {
   return (
     <div className="space-y-8 pt-2">
       <div className="grid grid-cols-2 gap-3 sm:max-w-sm">
-        <Card className="gap-1 border-border bg-card px-4 py-3">
-          <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{t("channelTokens")}</div>
-          <div className="text-2xl font-semibold tabular-nums">{fmtInt(d.token_count)}</div>
-        </Card>
-        <Card className="gap-1 border-border bg-card px-4 py-3">
-          <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{t("channelTopCount")}</div>
-          <div className="text-2xl font-semibold tabular-nums">{fmtInt(d.top_words.length)}</div>
-        </Card>
+        <Stat icon={Type} label={t("channelTokens")} value={fmtInt(d.token_count)} />
+        <Stat icon={Hash} label={t("channelTopCount")} value={fmtInt(d.top_words.length)} />
       </div>
 
       {d.has_wordcloud && (

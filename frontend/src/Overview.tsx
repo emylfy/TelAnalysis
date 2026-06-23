@@ -13,16 +13,7 @@ import { Hint } from "@/components/hint"
 import { Section } from "@/components/section"
 import { RankTable } from "@/components/rank-table"
 import { Collapsible } from "@/components/collapsible"
-
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <Card className="gap-1 border-border bg-card px-4 py-3">
-      <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="text-2xl font-semibold tabular-nums">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
-    </Card>
-  )
-}
+import { Stat } from "@/components/stat"
 
 function LatencyBlock({ l }: { l: LatencyStats }) {
   const { t } = useTranslation()

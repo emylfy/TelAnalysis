@@ -14,21 +14,13 @@ import { UserCombobox } from "@/components/user-combobox"
 import { TabError, TabLoading } from "@/components/loading"
 import { Section } from "@/components/section"
 import { Collapsible } from "@/components/collapsible"
+import { Stat } from "@/components/stat"
 import { SentimentBlock } from "@/Sentiment"
 
 // MTLD stabilizes only with a few hundred tokens; below this it reads 0.0 and
 // just pads the table with deleted/one-line accounts.
 const VOCAB_MIN_TOKENS = 500
 const VOCAB_TOP = 20
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <Card className="gap-1 border-border bg-card px-4 py-3">
-      <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className="text-2xl font-semibold tabular-nums">{value}</div>
-    </Card>
-  )
-}
 
 export function Words({ path, sel }: { path: string; sel: Sel }) {
   const { t } = useTranslation()
