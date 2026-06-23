@@ -28,10 +28,23 @@ class InitiatorRow:
 
 
 @dataclass
+class CloserRow:
+    user_id: str
+    name: str
+    closings: int
+    share: float
+
+
+@dataclass
 class InitiatorStats:
     gap_hours: int
     rows: list[InitiatorRow] = field(default_factory=list)
     total_initiations: int = 0
+    # who has the *last word* — the message that ends a conversation (the mirror
+    # image of an initiation: the last message before a gap > gap_hours, plus the
+    # very last message overall).
+    closer_rows: list[CloserRow] = field(default_factory=list)
+    total_closings: int = 0
 
 
 def _parse(s) -> datetime | None:
@@ -134,8 +147,9 @@ def conversation_initiators(
 
     gap_seconds = gap_hours * 3600
     counts: Counter = Counter()
+    closer_counts: Counter = Counter()
     names: dict[str, str] = {}
-    # First message also counts as an initiation.
+    # First message also counts as an initiation; the last counts as a closing.
     counts[rows[0][1]] += 1
     names[rows[0][1]] = rows[0][2]
     for i in range(1, len(rows)):
@@ -143,6 +157,14 @@ def conversation_initiators(
         ts, uid, name = rows[i]
         if (ts - prev_ts).total_seconds() >= gap_seconds:
             counts[uid] += 1
+            names.setdefault(uid, name)
+    # Closers: a message that ends a conversation — the last one before a gap,
+    # or the final message of the whole history.
+    for i in range(len(rows)):
+        ts, uid, name = rows[i]
+        is_last = i == len(rows) - 1 or (rows[i + 1][0] - ts).total_seconds() >= gap_seconds
+        if is_last:
+            closer_counts[uid] += 1
             names.setdefault(uid, name)
 
     total = sum(counts.values())
@@ -155,4 +177,20 @@ def conversation_initiators(
         )
         for uid, n in counts.most_common()
     ]
-    return InitiatorStats(gap_hours=gap_hours, rows=out_rows, total_initiations=total)
+    total_close = sum(closer_counts.values())
+    closer_rows = [
+        CloserRow(
+            user_id=uid,
+            name=names.get(uid, uid),
+            closings=n,
+            share=n / total_close if total_close else 0.0,
+        )
+        for uid, n in closer_counts.most_common()
+    ]
+    return InitiatorStats(
+        gap_hours=gap_hours,
+        rows=out_rows,
+        total_initiations=total,
+        closer_rows=closer_rows,
+        total_closings=total_close,
+    )

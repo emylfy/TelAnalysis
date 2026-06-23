@@ -13,7 +13,7 @@ import { TabError, TabLoading } from "@/components/loading"
 import { UserCombobox } from "@/components/user-combobox"
 import { Stat } from "@/components/stat"
 import { ExtremeList } from "@/Sentiment"
-import { Flag, Flame, Forward, HelpCircle, MessageSquare, Quote, Ruler, Timer, Type } from "lucide-react"
+import { Crown, Flag, Flame, Forward, HelpCircle, MessageSquare, Quote, Timer, Type } from "lucide-react"
 
 // Up to this many participants, overlay them all on the tone radar; beyond it,
 // show just the selected user vs. the chat average.
@@ -274,6 +274,8 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       : null
 
   const initRow = initQ.data?.rows.find((r) => String(r.user_id) === String(id))
+  // "last word" — share of conversations this person ends (mirror of initiations)
+  const closerRow = initQ.data?.closer_rows?.find((r) => String(r.user_id) === String(id))
   const fwd = fwdQ.data?.per_user?.[id]
   const matRows = matQ.data ? Object.values(matQ.data.per_user).sort((a, b) => b.mat_hits / Math.max(1, b.total_messages) - a.mat_hits / Math.max(1, a.total_messages)) : []
   // Only people who actually swore, and for the headline view only those with
@@ -292,6 +294,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
     personaForLength(s.length_buckets),
     ...(s.first_msg_minutes?.length ? [t("chipFirstOnline", { time: hhmm(wakeMin) })] : []),
     ...(initRow && initRow.share >= 0.55 ? [t("traitInitiator")] : []),
+    ...(closerRow && closerRow.share >= 0.55 ? [t("traitCloser")] : []),
     ...(dir && dir.median_seconds <= 120 ? [t("traitFastReplier")] : []),
   ].filter((c) => c && c !== "—")
   const personaShare = `${pct(total ? s.msg_count / total : 0)} · ${t("shareOfChat")}`
@@ -308,11 +311,24 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       {/* share of chat is already shown in the persona chip above — don't repeat it here */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat icon={MessageSquare} label={t("messages")} value={fmtInt(s.msg_count)} />
+        {/* "last word" — who ends conversations. Message length already gets its
+            own distribution block below, so this tile spends the slot on a metric
+            nothing else surfaces. Mirrors the Initiator tile's meter/baseline. */}
         <Stat
-          icon={Ruler}
-          label={t("msgLengthMedian")}
-          value={`${fmtInt(s.median_chars)} ${t("charsShort")}`}
-          sub={`avg ${s.avg_chars.toFixed(0)} · max ${fmtInt(s.longest_chars)}`}
+          icon={Crown}
+          label={t("lastWordShare")}
+          value={closerRow ? pct(closerRow.share) : "—"}
+          sub={closerRow ? `${fmtInt(closerRow.closings)} ${t("conversations").toLowerCase()}` : undefined}
+          meter={
+            closerRow
+              ? {
+                  value: closerRow.share,
+                  baseline: hasPeers ? 1 / ordered.length : undefined,
+                  label: hasPeers ? `${t("avgShort")} ${pct(1 / ordered.length)}` : undefined,
+                  color: "var(--chart-1)",
+                }
+              : undefined
+          }
         />
         <Stat
           icon={Type}

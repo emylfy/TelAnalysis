@@ -33,7 +33,7 @@ const ru = {
   // sessions
   conversations: "Разговоров",
   perConvAvg: "Сообщ./разговор (среднее)",
-  convMedian: "Медиана",
+  convTotalTime: "Время в разговорах",
   longestConv: "Самый долгий",
   mostMessagesConv: "Больше всего сообщений",
   longestConvs: "Самые долгие разговоры",
@@ -199,6 +199,7 @@ const ru = {
   initiator: "Кто начинает разговоры",
   initiations: "Инициатив",
   initiatorShare: "Доля инициатив",
+  lastWordShare: "Последнее слово",
   forwards: "Форварды (репосты)",
   forwardShare: "Доля форвардов",
   latencyHist: "Распределение скорости ответа",
@@ -240,9 +241,6 @@ const ru = {
     "Нужны опциональные зависимости для RU/EN-оценок. Установи и перезапусти сервер:",
   sentimentOffNote:
     "Это ~1 ГБ (torch + transformers) и ~50 МБ модели при первом запуске. Модель не различает сарказм и шутки — вспомогательная метрика.",
-  // PerUser char metrics
-  msgLengthMedian: "Длина (медиана)",
-  charsShort: "симв.",
   // PerUser captions
   wakeupOthers: "у других:",
   initiatorsLowN: "⚠ всего инициаций {{n}} — выборка маленькая, процент может быть случайным.",
@@ -287,6 +285,7 @@ const ru = {
   lenpersona_xl: "📜 эссе",
   traitInitiator: "🚀 инициатор",
   traitFastReplier: "⚡ быстро отвечает",
+  traitCloser: "🎤 последнее слово",
   // section hints — «что отсюда понять»
   howOftenHint: "Объём сообщений по дням и календарь активности по годам.",
   whenHoursHint: "Тепловая карта час × день недели: когда переписка живее всего.",
@@ -398,7 +397,7 @@ const en: typeof ru = {
   qWithAnswer: "Questions with a reply",
   conversations: "Conversations",
   perConvAvg: "Msgs/conversation (avg)",
-  convMedian: "Median",
+  convTotalTime: "Time in conversations",
   longestConv: "Longest",
   mostMessagesConv: "Most messages",
   longestConvs: "Longest conversations",
@@ -553,6 +552,7 @@ const en: typeof ru = {
   initiator: "Who starts conversations",
   initiations: "Initiations",
   initiatorShare: "Initiation share",
+  lastWordShare: "Last word",
   forwards: "Forwards (reposts)",
   forwardShare: "Forward share",
   latencyHist: "Reply-speed distribution",
@@ -590,8 +590,6 @@ const en: typeof ru = {
     "RU/EN sentiment needs optional dependencies. Install and restart the server:",
   sentimentOffNote:
     "It adds ~1 GB (torch + transformers) plus ~50 MB for the model on first run. The model misses sarcasm and jokes — it's a helper metric, not a diagnosis.",
-  msgLengthMedian: "Length (median)",
-  charsShort: "chars",
   wakeupOthers: "others:",
   initiatorsLowN: "⚠ only {{n}} initiations total — sample is small, the share may be noise.",
   reciprocityReverse:
@@ -627,6 +625,7 @@ const en: typeof ru = {
   lenpersona_xl: "📜 essayist",
   traitInitiator: "🚀 initiator",
   traitFastReplier: "⚡ fast replies",
+  traitCloser: "🎤 last word",
   // section hints — "what you learn here"
   howOftenHint: "Message volume by day and a per-year activity calendar.",
   whenHoursHint: "An hour × weekday heatmap: when the chat is most alive.",

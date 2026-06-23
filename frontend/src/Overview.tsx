@@ -61,12 +61,18 @@ function SessionsBlock({ s }: { s: SessionsStats }) {
     .map((se) => ({ ...se, dur: (new Date(se.end).getTime() - new Date(se.start).getTime()) / 1000 }))
     .sort((a, b) => b.dur - a.dur)
     .slice(0, 10)
+  // total wall-clock time spent in conversations (+ the per-conversation average).
+  // Replaces the median tile: median only restated "typical size", which the
+  // average beside it already gives — this adds the time dimension the
+  // message-count tiles never showed.
+  const totalDur = s.sessions.reduce((acc, se) => acc + (new Date(se.end).getTime() - new Date(se.start).getTime()) / 1000, 0)
+  const avgDur = totalDur / s.sessions.length
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label={t("conversations")} value={fmtInt(s.sessions.length)} />
         <Stat label={t("perConvAvg")} value={s.avg_messages.toFixed(1)} />
-        <Stat label={t("convMedian")} value={s.median_messages.toFixed(1)} />
+        <Stat label={t("convTotalTime")} value={humanizeDuration(totalDur)} sub={`${t("avgShort")} ${humanizeDuration(avgDur)}`} />
         {/* "most messages" (by count) — the longest-by-duration list below ranks
             differently, so this card no longer calls itself "longest" */}
         {s.longest && <Stat label={t("mostMessagesConv")} value={`${fmtInt(s.longest.msg_count)}`} sub={s.longest.start.slice(0, 10)} />}

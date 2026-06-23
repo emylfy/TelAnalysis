@@ -228,10 +228,18 @@ export interface InitiatorRow {
   initiations: number
   share: number
 }
+export interface CloserRow {
+  user_id: string
+  name: string
+  closings: number
+  share: number
+}
 export interface InitiatorStats {
   gap_hours: number
   rows: InitiatorRow[]
   total_initiations: number
+  closer_rows: CloserRow[]
+  total_closings: number
 }
 export interface UserForwards {
   user_id: string
