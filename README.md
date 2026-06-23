@@ -31,16 +31,17 @@ UI ships in **EN / RU** (toggle in the header). Chat content is left untouched �
 
 ## Features
 
+Every tab is framed by a **"Wrapped"-style recap** — a narrative summary, an activity sparkline, headline KPIs (messages, participants, days active, media, voice time), anniversary milestones, and auto-generated highlight cards (peak hour, loudest day, top emoji, longest streak…).
+
 | Tab | What you get |
 | --- | --- |
-| **Overview** | KPI cards (messages, participants, days active, media, voice time), area chart of daily activity, calendar heatmap (year × week × day, with binary "did we talk today" toggle), hour × weekday heatmap, top emojis, reply latency distribution, Q&A latency split |
-| **Network** | Interactive force-directed graph (drag / zoom / hover, edge thickness by interaction count, node colour by Louvain community), reply-chain depth metrics, "who replies to whom" matrix. Falls back to a bar chart for small chats. Edges/nodes export to CSV for Gephi |
-| **Words** | Wordcloud + top words bar chart + virtualised table, n-gram phrase extraction (bigrams/trigrams), russian-profanity tracker per user (`hits / 100 msgs`), unique-vocabulary index, email + phone extraction |
+| **Overview** | Area chart of daily activity, multi-year calendar heatmap (volume, or a binary "did we talk today" toggle), hour × weekday heatmap (peak-hour + night-share callouts), hour-overlap chart for 1-on-1s, conversation sessions (count, avg messages, total time, longest by duration), media-type breakdown + voice stats + top link domains, top emojis, reply-latency distribution with a question→answer split, longest-monologues ranking |
+| **Network** | Interactive force-directed graph (drag / zoom / hover, edge thickness & arrows by reply count and direction, node colour by Louvain community), a "chat portrait" of structural findings (hubs, bridges, magnets, centralisation), per-user structural-role table, reply-chain depth metrics. Falls back to a bar chart for small chats; nodes/edges export to CSV for Gephi |
+| **Words** | Wordcloud (whole-chat or per-user) + top-words bar chart & table, n-gram phrase extraction (bigrams / trigrams), vocabulary richness (MTLD) per participant, email + phone extraction |
 | **Channel** | Broadcast-style wordcloud and frequency analysis for channels |
-| **Per-user** | Per-user daily timeline, hour × weekday heatmap, top emojis, sticker-emoji preferences, reply latency, top words with wordcloud, speaking-style radar (avg message length, question rate, emoji rate, reply rate), longest monologues, forwards source breakdown |
-| **Highlights** | Auto-generated "Spotify Wrapped" cards, anniversary milestones, conversation-length distribution, top-10 longest sessions |
+| **Per-user** | Pick any participant: a persona card with trait chips, KPI tiles (messages, last-word share, words/message, question share, reply share), a speaking-tone radar (questions / exclamations / CAPS / replies vs. the chat average), per-user daily timeline + hour × weekday heatmap, time-of-day & message-length distributions, reply-speed / reciprocity, activity streaks & silences, conversation-initiator share, forwards share, characteristic phrases, top words & emojis, favourite stickers, distinguishing words for 1-on-1s (log-odds), and a Russian-profanity (mat) leaderboard (`hits / 100 msgs`) |
 
-Optional Russian/English **sentiment analysis** powered by `rubert-tiny2-russian-sentiment` — adds a per-user sentiment score, sentiment-over-time line, and sentiment by hour-of-day / weekday.
+Optional Russian/English **sentiment analysis** powered by `rubert-tiny2-russian-sentiment` adds a sentiment-over-time arc, per-participant tone lines, an hour-of-day / weekday breakdown, and the most positive / negative messages — surfaced on the **Words** and **Per-user** tabs.
 
 <table>
   <tr>
@@ -181,20 +182,20 @@ NLTK data (`stopwords`, `punkt_tab`) downloads automatically on the first word-a
 
 ### Try it without your own data
 
-There's a generator for two synthetic exports — a 7-person studio chat and a 1-on-1 — purely for previewing the app:
+Two synthetic exports ship with the repo, so the landing screen's **Try demo** buttons work right after cloning — nothing to download or generate (they're bundled into the Docker image too):
 
-```bash
-python3 tools/gen_demo_data.py   # writes demo/group_demo.json + demo/personal_demo.json
-./run.sh
-```
-
-On the landing screen choose a bundled demo, or paste a path:
 ```
 demo/group_demo.json       # 7-person studio chat, ~70k messages
 demo/personal_demo.json    # 1-on-1, ~18k messages
 ```
 
-Content is sampled from vocab pools with a fixed RNG seed; no real conversations are referenced. Files are gitignored — regenerate any time.
+To regenerate them (or tweak the participant profiles), run the generator:
+
+```bash
+python3 tools/gen_demo_data.py   # rewrites demo/group_demo.json + demo/personal_demo.json
+```
+
+Content is sampled from vocab pools with a fixed RNG seed; no real conversations are referenced.
 
 ## Optional: sentiment analysis
 
@@ -205,6 +206,18 @@ pip install -r requirements-sentiment.txt
 ```
 
 Restart the app after install. The model is not sarcasm-aware and does not understand slang or jokes — read the numbers with healthy scepticism.
+
+## Screenshots
+
+The dashboard images in this README are generated, not hand-captured — re-run the script after a UI change to refresh them:
+
+```bash
+pip install playwright            # dev-only, intentionally not in requirements.txt
+python -m playwright install chromium
+python tools/screenshots.py       # writes the 5 PNGs in docs/screenshots/
+```
+
+`tools/screenshots.py` drives headless Chromium against the two bundled demos and overwrites `docs/screenshots/*.png`. It starts a server automatically if one isn't already running; pass `--only <name>` to refresh a single shot or `--base-url` to target another port. The sentiment shot needs the optional model (see above) — without it that one is skipped.
 
 ## Tests & lint
 
