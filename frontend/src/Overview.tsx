@@ -7,7 +7,7 @@ import { api, type LatencyStats, type SessionsStats, type Sel } from "@/lib/api"
 import { fmtInt, humanizeDuration } from "@/lib/i18n"
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
-import { AreaTimeline, Bars, BarsH, Calendar, HeatLegend, HourOverlap, HourWeekday, MediaPie } from "@/components/charts"
+import { AreaTimeline, BarsH, Calendar, HeatLegend, HourOverlap, HourWeekday, MediaPie } from "@/components/charts"
 import { TabError, TabLoading } from "@/components/loading"
 import { Hint } from "@/components/hint"
 import { Section } from "@/components/section"
@@ -57,7 +57,6 @@ function LatencyBlock({ l }: { l: LatencyStats }) {
 function SessionsBlock({ s }: { s: SessionsStats }) {
   const { t } = useTranslation()
   if (!s.sessions?.length) return null
-  const buckets = Object.entries(s.duration_buckets ?? {}) as [string, number][]
   const longest = [...s.sessions]
     .map((se) => ({ ...se, dur: (new Date(se.end).getTime() - new Date(se.start).getTime()) / 1000 }))
     .sort((a, b) => b.dur - a.dur)
@@ -72,12 +71,6 @@ function SessionsBlock({ s }: { s: SessionsStats }) {
             differently, so this card no longer calls itself "longest" */}
         {s.longest && <Stat label={t("mostMessagesConv")} value={`${fmtInt(s.longest.msg_count)}`} sub={s.longest.start.slice(0, 10)} />}
       </div>
-      {buckets.length > 0 && (
-        <div className="space-y-2">
-          <div className="text-sm font-semibold">{t("convLength")}</div>
-          <Card className="border-border bg-card p-3"><Bars data={buckets} height={220} color="var(--chart-2)" /></Card>
-        </div>
-      )}
       {longest.length > 0 && (
         <div className="space-y-2">
           <div className="text-sm font-semibold">{t("longestConvs")}</div>
