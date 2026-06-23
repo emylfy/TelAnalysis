@@ -39,7 +39,7 @@ export function RankTable({
   return (
     <Card className="overflow-hidden border-border bg-card p-0">
       {columns && (
-        <div className="flex items-center gap-3 border-b border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-3 border-b border-border bg-surface-2/50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <span className="w-4 shrink-0" />
           <span className="min-w-0 flex-1">{columns[0]}</span>
           <span className="shrink-0 tabular-nums">{columns[1]}</span>
@@ -52,7 +52,7 @@ export function RankTable({
           return (
             <li
               key={i}
-              className="relative flex items-center gap-3 border-b border-border/50 px-4 py-2.5 last:border-0"
+              className="relative flex items-center gap-3 border-b border-border/50 px-4 py-2.5 transition-colors last:border-0 hover:bg-foreground/[0.03]"
             >
               {/* proportional track behind the row — the leaderboard "shape" */}
               <span

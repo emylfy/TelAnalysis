@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 
 import { Card } from "@/components/ui/card"
+import { AnimatedInt } from "@/components/motion"
 import { cn } from "@/lib/utils"
 
 /** A single KPI tile, shared across every tab (Overview / Per-user / Words /
@@ -27,6 +28,7 @@ export type StatMeter = {
 export function Stat({
   label,
   value,
+  valueNum,
   sub,
   icon: Icon,
   meter,
@@ -34,6 +36,9 @@ export function Stat({
 }: {
   label: string
   value: string
+  /** when set (plain integer), the value animates via NumberFlow; `value` is the
+   *  static/reduced-motion fallback. Omit for durations / % / decimals. */
+  valueNum?: number
   sub?: string
   icon?: ComponentType<{ className?: string }>
   meter?: StatMeter
@@ -42,19 +47,21 @@ export function Stat({
   return (
     <Card
       className={cn(
-        "gap-0 border-border bg-card px-4 py-3 ring-foreground/10 transition-colors hover:ring-foreground/20",
+        "gap-0 px-4 py-3 transition-[transform,box-shadow] hover:-translate-y-0.5",
         className,
       )}
     >
       <div className="flex items-start gap-3">
         {Icon && (
-          <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04] ring-1 ring-foreground/10">
+          <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-foreground/[0.08]">
             <Icon className="size-4 text-primary/80" />
           </span>
         )}
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">{label}</div>
-          <div className="text-2xl font-semibold leading-none tabular-nums">{value}</div>
+          <div className="text-[1.75rem] font-semibold leading-none tracking-tight tabular-nums">
+            {valueNum != null ? <AnimatedInt value={valueNum} /> : value}
+          </div>
           {sub && <div className="pt-0.5 text-xs text-muted-foreground">{sub}</div>}
         </div>
       </div>
@@ -69,7 +76,7 @@ function Meter({ value, baseline, label, color = "var(--primary)" }: StatMeter) 
   const base = baseline != null ? clamp(baseline) * 100 : null
   return (
     <div className="relative mt-3">
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/[0.08]">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
         <div className="h-full rounded-full transition-[width]" style={{ width: `${fill}%`, background: color }} />
       </div>
       {base != null && (

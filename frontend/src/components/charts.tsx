@@ -3,6 +3,7 @@ import ReactECharts from "echarts-for-react"
 
 import i18n, { fmtDateTick, fmtInt, mediaKindLabel, monthShort, weekdayShort } from "@/lib/i18n"
 import {
+  barRadius,
   base,
   brand,
   DATA,
@@ -15,6 +16,8 @@ import {
   rankStyle,
   resolveColor,
   series as PALETTE,
+  surfaceBg,
+  surfaceCard,
   tooltip as TOOLTIP,
   valueAxis,
   vFill,
@@ -63,7 +66,7 @@ export function HourWeekday({ grid }: { grid: number[][] }) {
           axisLabel: { color: ink.tick },
         },
         visualMap: { min: 0, max, show: false, inRange: { color: [...heat] } },
-        series: [{ type: "heatmap", data, itemStyle: { borderColor: "#0e1117", borderWidth: 1 } }],
+        series: [{ type: "heatmap", data, itemStyle: { borderColor: surfaceBg, borderWidth: 1 } }],
       }}
     />
   )
@@ -181,7 +184,7 @@ export function MediaPie({ byKind }: { byKind: Record<string, number> }) {
             // long tail of media kinds — the legend already names every slice.
             label: { show: false },
             labelLine: { show: false },
-            itemStyle: { borderColor: "#14161d", borderWidth: 2 },
+            itemStyle: { borderColor: surfaceCard, borderWidth: 2 },
             data,
           },
         ],
@@ -223,7 +226,7 @@ export function Bars({
             type: "bar",
             data: data.map((d, i) => ({
               value: d[1],
-              itemStyle: { color: i === maxIdx ? brand : baseColor, borderRadius: [3, 3, 0, 0] },
+              itemStyle: { color: i === maxIdx ? brand : baseColor, borderRadius: [barRadius, barRadius, 0, 0] },
             })),
           },
         ],
@@ -341,7 +344,7 @@ export function DivergingBars({
         series: [
           {
             type: "bar",
-            data: data.map((d) => ({ value: d[1], itemStyle: { color: d[1] >= 0 ? pos : neg, borderRadius: d[1] >= 0 ? [3, 3, 0, 0] : [0, 0, 3, 3] } })),
+            data: data.map((d) => ({ value: d[1], itemStyle: { color: d[1] >= 0 ? pos : neg, borderRadius: d[1] >= 0 ? [barRadius, barRadius, 0, 0] : [0, 0, barRadius, barRadius] } })),
           },
         ],
       }}
@@ -669,7 +672,7 @@ export function BarsH({
             data: rows.map((d, i) => ({
               value: d[1],
               itemStyle: {
-                borderRadius: [0, 3, 3, 0],
+                borderRadius: [0, barRadius, barRadius, 0],
                 ...(accent ? rankStyle(n - 1 - i, n, baseColor) : { color: baseColor }),
               },
             })),

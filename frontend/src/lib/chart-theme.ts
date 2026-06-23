@@ -8,11 +8,20 @@
 
 // structural ink — axes, gridlines, tick labels, the value labels on series
 export const ink = {
-  axis: "rgba(255,255,255,0.07)",
-  grid: "rgba(255,255,255,0.045)",
-  tick: "#7c8493", // muted, recedes behind the data
+  axis: "rgba(255,255,255,0.10)",
+  grid: "rgba(255,255,255,0.07)", // faintly visible hairline grid (was invisible at 4.5%)
+  tick: "#9aa3b2", // mid-grey — legible but still recedes behind the data
   label: "#e5e7eb", // foreground, for in-chart value labels
 } as const
+
+// Canvas surfaces — mirror --background / --card in index.css. ECharts can't read
+// CSS vars, so the 1px borders it draws between heatmap/calendar cells and pie
+// segments are hardcoded here to match the page (no seam against the surface).
+export const surfaceBg = "#0c0e14" // == --background (deep blue-black)
+export const surfaceCard = "#15171f" // == --card (surface-1)
+
+// Shared bar corner radius — every bar chart rounds consistently (was a flat 3px).
+export const barRadius = 5
 
 // brand coral — reserved for emphasis: the headline item, "you", the #1 bar.
 // Used sparingly so it actually reads as emphasis and not decoration.
@@ -22,7 +31,7 @@ export const brand = "#ff6b6b"
 export const pos = "#34d399"
 export const neg = "#fb6f5d"
 
-// Curated categorical palette. Harmonious on the #0e1117 surface and ordered
+// Curated categorical palette. Harmonious on the deep blue-black surface and ordered
 // most-distinct-first, so a 2- or 3-series chart gets maximally separable hues.
 // `series[0]` (indigo) is the default "neutral data" colour across the app.
 export const series = [
@@ -95,19 +104,24 @@ export const heatBinary = ["#1b2740", "#6a8efb"] as const
 
 // Tooltip — rounded, soft shadow, faint blur. Consistent everywhere.
 export const tooltip = {
-  backgroundColor: "rgba(18,20,27,0.94)",
-  borderColor: "rgba(255,255,255,0.08)",
+  backgroundColor: "rgba(24,26,36,0.92)", // tone of --elevated
+  borderColor: "rgba(255,255,255,0.10)",
   borderWidth: 1,
   padding: [8, 12] as [number, number],
   textStyle: { color: ink.label, fontSize: 12 },
   extraCssText:
-    "border-radius:10px;box-shadow:0 10px 30px -8px rgba(0,0,0,0.6);backdrop-filter:blur(6px);",
+    "border-radius:12px;box-shadow:0 8px 24px -8px rgba(0,0,0,0.55);backdrop-filter:blur(6px);",
 }
 
 export const base = {
   backgroundColor: "transparent",
   textStyle: { color: ink.tick, fontFamily: "inherit" },
   tooltip,
+  // Entrance animation: every chart spreading `...base` fades/rises in with a
+  // slight per-element stagger. prefers-reduced-motion is honoured globally.
+  animationDuration: 600,
+  animationEasing: "cubicOut" as const,
+  animationDelay: (i: number) => i * 18,
 }
 
 /** Shared value-axis styling (no axis line, faint split lines, muted ticks). */

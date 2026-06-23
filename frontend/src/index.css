@@ -41,6 +41,14 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+    --color-surface-1: var(--surface-1);
+    --color-surface-2: var(--surface-2);
+    --color-elevated: var(--elevated);
+    --color-brand-2: var(--brand-2);
+    /* elevation scale → shadow-e1/e2/e3 utilities (real depth on dark) */
+    --shadow-e1: 0 1px 2px -1px rgb(0 0 0 / 0.40), 0 1px 1px rgb(0 0 0 / 0.30);
+    --shadow-e2: 0 2px 4px -2px rgb(0 0 0 / 0.45), 0 4px 12px -4px rgb(0 0 0 / 0.45);
+    --shadow-e3: 0 8px 24px -8px rgb(0 0 0 / 0.55), 0 2px 6px -2px rgb(0 0 0 / 0.40);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -88,24 +96,31 @@
 /* TelAnalysis dark palette (ported from analysis/theme.py PALETTE).
    App is dark-only; <html class="dark"> is set in index.html. */
 .dark {
-    --background: #0e1117;
-    --foreground: #e5e7eb;
-    --card: #14161d;
-    --card-foreground: #e5e7eb;
-    --popover: #14161d;
-    --popover-foreground: #e5e7eb;
+    /* refined-dark: deeper blue-black bg + stepped elevation surfaces so cards
+       float above the page (paired with the shadow-e* scale + crisp hairline) */
+    --background: oklch(0.165 0.012 265);   /* ~#0c0e14, below the old #0e1117 */
+    --foreground: oklch(0.93 0.004 260);
+    --surface-1: oklch(0.205 0.013 265);    /* base card */
+    --surface-2: oklch(0.235 0.014 265);    /* nested / hover surface */
+    --elevated:  oklch(0.255 0.015 265);    /* popover / overlay */
+    --card: var(--surface-1);
+    --card-foreground: var(--foreground);
+    --popover: var(--elevated);
+    --popover-foreground: var(--foreground);
     --primary: #ff6b6b;            /* brand accent (coral) */
     --primary-foreground: #ffffff;
-    --secondary: #1a1f2e;
-    --secondary-foreground: #e5e7eb;
-    --muted: #1a1f2e;
-    --muted-foreground: #9ca3af;
-    --accent: #1f2430;             /* subtle hover surface (not the brand pop) */
-    --accent-foreground: #e5e7eb;
+    --brand-2: #6a8efb;            /* single secondary hue (indigo) */
+    --secondary: var(--surface-2);
+    --secondary-foreground: var(--foreground);
+    --muted: var(--surface-2);
+    --muted-foreground: oklch(0.66 0.012 260);  /* brighter for axis/caption legibility */
+    --accent: var(--elevated);    /* subtle hover surface (not the brand pop) */
+    --accent-foreground: var(--foreground);
     --destructive: #e86452;
-    --border: oklch(1 0 0 / 8%);
-    --input: oklch(1 0 0 / 10%);
+    --border: oklch(1 0 0 / 12%);  /* crisp hairline (was 8%) */
+    --input: oklch(1 0 0 / 14%);
     --ring: #ff6b6b;
+    --radius: 0.75rem;             /* 10px → 12px; the radius-* scale recomputes */
     /* data palette — mirrors frontend/src/lib/chart-theme.ts (keep in sync) */
     --chart-1: #6a8efb;            /* indigo — primary data */
     --chart-2: #34d399;            /* emerald */
@@ -114,13 +129,13 @@
     --chart-5: #38bdf8;            /* sky */
     --pos: #34d399;                /* sentiment / positive */
     --neg: #fb6f5d;                /* sentiment / negative */
-    --sidebar: #14161d;
-    --sidebar-foreground: #e5e7eb;
+    --sidebar: var(--surface-1);
+    --sidebar-foreground: var(--foreground);
     --sidebar-primary: #ff6b6b;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #1f2430;
-    --sidebar-accent-foreground: #e5e7eb;
-    --sidebar-border: oklch(1 0 0 / 8%);
+    --sidebar-accent: var(--elevated);
+    --sidebar-accent-foreground: var(--foreground);
+    --sidebar-border: oklch(1 0 0 / 12%);
     --sidebar-ring: #ff6b6b;
 }
 
@@ -130,6 +145,10 @@
     }
   body {
     @apply bg-background text-foreground;
+    /* refined-dark signature: a faint catch-light at the top of the page so the
+       background reads as a lit surface, not flat ink. Fixed = doesn't scroll. */
+    background-image: radial-gradient(1200px 600px at 50% -10%, oklch(0.26 0.03 265 / 0.45), transparent 60%);
+    background-attachment: fixed;
     }
   html {
     @apply font-sans;
@@ -137,4 +156,19 @@
        scrollbar appears/disappears (notably in Firefox/Zen). */
     scrollbar-gutter: stable;
     }
+}
+
+/* Shimmer sweep for skeletons (see components/ui/skeleton.tsx). */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* Honor the OS "reduce motion" setting everywhere — covers CSS transitions,
+   the shimmer keyframe, and ECharts/motion entrance animations cheaply. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

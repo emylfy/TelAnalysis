@@ -33,6 +33,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TabLoading } from "@/components/loading"
 import { Stat } from "@/components/stat"
+import { FadeItem, Stagger } from "@/components/motion"
 import { Onboarding } from "@/Onboarding"
 
 // Tabs are lazy: the heavy charting libs (ECharts) load only when a chart-bearing
@@ -392,11 +393,11 @@ function SummaryCard({
   compact?: boolean
 }) {
   const { t } = useTranslation()
-  const figures = [
-    { label: t("messages"), value: fmtInt(kpis.total_messages), icon: MessageSquare },
-    { label: t("daysActive"), value: fmtInt(kpis.active_days), icon: CalendarCheck },
-    { label: participantWord(kpis.unique_users), value: fmtInt(kpis.unique_users), icon: Users },
-    { label: t("media"), value: fmtInt(kpis.media_messages), icon: ImageIcon },
+  const figures: { label: string; value: string; num?: number; icon: LucideIcon }[] = [
+    { label: t("messages"), value: fmtInt(kpis.total_messages), num: kpis.total_messages, icon: MessageSquare },
+    { label: t("daysActive"), value: fmtInt(kpis.active_days), num: kpis.active_days, icon: CalendarCheck },
+    { label: participantWord(kpis.unique_users), value: fmtInt(kpis.unique_users), num: kpis.unique_users, icon: Users },
+    { label: t("media"), value: fmtInt(kpis.media_messages), num: kpis.media_messages, icon: ImageIcon },
   ]
   if (voiceSeconds && voiceSeconds > 0) figures.push({ label: t("voice"), value: humanizeDuration(voiceSeconds), icon: Mic })
 
@@ -449,11 +450,13 @@ function SummaryCard({
           className="mt-2.5 max-w-3xl text-base leading-relaxed text-foreground [&_b]:font-semibold [&_b]:text-primary"
           dangerouslySetInnerHTML={{ __html: hero.prose_html }}
         />
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <Stagger className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {figures.map((f) => (
-            <Stat key={f.label} icon={f.icon} label={f.label} value={f.value} className="bg-background/40" />
+            <FadeItem key={f.label}>
+              <Stat icon={f.icon} label={f.label} value={f.value} valueNum={f.num} className="h-full bg-surface-2" />
+            </FadeItem>
           ))}
-        </div>
+        </Stagger>
         {annivBits && annivBits.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {annivBits.map((b) => (
@@ -490,12 +493,13 @@ function HighlightsRow({ items }: { items: Highlight[] }) {
   return (
     <section className="space-y-2">
       <h2 className="text-sm font-semibold">{t("highlights")}</h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((h) => {
           // map kind → lucide; Sparkles is a neutral fallback for unknown kinds.
           const Icon = (h.kind && HIGHLIGHT_ICONS[h.kind]) || Sparkles
           return (
-          <Card key={h.label} className="flex-row items-center gap-3 border-border bg-card px-4 py-3">
+          <FadeItem key={h.label}>
+          <Card className="h-full flex-row items-center gap-3 border-border bg-card px-4 py-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04] ring-1 ring-foreground/10">
               <Icon className="size-5 text-muted-foreground" />
             </span>
@@ -505,9 +509,10 @@ function HighlightsRow({ items }: { items: Highlight[] }) {
               <div className="truncate text-xs text-muted-foreground" title={h.sub}>{h.sub}</div>
             </div>
           </Card>
+          </FadeItem>
           )
         })}
-      </div>
+      </Stagger>
     </section>
   )
 }

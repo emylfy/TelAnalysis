@@ -124,7 +124,7 @@ export function Onboarding({
         ))}
       </div>
 
-      <Card className="relative w-full max-w-xl border-border bg-card px-8 py-9 shadow-xl shadow-black/20">
+      <Card className="relative w-full max-w-xl border-border bg-card px-8 py-9 shadow-e3">
         <div className="flex items-center gap-3">
           <Logo />
           <div>

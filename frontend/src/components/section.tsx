@@ -21,7 +21,7 @@ export function Section({
     <section className="space-y-3">
       <div className="flex items-start gap-3">
         {Icon && (
-          <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.04] ring-1 ring-foreground/10">
+          <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 shadow-e1 ring-1 ring-foreground/[0.08]">
             <Icon className="size-[18px] text-primary/85" />
           </span>
         )}
