@@ -27,7 +27,7 @@ Both export shapes are supported:
 - **Single chat** — `Settings → Export Chat History`
 - **Full archive** — `Settings → Advanced → Export Telegram Data` → a chat picker appears once the export is loaded
 
-UI ships in **RU / EN** (toggle in the header). Chat content is left untouched — wordclouds and message previews show whatever language the messages are in.
+UI ships in **EN / RU** (toggle in the header). Chat content is left untouched — wordclouds and message previews show whatever language the messages are in.
 
 ## Features
 
@@ -226,7 +226,7 @@ Highlights of what this version adds:
 - Per-user tab (speaking-style radar, reply latency, monologues, sticker-emoji preferences, forwards ratio)
 - Russian/English sentiment (`rubert-tiny2`), MTLD lexical diversity, n-gram phrases, russian-profanity tracker
 - Reply-chain depth, conversation sessions, Q&A latency split, streaks, anniversaries, "Spotify Wrapped" highlights
-- HTML + JSON export support, full-archive (multi-chat) handling, RU/EN UI, tests and CI
+- HTML + JSON export support, full-archive (multi-chat) handling, EN/RU UI, tests and CI
 
 ## License
 
