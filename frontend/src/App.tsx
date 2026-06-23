@@ -34,6 +34,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TabLoading } from "@/components/loading"
 import { Stat } from "@/components/stat"
 import { FadeItem, Stagger } from "@/components/motion"
+import { Sparkline } from "@/components/sparkline"
 import { Onboarding } from "@/Onboarding"
 
 // Tabs are lazy: the heavy charting libs (ECharts) load only when a chart-bearing
@@ -382,12 +383,15 @@ function SummaryCard({
   kpis,
   voiceSeconds,
   annivBits,
+  perDay,
   compact = false,
 }: {
   hero: Hero
   kpis: Kpis
   voiceSeconds?: number
   annivBits?: string[]
+  /** daily message counts — drives the hero activity sparkline (overview only) */
+  perDay?: [string, number][]
   // slim identity bar (title + figures only) for non-overview tabs, so the full
   // narrative poster isn't repeated above every view
   compact?: boolean
@@ -436,20 +440,24 @@ function SummaryCard({
 
   return (
     <Card className="relative overflow-hidden border-border bg-card px-8 py-7">
-      {/* soft brand glow, top-right — gives the poster a deliberate accent
-          without a loud full-card gradient */}
+      {/* gradient mesh: a coral catch-light top-right + an indigo one bottom-left,
+          both very soft — gives the poster depth without a loud full-card wash */}
       <div aria-hidden className="pointer-events-none absolute -right-28 -top-28 size-72 rounded-full bg-primary/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -bottom-32 -left-24 size-80 rounded-full bg-brand-2/10 blur-3xl" />
       <div className="relative">
         {/* eyebrow: chat type + date range — the context that used to sit in a
             muted meta line below, lifted above the title where dashboards put it */}
         {eyebrow && (
           <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{eyebrow}</div>
         )}
-        <h1 className="mt-1.5 text-3xl font-bold tracking-tight sm:text-4xl">{hero.title}</h1>
+        <h1 className="mt-1.5 bg-gradient-to-br from-foreground to-foreground/65 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
+          {hero.title}
+        </h1>
         <p
           className="mt-2.5 max-w-3xl text-base leading-relaxed text-foreground [&_b]:font-semibold [&_b]:text-primary"
           dangerouslySetInnerHTML={{ __html: hero.prose_html }}
         />
+        {perDay && perDay.length > 1 && <Sparkline data={perDay} className="mt-5 h-10 w-full opacity-90" />}
         <Stagger className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {figures.map((f) => (
             <FadeItem key={f.label}>
@@ -577,6 +585,8 @@ export default function App() {
   // shares its key with Overview (dedup); only used for the voice KPI card
   const mediaQ = useQuery({ queryKey: ["media", path, sel, from, to], queryFn: () => api.media(path!, period), enabled: !!sel && !inManager })
   const annivQ = useQuery({ queryKey: ["anniv", path, sel, from, to, lang], queryFn: () => api.anniversaries(path!, period), enabled: !!sel && !inManager })
+  // shares its key with the Overview "per day" query (dedup) — feeds the hero sparkline
+  const pdQ = useQuery({ queryKey: ["pd", path, sel, from, to], queryFn: () => api.perDay(path!, period), enabled: !!sel && !inManager })
   const isHtml = !!chatsQ.data && chatsQ.data.source !== "json"
 
   // Relationship recap chips for the summary card: ["N days together", "crossed
@@ -698,6 +708,7 @@ export default function App() {
                 kpis={kpisQ.data}
                 voiceSeconds={mediaQ.data?.voice_total_seconds}
                 annivBits={annivBits}
+                perDay={tab === "overview" ? pdQ.data?.per_day : undefined}
                 compact={tab !== "overview"}
               />
             ) : (
