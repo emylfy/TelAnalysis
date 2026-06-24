@@ -274,7 +274,7 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
   // Units per axis so the perimeter labels are self-explanatory: the three ratios
   // read as "%", emoji as uses-per-100-messages, verbosity as words. The selected
   // user's value is printed under each axis name (see Radar).
-  const axisUnits = ["%", "%", "/100", "%", ` ${t("unitWords")}`]
+  const axisUnits = ["%", "%", "/100", "%", ` ${t("unitWords")}`]
   const selVals = radarVals(s)
   const indicators = [t("axisQuestion"), t("axisExcl"), t("axisEmoji"), t("axisReply"), t("axisVerbosity")].map((name, i) => ({
     name,
