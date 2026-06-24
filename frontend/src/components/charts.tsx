@@ -530,7 +530,20 @@ export function Radar({
       height={height}
       option={{
         ...base,
-        tooltip: { ...TOOLTIP },
+        tooltip: {
+          ...TOOLTIP,
+          trigger: "item",
+          // Default radar tooltip echoes the indicator `name` verbatim — which we
+          // load with rich-text markup (`{val|…}`) for the axis labels — so build
+          // the rows ourselves from the clean names + units instead.
+          formatter: (p: { name?: string; marker?: string; value?: number[] }) => {
+            const vals = p.value ?? []
+            const rows = indicators
+              .map((ind, i) => `${ind.name}: <b>${vals[i] ?? 0}${ind.unit ?? ""}</b>`)
+              .join("<br/>")
+            return `${p.marker ?? ""}${p.name ?? ""}<br/>${rows}`
+          },
+        },
         legend: { bottom: 0, textStyle: { color: ink.tick }, type: "scroll" },
         radar: {
           indicator: ecIndicators,
