@@ -142,8 +142,10 @@ QUESTIONS = [
     "what's the status?",
 ]
 
+# Note: a few memes are ironic and the literal sentiment model misreads them, so
+# they're left out to keep the sentiment extremes honest ("this is fine" → +0.98,
+# "i'm dead" → −0.64, "ship it" → −0.77).
 MEMES = [
-    "this is fine",
     "that's a feature not a bug",
     "i'm crying",
     "i can't with this",
@@ -162,43 +164,84 @@ MEMES = [
     "no thoughts just vibes",
     "real",
     "based",
-    "i'm dead",
     "huge",
     "let's gooo",
-    "ship it",
 ]
 
+# Off-topic human chatter — coffee, food, weekends, music, pets, weather. Keeps
+# the wordcloud from reading like a pure Jira feed and gives the chat a pulse.
+BANTER = [
+    "anyone want coffee?",
+    "coffee run, who's in?",
+    "lunch in 20?",
+    "ok who ate my snacks",
+    "the coffee machine is broken again",
+    "i made way too much pasta last night",
+    "pizza for the late shift?",
+    "someone bring donuts tomorrow",
+    "my cat just walked across the keyboard",
+    "the dog is judging my code again",
+    "weekend plans anyone?",
+    "going hiking this weekend",
+    "what's everyone listening to?",
+    "this playlist is carrying me today",
+    "new album dropped and it's perfect",
+    "it's raining again over here",
+    "the weather is unreal today",
+    "i need a nap so badly",
+    "slept terribly, send coffee",
+    "happy friday everyone",
+    "almost the weekend, hang in there",
+    "who's watching the game tonight?",
+    "movie night after the build?",
+    "found a great taco place downtown",
+    "tea over coffee, fight me",
+    "my plants are finally thriving",
+    "stretch break, my back is gone",
+    "brb walking the dog",
+    "the office plant has a name now",
+    "good morning, the coffee is on me today",
+]
+
+# Crunch-time venting — verified to score negative under the sentiment model, so
+# the "most negative" list shows genuine frustration instead of a positive line
+# the RU model happened to misread. Dropped phrases that scored positive
+# ("how is it monday again" → +0.46, "reworking this again" → +0.36, "need a
+# break" → +0.06).
 COMPLAINTS = [
-    "so tired",
     "swamped today",
-    "i'm burning out",
-    "can't keep up",
-    "too many tasks",
-    "need a break",
-    "my brain is fried",
-    "how is it monday again",
-    "reworking this again",
-    "this is an endless loop",
     "running on fumes",
+    "this is an endless loop",
     "the deadline is eating me alive",
+    "i hate this bug",
+    "everything is broken",
+    "this is the worst",
+    "this is a disaster",
+    "i'm completely exhausted",
+    "i can't deal with this anymore",
+    "this is so frustrating",
+    "i'm really upset about this",
 ]
 
+# Verified against the sentiment model so the "most positive" list reads true.
+# Dropped phrases the RU model mis-scores as negative ("we shipped it" → −0.76,
+# "that's a wrap" → −0.21); kept/added ones that land strongly positive.
 POSITIVE = [
     "finally!",
     "that came out great",
     "you all rock",
     "so proud of us",
-    "this is awesome",
     "this looks incredible",
     "respect",
     "nice work everyone",
-    "huge milestone",
     "love this team",
     "best team ever",
     "you're all amazing",
-    "we shipped it",
-    "incredible work",
-    "that's a wrap",
+    "this turned out perfect",
+    "i'm so happy with this",
+    "i love how this looks",
+    "this is beautiful work",
+    "thank you all so much",
 ]
 
 ANNOUNCEMENT_PREFIXES = [
@@ -334,30 +377,30 @@ BIZ = [
 ]
 
 LINKS = [
-    "https://github.com/demo-studio/engine",
+    "https://github.com/emberleaf/engine",
     "https://store.steampowered.com/app/000000/",
     "https://www.gamedeveloper.com/design",
     "https://www.reddit.com/r/gamedev/",
     "https://itch.io/games/featured",
     "https://www.youtube.com/watch?v=demo",
-    "https://demostudio.example/devlog/42",
+    "https://emberleaf.example/devlog/42",
 ]
 
 # Planted contact info so the email/phone extractor has something to show.
 # Addresses use the reserved .example TLD; phones use the fictional 555-01xx
 # block (validates as a well-formed US number, never assigned to anyone real).
 CONTACT_DROPS = [
-    "ping me at ethan@demostudio.example",
+    "ping me at ethan@emberleaf.example",
     "the new build server is at 10.0.0.42",
-    "email the press kit to press@demostudio.example",
+    "email the press kit to press@emberleaf.example",
     "call me at +1 415 555 0148",
-    "my work email is sofia@demostudio.example",
+    "my work email is sofia@emberleaf.example",
     "reach the publisher at deals@example-publisher.example",
-    "support inbox is help@demostudio.example",
+    "support inbox is help@emberleaf.example",
     "text me at +1 628 555 0199",
     "my direct line is +1 206 555 0112",
     "studio reception is +1 312 555 0177",
-    "for press inquiries email hello@demostudio.example",
+    "for press inquiries email hello@emberleaf.example",
     "ivan's cell is +1 646 555 0185",
 ]
 
@@ -375,14 +418,12 @@ FORWARD_SOURCES = [
 # Short, excited lines that get UPPERCASED into shouts (drives ALL-CAPS %).
 SHOUTS = [
     "let's gooo",
-    "ship it",
     "we did it",
     "it works",
     "best day ever",
     "huge news",
     "look at this",
     "it's happening",
-    "we shipped it",
     "the build is live",
     "go go go",
     "yesss",
@@ -414,9 +455,9 @@ FILE_NAMES = [
     "localization_strings.csv",
 ]
 AUDIO_TRACKS = [
-    ("Demo Studio OST", "main theme"),
-    ("Demo Studio OST", "boss battle"),
-    ("Demo Studio OST", "credits"),
+    ("Emberleaf OST", "main theme"),
+    ("Emberleaf OST", "boss battle"),
+    ("Emberleaf OST", "credits"),
     ("reference track", "for the trailer"),
 ]
 LOCATIONS = ["the studio", "the offsite venue", "the conference hall", "the cafe downstairs"]
@@ -425,11 +466,6 @@ EMOJI_HEAVY = [
     "🔥", "💀", "😂", "😅", "🤔", "😩", "👍", "👌", "🥲", "🤡",
     "✨", "🚀", "🎮", "🎨", "🎵", "📦", "✅", "❌", "⚡", "💪",
     "🙏", "❤️", "😎", "🤯", "🥺", "👀", "😴", "🍕", "☕", "🎉",
-]
-
-STICKER_EMOJIS = [
-    "🐱", "🐶", "🦊", "🐸", "🐙", "🦝", "🦄", "🐼", "🐧", "🦋",
-    "💀", "🔥", "✨", "💯", "🎉", "🙃", "😎", "🤡", "🤖", "👾",
 ]
 
 # 1-on-1 vocabulary — curated against the sentiment model so the arc reads.
@@ -579,6 +615,7 @@ POOLS: dict[str, list[str]] = {
     "DISAGREES": DISAGREES,
     "QUESTIONS": QUESTIONS,
     "MEMES": MEMES,
+    "BANTER": BANTER,
     "COMPLAINTS": COMPLAINTS,
     "POSITIVE": POSITIVE,
     "PLANNING": PLANNING,
@@ -600,7 +637,7 @@ POOLS: dict[str, list[str]] = {
 }
 
 # Categories whose phrases are inherently short — never stack into monologues.
-_SHORT_CATS = {"ACKS", "AGREES", "DISAGREES", "GREETINGS", "MEMES", "LINKS", "P_GREETINGS"}
+_SHORT_CATS = {"ACKS", "AGREES", "DISAGREES", "GREETINGS", "MEMES", "BANTER", "LINKS", "P_GREETINGS"}
 
 # What a reply most often is: a short reaction to the parent message.
 REPLY_MIX = [("ACKS", 3.0), ("AGREES", 2.0), ("DISAGREES", 1.0), ("MEMES", 1.5), ("QUESTIONS", 1.0)]
@@ -616,49 +653,49 @@ GROUP_USERS = [
         "hour_center": 13, "hour_spread": 4.0, "emoji": 0.08,
         "len": [0.45, 0.30, 0.18, 0.07], "reply_rate": 0.34, "announce": True,
         "caps_rate": 0.004, "excl_rate": 0.08, "long_rate": 0.025, "essay_cat": "PLANNING",
-        "mix": [("PLANNING", 3), ("QUESTIONS", 2.5), ("ENGINE", 1), ("AGREES", 2), ("ACKS", 1.5), ("POSITIVE", 1)],
+        "mix": [("PLANNING", 3), ("QUESTIONS", 2.5), ("ENGINE", 1), ("AGREES", 2), ("ACKS", 1.5), ("POSITIVE", 1), ("COMPLAINTS", 0.8), ("BANTER", 1.0)],
     },
     {
         "id": "user1002", "name": "Maya", "weight": 0.15,
         "hour_center": 16, "hour_spread": 4.0, "emoji": 0.55,
         "len": [0.70, 0.22, 0.07, 0.01], "reply_rate": 0.30, "announce": False,
         "caps_rate": 0.06, "excl_rate": 0.35, "long_rate": 0.0, "essay_cat": None,
-        "mix": [("ART", 3), ("MEMES", 2.5), ("POSITIVE", 2), ("ACKS", 1.5), ("GREETINGS", 1)],
+        "mix": [("ART", 3), ("MEMES", 2.5), ("BANTER", 2.5), ("POSITIVE", 2), ("ACKS", 1.5), ("GREETINGS", 1)],
     },
     {
         "id": "user1003", "name": "Kai", "weight": 0.17,
         "hour_center": 19, "hour_spread": 4.5, "emoji": 0.06,
         "len": [0.40, 0.32, 0.20, 0.08], "reply_rate": 0.42, "announce": False,
         "caps_rate": 0.012, "excl_rate": 0.06, "long_rate": 0.05, "essay_cat": "ENGINE",
-        "mix": [("ENGINE", 4), ("QUESTIONS", 1.5), ("COMPLAINTS", 1.2), ("LINKS", 1), ("AGREES", 1.2)],
+        "mix": [("ENGINE", 4), ("QUESTIONS", 1.5), ("COMPLAINTS", 1.2), ("LINKS", 1), ("AGREES", 1.2), ("BANTER", 1.5)],
     },
     {
         "id": "user1004", "name": "Noah", "weight": 0.13,
         "hour_center": 23, "hour_spread": 3.5, "emoji": 0.11,
         "len": [0.48, 0.30, 0.16, 0.06], "reply_rate": 0.40, "announce": False,
         "caps_rate": 0.05, "excl_rate": 0.22, "long_rate": 0.02, "essay_cat": "GAMEPLAY",
-        "mix": [("GAMEPLAY", 4), ("MEMES", 2), ("QUESTIONS", 1.5), ("COMPLAINTS", 1.2)],
+        "mix": [("GAMEPLAY", 4), ("MEMES", 2), ("BANTER", 2), ("QUESTIONS", 1.5), ("POSITIVE", 1.0), ("COMPLAINTS", 1.2)],
     },
     {
         "id": "user1005", "name": "Liam", "weight": 0.10,
         "hour_center": 9, "hour_spread": 3.5, "emoji": 0.12,
         "len": [0.32, 0.30, 0.24, 0.14], "reply_rate": 0.30, "announce": False,
         "caps_rate": 0.01, "excl_rate": 0.10, "long_rate": 0.07, "essay_cat": "NARRATIVE",
-        "mix": [("NARRATIVE", 4), ("POSITIVE", 1.5), ("QUESTIONS", 1.5), ("ACKS", 1)],
+        "mix": [("NARRATIVE", 4), ("POSITIVE", 1.5), ("QUESTIONS", 1.5), ("ACKS", 1), ("BANTER", 1.5)],
     },
     {
         "id": "user1006", "name": "Sofia", "weight": 0.15,
         "hour_center": 14, "hour_spread": 6.0, "emoji": 0.35,
         "len": [0.50, 0.30, 0.15, 0.05], "reply_rate": 0.33, "announce": True,
         "caps_rate": 0.03, "excl_rate": 0.30, "long_rate": 0.01, "essay_cat": "COMMUNITY",
-        "mix": [("COMMUNITY", 3.5), ("LINKS", 1.5), ("POSITIVE", 2), ("QUESTIONS", 1.5), ("PLANNING", 1)],
+        "mix": [("COMMUNITY", 3.5), ("LINKS", 1.5), ("POSITIVE", 2), ("QUESTIONS", 1.5), ("PLANNING", 1), ("BANTER", 1.5)],
     },
     {
         "id": "user1007", "name": "Ivan", "weight": 0.10,
         "hour_center": 20, "hour_spread": 4.0, "emoji": 0.05,
         "len": [0.62, 0.26, 0.10, 0.02], "reply_rate": 0.25, "announce": False,
         "caps_rate": 0.003, "excl_rate": 0.04, "long_rate": 0.0, "essay_cat": None,
-        "mix": [("BIZ", 3), ("PLANNING", 1.5), ("QUESTIONS", 1.5), ("ACKS", 2), ("AGREES", 1.5)],
+        "mix": [("BIZ", 3), ("PLANNING", 1.5), ("QUESTIONS", 1.5), ("ACKS", 2), ("AGREES", 1.5), ("COMPLAINTS", 1.0), ("BANTER", 0.8)],
     },
 ]
 
@@ -677,7 +714,7 @@ GROUP_AFFINITY = {
 
 GROUP_START = date(2024, 1, 15)
 GROUP_END = date(2026, 5, 1)
-GROUP_NAME = "Demo Studio · team"
+GROUP_NAME = "Emberleaf Studio · team"
 GROUP_TYPE = "private_supergroup"
 
 # 1-on-1 config
@@ -689,7 +726,7 @@ PERSONAL_OTHER_NAME = "Mira"
 
 PERSONAL_START = date(2024, 10, 1)
 PERSONAL_END = date(2026, 5, 1)
-PERSONAL_NAME = "Demo Friend"
+PERSONAL_NAME = "Mira"
 PERSONAL_TYPE = "personal_chat"
 
 # Generation helpers
@@ -794,13 +831,13 @@ def _spike(d: date, group: bool) -> float:
     """Multiplier for special burst-activity days."""
     spikes = (
         [
-            (date(2024, 6, 7), 3.0),    # demo launch
-            (date(2024, 8, 21), 2.6),   # gamescom
-            (date(2024, 11, 22), 4.0),  # early access release
-            (date(2025, 3, 14), 2.0),   # patch 1.1
-            (date(2025, 5, 9), 1.8),    # studio birthday
-            (date(2025, 9, 12), 3.2),   # 1.0 release
-            (date(2026, 2, 14), 2.4),   # dlc reveal
+            (date(2024, 6, 7), 2.4),    # demo launch
+            (date(2024, 8, 21), 2.2),   # gamescom
+            (date(2024, 11, 22), 2.8),  # early access release
+            (date(2025, 3, 14), 1.9),   # patch 1.1
+            (date(2025, 5, 9), 1.7),    # studio birthday
+            (date(2025, 9, 12), 2.6),   # 1.0 release
+            (date(2026, 2, 14), 2.1),   # dlc reveal
         ]
         if group
         else [
@@ -877,7 +914,7 @@ def gen_group_messages() -> list[dict]:
     total_days = (GROUP_END - GROUP_START).days
     recent_by_idx: dict[int, list[int]] = {i: [] for i in range(len(GROUP_USERS))}
 
-    target_per_day_avg = 95
+    target_per_day_avg = 120
     user_weights = [u["weight"] for u in GROUP_USERS]
 
     for day_offset in range(total_days):
@@ -922,35 +959,33 @@ def gen_group_messages() -> list[dict]:
             if r < 0.001:  # rare planted contact info for the extractor demo
                 drop = rng.choice(CONTACT_DROPS)
                 msg.update(text=drop, text_entities=[{"type": "plain", "text": drop}])
-            elif r < 0.031:  # 3% sticker
-                msg.update(media_type="sticker", sticker_emoji=rng.choice(STICKER_EMOJIS), text="", text_entities=[])
-            elif r < 0.056:  # 2.5% voice
+            elif r < 0.026:  # 2.5% voice
                 msg.update(media_type="voice_message", duration_seconds=rng.randint(5, 220), text="", text_entities=[])
-            elif r < 0.076:  # 2% animation / GIF
+            elif r < 0.046:  # 2% animation / GIF
                 msg.update(media_type="animation", text="", text_entities=[])
-            elif r < 0.088:  # 1.2% photo
+            elif r < 0.058:  # 1.2% photo
                 msg["media_type"] = "photo"
                 if rng.random() < 0.4:
                     msg["caption"] = rng.choice(POOLS["ART"])
-            elif r < 0.092:  # 0.4% poll
+            elif r < 0.062:  # 0.4% poll
                 msg.update(media_type="poll", poll=_poll(rng), text="", text_entities=[])
-            elif r < 0.098:  # 0.6% file
+            elif r < 0.068:  # 0.6% file
                 msg.update(media_type="file", file_name=rng.choice(FILE_NAMES), text="", text_entities=[])
-            elif r < 0.102:  # 0.4% audio file
+            elif r < 0.072:  # 0.4% audio file
                 performer, title = rng.choice(AUDIO_TRACKS)
                 msg.update(media_type="audio_file", performer=performer, title=title, text="", text_entities=[])
-            elif r < 0.106:  # 0.4% round video message
+            elif r < 0.076:  # 0.4% round video message
                 msg.update(media_type="video_message", duration_seconds=rng.randint(5, 90), text="", text_entities=[])
-            elif r < 0.1075:  # 0.15% location
+            elif r < 0.0775:  # 0.15% location
                 msg.update(media_type="location", text="", text_entities=[],
                            location_information={"latitude": round(rng.uniform(40, 60), 5), "longitude": round(rng.uniform(-5, 30), 5)})
                 if rng.random() < 0.5:
                     msg["caption"] = rng.choice(LOCATIONS)
-            elif r < 0.109:  # 0.15% shared contact
+            elif r < 0.079:  # 0.15% shared contact
                 msg.update(media_type="contact", text="", text_entities=[],
                            contact_information={"first_name": rng.choice(["Alex", "Sam", "Jordan", "Riley"]),
                                                 "phone_number": f"+1 415 555 0{rng.randint(100, 199)}"})
-            elif r < 0.119:  # 1% forward
+            elif r < 0.089:  # 1% forward
                 msg["forwarded_from"] = rng.choice(FORWARD_SOURCES)
 
             messages.append(msg)
@@ -971,7 +1006,7 @@ def gen_personal_messages() -> list[dict]:
     recent_me: list[int] = []
     recent_other: list[int] = []
 
-    target_per_day_avg = 38
+    target_per_day_avg = 55
 
     for day_offset in range(total_days):
         d = PERSONAL_START + timedelta(days=day_offset)
@@ -984,7 +1019,9 @@ def gen_personal_messages() -> list[dict]:
             is_me = rng.random() < (0.6 if phase == "drift" else 0.5)
             uid, uname = (PERSONAL_ME_ID, PERSONAL_ME_NAME) if is_me else (PERSONAL_OTHER_ID, PERSONAL_OTHER_NAME)
 
-            hour = rng.choices(range(24), weights=[_hour_weight(h, 13 if is_me else 21, 4.5) for h in range(24)], k=1)[0]
+            # Both lean evening (real 1-on-1s peak ~19-23h), offset so the
+            # hour-overlap chart shows a shared peak with a visible lead/lag.
+            hour = rng.choices(range(24), weights=[_hour_weight(h, 18 if is_me else 21, 4.0) for h in range(24)], k=1)[0]
             ts = _ts(d, hour, rng)
 
             # emphasis rates shift with mood: warm & loud when happy, flat in drift.
@@ -1020,30 +1057,28 @@ def gen_personal_messages() -> list[dict]:
             if r < 0.0008:  # rare planted contact info
                 drop = rng.choice(PERSONAL_CONTACTS)
                 msg.update(text=drop, text_entities=[{"type": "plain", "text": drop}])
-            elif r < 0.0458:  # 4.5% sticker
-                msg.update(media_type="sticker", sticker_emoji=rng.choice(STICKER_EMOJIS), text="", text_entities=[])
-            elif r < 0.0908:  # 4.5% voice (long-distance friends call a lot)
+            elif r < 0.0858:  # 8.5% voice — long-distance friends live on voice notes
                 msg.update(media_type="voice_message", duration_seconds=rng.randint(10, 420), text="", text_entities=[])
-            elif r < 0.1158:  # 2.5% round video message
+            elif r < 0.1108:  # 2.5% round video message
                 msg.update(media_type="video_message", duration_seconds=rng.randint(5, 120), text="", text_entities=[])
-            elif r < 0.1358:  # 2% animation / GIF
+            elif r < 0.1308:  # 2% animation / GIF
                 msg.update(media_type="animation", text="", text_entities=[])
-            elif r < 0.1538:  # 1.8% photo
+            elif r < 0.1508:  # 2% photo
                 msg["media_type"] = "photo"
                 if rng.random() < 0.5:
                     msg["caption"] = rng.choice(POOLS["P_DAILY"])
-            elif r < 0.1618:  # 0.8% audio (songs they share)
+            elif r < 0.1588:  # 0.8% audio (songs they share)
                 performer, title = rng.choice(PERSONAL_AUDIO)
                 msg.update(media_type="audio_file", performer=performer, title=title, text="", text_entities=[])
-            elif r < 0.1658:  # 0.4% location
+            elif r < 0.1628:  # 0.4% location
                 msg.update(media_type="location", text="", text_entities=[],
                            location_information={"latitude": round(rng.uniform(40, 60), 5), "longitude": round(rng.uniform(-5, 30), 5)})
                 if rng.random() < 0.5:
                     msg["caption"] = rng.choice(PERSONAL_LOCATIONS)
-            elif r < 0.1688:  # 0.3% file
+            elif r < 0.1658:  # 0.3% file
                 msg.update(media_type="file", file_name=rng.choice(["photos.zip", "recipe.pdf", "playlist.m3u", "tickets.pdf"]),
                            text="", text_entities=[])
-            elif r < 0.1708:  # 0.2% shared contact
+            elif r < 0.1678:  # 0.2% shared contact
                 msg.update(media_type="contact", text="", text_entities=[],
                            contact_information={"first_name": rng.choice(["Mom", "Sam", "Jess", "Leo"]),
                                                 "phone_number": f"+1 312 555 0{rng.randint(100, 199)}"})

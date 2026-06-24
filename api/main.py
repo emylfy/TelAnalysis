@@ -620,8 +620,31 @@ def sentiment(
         for txt, s in u.messages:
             if isinstance(s, float) and txt and abs(s) > 0.05:
                 extremes.append((txt, s, u.name))
-    pos = sorted(extremes, key=lambda r: -r[1])[:top]
-    neg = sorted(extremes, key=lambda r: r[1])[:top]
+
+    # Dedup before taking the top N. Without this, a chat where someone sends the
+    # same line repeatedly ("we shipped it!" ×8) fills the whole list with one
+    # message — uninteresting and, on a screenshot, looks broken. Normalise away
+    # case, punctuation and emoji so "good morning!", "good morning! 😂" and
+    # "good morning" collapse to one entry; keep the strongest-scoring instance.
+    def _norm(text: str) -> str:
+        return " ".join(re.sub(r"[^\w\s]", "", text.lower(), flags=re.UNICODE).split())
+
+    def _dedup_top(rows: list[tuple[str, float, str]], *, positive: bool) -> list[tuple[str, float, str]]:
+        ordered = sorted(rows, key=lambda r: -r[1] if positive else r[1])
+        seen: set[str] = set()
+        out: list[tuple[str, float, str]] = []
+        for r in ordered:
+            key = _norm(r[0])
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            out.append(r)
+            if len(out) >= top:
+                break
+        return out
+
+    pos = _dedup_top(extremes, positive=True)
+    neg = _dedup_top(extremes, positive=False)
     return {
         "available": True,
         "avg": res.chat_avg_sentiment,

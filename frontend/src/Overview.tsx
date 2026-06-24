@@ -244,8 +244,9 @@ export function Overview({ path, sel }: { path: string; sel: Sel }) {
             <p className="-mt-1 text-xs text-muted-foreground">{t("emojiTopHint")}</p>
             <Card className="border-border bg-card p-3">
               {/* horizontal: emoji read clearly as row labels (vertical bars
-                  squeezed them into illegible x-axis ticks) */}
-              <BarsH data={emojis.data.chat_top.slice(0, 15)} color="var(--chart-4)" />
+                  squeezed them into illegible x-axis ticks). Bigger glyphs +
+                  taller rows so the emoji themselves are legible, not tiny. */}
+              <BarsH data={emojis.data.chat_top.slice(0, 15)} color="var(--chart-4)" labelSize={20} rowHeight={32} />
             </Card>
             {emojis.data.chat_top.length > 20 && (
               <Collapsible label={t("showAll", { n: emojis.data.chat_top.length })}>

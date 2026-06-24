@@ -14,10 +14,24 @@ enable, run:
 
 from __future__ import annotations
 
+import os
 import re
 from functools import lru_cache
 
-_MODEL_NAME = "seara/rubert-tiny2-russian-sentiment"
+# Default model is Russian-first. Override with the TLA_SENTIMENT_MODEL env var
+# to score other languages — any HuggingFace
+# sequence-classification model whose labels include "positive"/"negative" works,
+# e.g. "cardiffnlp/twitter-xlm-roberta-base-sentiment" (multilingual) or
+# "distilbert-base-uncased-finetuned-sst-2-english" (English). Set it before
+# starting the server; the model is loaded once per process.
+_DEFAULT_MODEL = "seara/rubert-tiny2-russian-sentiment"
+
+
+def model_name() -> str:
+    """Active sentiment model id (env override or the Russian default)."""
+    return os.environ.get("TLA_SENTIMENT_MODEL", "").strip() or _DEFAULT_MODEL
+
+
 _MAX_LEN = 128
 _DEFAULT_BATCH = 32
 
@@ -94,8 +108,9 @@ def _load():
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-    tok = AutoTokenizer.from_pretrained(_MODEL_NAME)
-    model = AutoModelForSequenceClassification.from_pretrained(_MODEL_NAME)
+    name = model_name()
+    tok = AutoTokenizer.from_pretrained(name)
+    model = AutoModelForSequenceClassification.from_pretrained(name)
     if torch.cuda.is_available():
         device = "cuda"
     elif torch.backends.mps.is_available():
@@ -104,10 +119,25 @@ def _load():
         device = "cpu"
     model = model.to(device).eval()
 
-    id2label = model.config.id2label  # {0: neutral, 1: positive, 2: negative}
-    label2id = {v.lower(): k for k, v in id2label.items()}
-    pos_idx = label2id["positive"]
-    neg_idx = label2id["negative"]
+    # Resolve the positive/negative class indices by label name. Different models
+    # spell them differently ("positive", "POSITIVE", "LABEL_2"), so match on a
+    # "pos"/"neg" substring rather than an exact key — keeps custom models working.
+    id2label = model.config.id2label  # e.g. {0: neutral, 1: positive, 2: negative}
+
+    def _find(substr: str) -> int | None:
+        for idx, lbl in id2label.items():
+            if substr in str(lbl).lower():
+                return int(idx)
+        return None
+
+    pos_idx = _find("pos")
+    neg_idx = _find("neg")
+    if pos_idx is None or neg_idx is None:
+        raise RuntimeError(
+            f"Sentiment model {name!r} has labels {id2label} with no recognisable "
+            "positive/negative classes. Set TLA_SENTIMENT_MODEL to a model whose "
+            "labels include 'positive' and 'negative'."
+        )
     return tok, model, torch, device, pos_idx, neg_idx
 
 

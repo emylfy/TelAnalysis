@@ -102,6 +102,19 @@ export const heat = ["#1b2740", "#3b54c9", "#8b5cf6", "#ff6b6b"] as const
 // instead of the loud full heat ramp.
 export const heatBinary = ["#1b2740", "#6a8efb"] as const
 
+// Colour-scale ceiling for the heatmaps. A handful of burst days/hours would
+// otherwise set a linear 0..max domain and drag every normal cell into the
+// darkest bucket (washing out the whole grid). Cap the domain at a high
+// percentile of the *positive* values instead: peaks saturate at the warm end
+// (ECharts visualMap clamps out-of-range values), the body spreads across the
+// ramp, and zeros stay dark. Zeros are excluded so sparse chats still gradient
+// their active days. Tooltips show the raw value regardless.
+export function heatMax(values: number[], pct = 0.95): number {
+  const pos = values.filter((v) => v > 0).sort((a, b) => a - b)
+  if (!pos.length) return 1
+  return Math.max(1, pos[Math.min(pos.length - 1, Math.floor(pct * (pos.length - 1)))])
+}
+
 // Tooltip — rounded, soft shadow, faint blur. Consistent everywhere.
 export const tooltip = {
   backgroundColor: "rgba(24,26,36,0.92)", // tone of --elevated

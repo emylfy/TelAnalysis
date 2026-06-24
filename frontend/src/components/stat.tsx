@@ -75,18 +75,23 @@ function Meter({ value, baseline, label, color = "var(--primary)" }: StatMeter) 
   const fill = clamp(value) * 100
   const base = baseline != null ? clamp(baseline) * 100 : null
   return (
-    <div className="relative mt-3">
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-        <div className="h-full rounded-full transition-[width]" style={{ width: `${fill}%`, background: color }} />
+    <div className="mt-3">
+      {/* positioning context is just the bar row, so the baseline tick centres on
+          the bar — not on the whole block (label included), where it used to drift
+          down and overlap the caption text. */}
+      <div className="relative">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+          <div className="h-full rounded-full transition-[width]" style={{ width: `${fill}%`, background: color }} />
+        </div>
+        {base != null && (
+          // chat-average tick — a thin rounded riser straddling the bar
+          <div
+            aria-hidden
+            className="absolute top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/55"
+            style={{ left: `${base}%` }}
+          />
+        )}
       </div>
-      {base != null && (
-        // chat-average tick — a thin riser straddling the bar
-        <div
-          aria-hidden
-          className="absolute top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-foreground/45"
-          style={{ left: `${base}%` }}
-        />
-      )}
       {label && <div className="mt-1.5 text-[0.68rem] text-muted-foreground">{label}</div>}
     </div>
   )

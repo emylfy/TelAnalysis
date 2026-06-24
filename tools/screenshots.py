@@ -41,6 +41,8 @@ GROUP = ROOT / "demo" / "group_demo.json"
 PERSONAL = ROOT / "demo" / "personal_demo.json"
 
 # Logical viewport; doubled on disk via device_scale_factor for crisp output.
+# A target may override the height (`vh`) or width (`vw`) to show more of a tab —
+# the README renders these full-width, so a taller capture means more is visible.
 VIEWPORT = {"width": 1380, "height": 900}
 SCALE = 2
 
@@ -48,10 +50,10 @@ SCALE = 2
 #   "viewport"  — capture the visible viewport from the top of the page.
 #   "sentiment" — element-shot of the Sentiment section (the "relationship arc").
 TARGETS = [
-    {"name": "group-01-overview", "demo": GROUP, "tab": "overview", "kind": "viewport", "settle": 1800},
-    {"name": "group-02-network", "demo": GROUP, "tab": "network", "kind": "viewport", "settle": 3800},
-    {"name": "group-03-words", "demo": GROUP, "tab": "words", "kind": "viewport", "settle": 1600, "wordcloud": True},
-    {"name": "group-04-per-user", "demo": GROUP, "tab": "peruser", "kind": "viewport", "settle": 2200},
+    {"name": "group-01-overview", "demo": GROUP, "tab": "overview", "kind": "viewport", "settle": 1800, "vh": 1320},
+    {"name": "group-02-network", "demo": GROUP, "tab": "network", "kind": "viewport", "settle": 3800, "vh": 1180},
+    {"name": "group-03-words", "demo": GROUP, "tab": "words", "kind": "viewport", "settle": 1600, "wordcloud": True, "vh": 1320},
+    {"name": "group-04-per-user", "demo": GROUP, "tab": "peruser", "kind": "viewport", "settle": 4000, "vh": 1450},
     {"name": "personal-01-sentiment", "demo": PERSONAL, "tab": "words", "kind": "sentiment", "settle": 1500},
 ]
 
@@ -87,7 +89,8 @@ def _start_server(base_url: str) -> subprocess.Popen:
 
 
 def _capture(browser, base_url: str, tgt: dict) -> Path | None:
-    ctx = browser.new_context(viewport=VIEWPORT, device_scale_factor=SCALE)
+    vp = {"width": tgt.get("vw", VIEWPORT["width"]), "height": tgt.get("vh", VIEWPORT["height"])}
+    ctx = browser.new_context(viewport=vp, device_scale_factor=SCALE)
     # Seed the export path *before* app JS runs, so onboarding is skipped.
     ctx.add_init_script(f"window.localStorage.setItem('tla.path', {json.dumps(str(tgt['demo']))})")
     page = ctx.new_page()
@@ -128,6 +131,13 @@ def _capture(browser, base_url: str, tgt: dict) -> Path | None:
                 )
             # ECharts renders to <canvas>; wait for the first chart of the tab.
             page.wait_for_selector("main canvas", timeout=90_000)
+            # Several charts (e.g. the tone radar) depend on a second endpoint
+            # that lands after the first canvas — wait for the network to settle
+            # so they render with real data, not a half-loaded zero.
+            try:
+                page.wait_for_load_state("networkidle", timeout=30_000)
+            except Exception:
+                pass
             page.wait_for_timeout(tgt["settle"])
             page.evaluate("() => window.scrollTo(0, 0)")
             page.screenshot(path=str(out), full_page=False)

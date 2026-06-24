@@ -9,6 +9,7 @@ import {
   DATA,
   heat,
   heatBinary,
+  heatMax,
   ink,
   neg,
   personColor,
@@ -37,13 +38,8 @@ function Chart({ option, height = 280 }: { option: object; height?: number }) {
 export function HourWeekday({ grid }: { grid: number[][] }) {
   const wd = weekdayShort()
   const data: [number, number, number][] = []
-  let max = 1
-  grid.forEach((row, w) =>
-    row.forEach((v, h) => {
-      data.push([h, w, v])
-      if (v > max) max = v
-    }),
-  )
+  grid.forEach((row, w) => row.forEach((v, h) => data.push([h, w, v])))
+  const max = heatMax(grid.flat())
   return (
     <Chart
       height={260}
@@ -89,8 +85,9 @@ export function Calendar({
   const years = [...new Set(display.map((d) => d[0].slice(0, 4)))].sort()
   // One year at a time (caller switches via tabs); fall back to the latest.
   const activeYear = year && years.includes(year) ? year : years[years.length - 1]
-  let max = 1
-  for (const [, v] of display) if (v > max) max = v
+  // Cap the colour domain at a high percentile (across all years, for a stable
+  // scale as the year tabs switch) so burst days don't wash out the rest.
+  const max = heatMax(display.map(([, v]) => v))
   // Only this year's days, and trim the calendar to the real data span so a
   // partial current year (e.g. Jan–May) doesn't render half a grid of empty
   // future months. ISO dates sort lexicographically = chronologically.
@@ -501,17 +498,33 @@ export function Network({
   )
 }
 
-/** Radar — overlay several entities across shared axes (e.g. speaking tone). */
+/** Radar — overlay several entities across shared axes (e.g. speaking tone).
+ *  `highlight` is the focal polygon (filled, thick); `reference` is a baseline
+ *  like the chat average (dashed ring, faint fill) so the "you vs the room"
+ *  comparison reads — a plain thin grey line all but disappears against the grid.
+ *
+ *  The focal entity's value (with its axis `unit`) is printed under each axis
+ *  NAME at the perimeter, not at the polygon vertex: vertex labels for two
+ *  small-and-adjacent axes pile up on top of each other near the centre, while
+ *  perimeter labels are fixed around the ring and never collide. It also makes
+ *  the mixed units legible — "19%" vs "7 w" vs "15/100" — instead of bare,
+ *  ambiguous numbers. */
 export function Radar({
   indicators,
   series,
-  height = 340,
+  height = 360,
 }: {
-  indicators: { name: string; max: number }[]
-  series: { name: string; values: number[]; highlight?: boolean; color?: string }[]
+  indicators: { name: string; max: number; unit?: string; value?: number }[]
+  series: { name: string; values: number[]; highlight?: boolean; reference?: boolean; color?: string }[]
   height?: number
 }) {
   const hue = (s: { color?: string }, i: number) => (s.color ? resolveColor(s.color) : PALETTE[i % PALETTE.length])
+  // Bake the focal value+unit into the axis name as a second, emphasised line
+  // (rendered via the `val` rich style defined on axisName below).
+  const ecIndicators = indicators.map((ind) => ({
+    name: ind.value != null ? `${ind.name}\n{val|${ind.value}${ind.unit ?? ""}}` : ind.name,
+    max: ind.max,
+  }))
   return (
     <Chart
       height={height}
@@ -520,8 +533,11 @@ export function Radar({
         tooltip: { ...TOOLTIP },
         legend: { bottom: 0, textStyle: { color: ink.tick }, type: "scroll" },
         radar: {
-          indicator: indicators,
-          axisName: { color: ink.tick },
+          indicator: ecIndicators,
+          axisName: {
+            color: ink.tick,
+            rich: { val: { color: ink.label, fontSize: 12, fontWeight: 700, lineHeight: 17 } },
+          },
           splitLine: { lineStyle: { color: ink.grid } },
           splitArea: { areaStyle: { color: ["transparent"] } },
           axisLine: { lineStyle: { color: ink.grid } },
@@ -534,9 +550,18 @@ export function Radar({
             data: series.map((s, i) => ({
               name: s.name,
               value: s.values,
-              symbol: "none",
-              lineStyle: { width: s.highlight ? 2.5 : 1, opacity: s.highlight ? 1 : 0.4 },
-              areaStyle: s.highlight ? { color: hue(s, i), opacity: 0.15 } : undefined,
+              symbol: s.highlight ? "circle" : "none",
+              symbolSize: 4,
+              lineStyle: {
+                width: s.highlight ? 2.5 : s.reference ? 1.5 : 1,
+                opacity: s.highlight ? 1 : s.reference ? 0.75 : 0.4,
+                type: s.reference ? ("dashed" as const) : ("solid" as const),
+              },
+              areaStyle: s.highlight
+                ? { color: hue(s, i), opacity: 0.15 }
+                : s.reference
+                  ? { color: hue(s, i), opacity: 0.06 }
+                  : undefined,
             })),
           },
         ],
@@ -654,18 +679,25 @@ export function BarsH({
   height,
   color,
   accent = true,
+  labelSize,
+  rowHeight = 26,
 }: {
   data: [string, number][]
   height?: number
   color?: string
   accent?: boolean
+  /** y-axis category label size. Bumped for emoji rows, which read as tiny
+   *  glyphs at the default 12px. */
+  labelSize?: number
+  /** px per row when auto-sizing the height (default 26). */
+  rowHeight?: number
 }) {
   const rows = [...data].sort((a, b) => a[1] - b[1]) // ECharts y-category draws bottom→top
   const baseColor = color ? resolveColor(color) : DATA
   const n = rows.length
   return (
     <Chart
-      height={height ?? Math.max(160, rows.length * 26 + 32)}
+      height={height ?? Math.max(160, rows.length * rowHeight + 32)}
       option={{
         ...base,
         tooltip: { ...TOOLTIP, trigger: "axis", axisPointer: { type: "shadow" } },
@@ -675,7 +707,7 @@ export function BarsH({
           type: "category",
           data: rows.map((d) => d[0]),
           axisLine: { lineStyle: { color: ink.axis } },
-          axisLabel: { color: ink.tick },
+          axisLabel: { color: ink.tick, fontSize: labelSize },
         },
         series: [
           {

@@ -129,7 +129,7 @@ function StickerGrid({
     return (
       <>
         {emojiFallback.length > 0 && (
-          <Card className="border-border bg-card p-3"><BarsH data={emojiFallback.slice(0, 12)} color="var(--chart-5)" /></Card>
+          <Card className="border-border bg-card p-3"><BarsH data={emojiFallback.slice(0, 12)} color="var(--chart-5)" labelSize={20} rowHeight={32} /></Card>
         )}
         <p className="text-xs text-muted-foreground">{t("stickersNoImg")}</p>
       </>
@@ -232,21 +232,32 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
   // group (200+ lines + a paginated legend), so we plot just the selected user
   // against the chat average — "you vs. the room". The axis scale still spans
   // every participant's range so the selected polygon stays honestly positioned.
+  // Emoji uses per 100 messages. The endpoint gives each user's top emojis with
+  // counts; summing them is a close proxy for their total emoji use.
+  const emojiRate = (uid: string, msgCount: number) => {
+    const list = emojisQ.data?.per_user?.[uid] ?? []
+    const total = list.reduce((sum, [, c]) => sum + c, 0)
+    return msgCount ? Math.round((total / msgCount) * 100) : 0
+  }
+  // Five style axes. CAPS was dropped — almost nobody types in >60% uppercase, so
+  // it sat at ~0 for everyone and collapsed the polygon; emoji use and verbosity
+  // (avg words/msg) vary between people, so the shape actually fills out.
   const radarVals = (u: typeof s) => [
     Math.round(u.question_ratio * 100),
     Math.round(u.exclamation_ratio * 100),
-    Math.round(u.caps_ratio * 100),
+    emojiRate(u.user_id, u.msg_count),
     Math.round(u.msg_count ? (u.reply_count / u.msg_count) * 100 : 0),
+    Math.round(u.avg_words),
   ]
   // Per-axis max — each indicator scaled to its own range across users. A single
-  // shared max lets the wide axes (reply/question ratios) dominate and collapses
-  // the small ones (caps, exclamations) to the centre, so the polygon degenerates
-  // into a sliver. Rounded up to a "nice" step, min 1 to avoid a zero axis.
-  const axisMax = [0, 1, 2, 3].map((i) => {
+  // shared max lets the wide axes dominate and collapses the small ones to the
+  // centre, so the polygon degenerates into a sliver. Rounded up to a "nice"
+  // step, min 1 to avoid a zero axis.
+  const axisMax = [0, 1, 2, 3, 4].map((i) => {
     const m = Math.max(...ordered.map((u) => radarVals(u)[i]), 0)
     return m > 0 ? Math.ceil(m / 5) * 5 : 1
   })
-  const radarAvg = [0, 1, 2, 3].map((i) => {
+  const radarAvg = [0, 1, 2, 3, 4].map((i) => {
     const vals = ordered.map((u) => radarVals(u)[i])
     return Math.round(vals.reduce((a, b) => a + b, 0) / (vals.length || 1))
   })
@@ -258,9 +269,19 @@ export function PerUser({ path, sel }: { path: string; sel: Sel }) {
       ? ordered.map((u) => ({ name: u.name, highlight: u.user_id === id, color: personColor(u.name), values: radarVals(u) }))
       : [
           { name: s.name, highlight: true, color: personColor(s.name), values: radarVals(s) },
-          { name: t("chatAverage"), color: "rgba(148,163,184,0.9)", values: radarAvg },
+          { name: t("chatAverage"), reference: true, color: "rgba(148,163,184,0.9)", values: radarAvg },
         ]
-  const indicators = [t("axisQuestion"), t("axisExcl"), t("axisCaps"), t("axisReply")].map((name, i) => ({ name, max: axisMax[i] }))
+  // Units per axis so the perimeter labels are self-explanatory: the three ratios
+  // read as "%", emoji as uses-per-100-messages, verbosity as words. The selected
+  // user's value is printed under each axis name (see Radar).
+  const axisUnits = ["%", "%", "/100", "%", ` ${t("unitWords")}`]
+  const selVals = radarVals(s)
+  const indicators = [t("axisQuestion"), t("axisExcl"), t("axisEmoji"), t("axisReply"), t("axisVerbosity")].map((name, i) => ({
+    name,
+    max: axisMax[i],
+    unit: axisUnits[i],
+    value: selVals[i],
+  }))
 
   // wakeup — surfaced as a persona chip ("first online ~HH:MM"), not its own
   // box-plot section

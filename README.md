@@ -11,7 +11,7 @@
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 ![Built with React + FastAPI](https://img.shields.io/badge/built%20with-React%20%2B%20FastAPI-61DAFB.svg)
 
-> Local web app for analysing Telegram chat exports — runs entirely on your machine. Drop in `result.json`, get heatmaps, network graphs, word clouds, reply latency, sentiment arcs, and per-user breakdowns. A React SPA served same-origin by a FastAPI backend; your data never leaves your device.
+> Drop in a Telegram chat export and explore it as an interactive dashboard: activity heatmaps, a reply-network graph, word clouds, per-user breakdowns, and optional sentiment. Runs locally in your browser — no upload, no account.
 
 <p align="center">
   <img src="docs/screenshots/group-01-overview.png" alt="Overview tab — KPIs, hero, daily timeline, peak hours" width="900">
@@ -19,55 +19,107 @@
 
 ## What it does
 
-Reads a Telegram Desktop export (single chat or full archive) and renders an interactive dashboard. Tabs adapt to chat type — channels get broadcast-style stats, groups get the network graph and per-user breakdown, 1-on-1 chats get matched-pair analytics.
+Reads a Telegram Desktop export (single chat or full archive) and renders an interactive dashboard. The tabs adapt to the chat type: channels get broadcast stats, groups get the network graph and per-user breakdown, 1-on-1 chats get paired analytics.
 
 > **JSON is recommended** — in the export dialog switch the format from the default *HTML* to *Machine-readable JSON*. **HTML exports also work** (drop in the export folder or `messages.html`), but they're lossier: Telegram's HTML has no participant IDs, so the Network and Per-User tabs are less accurate for groups (the app warns on load). Either way, exporting is a Telegram Desktop feature — mobile and the native macOS client can't export chat history.
 
 Both export shapes are supported:
 - **Single chat** — `Settings → Export Chat History`
-- **Full archive** — `Settings → Advanced → Export Telegram Data` → a chat picker appears once the export is loaded
+- **Full archive** — `Settings → Advanced → Export Telegram Data` → a chat picker appears once the export is loaded, plus a [chat manager](#manage-the-archive-reclaim-disk-space) for pruning the export down to size
 
 UI ships in **EN / RU** (toggle in the header). Chat content is left untouched — wordclouds and message previews show whatever language the messages are in.
 
+## Highlights
+
+A few things you won't find in a plain message counter:
+
+- **Who answers whom faster** — for 1-on-1 chats, reply stats *per direction*: median and 90th-percentile response time, plus the share answered within 5 / 30 / 60 minutes.
+- **How long you actually talked** — messages are grouped into conversation sessions, so you get real wall-clock time spent talking, not just a message count.
+- **Who opens and who closes** — per-person share of conversations started, and of having the last word before a silence.
+- **A reply network with auto-detected communities** — for groups: Louvain clusters plus a "chat portrait" that calls out hubs, bridges, and reply-magnets.
+- **Favourite stickers as actual images** — recovered from the export and shown as pictures, not just emoji tags.
+- **The words that give you away** — log-odds distinctive words that set each person apart in a 1-on-1.
+- **Anniversary milestones** — 100 / 365 / 1000 days, 10k / 100k messages: when each was crossed and which one is next.
+- **A Russian-mat leaderboard** — hits per 100 messages with morphological root matching (a community favourite; English-only chats just won't trigger it).
+
 ## Features
 
-Every tab is framed by a **"Wrapped"-style recap** — a narrative summary, an activity sparkline, headline KPIs (messages, participants, days active, media, voice time), anniversary milestones, and auto-generated highlight cards (peak hour, loudest day, top emoji, longest streak…).
+The Overview opens with a **"Wrapped"-style recap**: a short summary, an activity sparkline, headline numbers (messages, participants, days active, media, voice time), anniversary milestones, and highlight cards (peak hour, busiest day, top emoji, longest streak).
 
 | Tab | What you get |
 | --- | --- |
-| **Overview** | Area chart of daily activity, multi-year calendar heatmap (volume, or a binary "did we talk today" toggle), hour × weekday heatmap (peak-hour + night-share callouts), hour-overlap chart for 1-on-1s, conversation sessions (count, avg messages, total time, longest by duration), media-type breakdown + voice stats + top link domains, top emojis, reply-latency distribution with a question→answer split, longest-monologues ranking |
-| **Network** | Interactive force-directed graph (drag / zoom / hover, edge thickness & arrows by reply count and direction, node colour by Louvain community), a "chat portrait" of structural findings (hubs, bridges, magnets, centralisation), per-user structural-role table, reply-chain depth metrics. Falls back to a bar chart for small chats; nodes/edges export to CSV for Gephi |
-| **Words** | Wordcloud (whole-chat or per-user) + top-words bar chart & table, n-gram phrase extraction (bigrams / trigrams), vocabulary richness (MTLD) per participant, email + phone extraction |
-| **Channel** | Broadcast-style wordcloud and frequency analysis for channels |
-| **Per-user** | Pick any participant: a persona card with trait chips, KPI tiles (messages, last-word share, words/message, question share, reply share), a speaking-tone radar (questions / exclamations / CAPS / replies vs. the chat average), per-user daily timeline + hour × weekday heatmap, time-of-day & message-length distributions, reply-speed / reciprocity, activity streaks & silences, conversation-initiator share, forwards share, characteristic phrases, top words & emojis, favourite stickers, distinguishing words for 1-on-1s (log-odds), and a Russian-profanity (mat) leaderboard (`hits / 100 msgs`) |
+| **Overview** | Daily-activity chart and a multi-year calendar heatmap, an hour×weekday heatmap with peak-hour and night-owl callouts, and an hour-overlap chart for 1-on-1s. Conversation sessions, media and voice breakdown, top link domains and emojis, reply latency (question→answer), and longest monologues. |
+| **Network** | An interactive force-directed graph (drag, zoom, hover) where edges track reply count and direction and node colour is the Louvain community, plus a "chat portrait" of hubs, bridges and magnets, a per-user role table, and reply-chain depth. Small chats fall back to a bar chart; nodes and edges export to CSV for Gephi. |
+| **Words** | Wordcloud (whole chat or per user), a top-words chart and table, common phrases (bigrams and trigrams), per-participant vocabulary richness (MTLD), and extracted emails and phone numbers. |
+| **Channel** | Wordcloud and word-frequency analysis for broadcast channels. |
+| **Per-user** | A page per participant — persona card, headline tiles (messages, last-word share, words per message, question share, reply speed), a tone radar, timelines and heatmaps, and a lot more (full list below). |
 
-Optional Russian/English **sentiment analysis** powered by `rubert-tiny2-russian-sentiment` adds a sentiment-over-time arc, per-participant tone lines, an hour-of-day / weekday breakdown, and the most positive / negative messages — surfaced on the **Words** and **Per-user** tabs.
+<details>
+<summary>Everything on a per-user page</summary>
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/group-02-network.png" alt="Network tab — force-directed graph with communities"></td>
-    <td width="50%"><img src="docs/screenshots/group-03-words.png" alt="Words tab — wordcloud and top phrases"></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/group-04-per-user.png" alt="Per-User tab — speaking style radar and timeline"></td>
-    <td width="50%"><img src="docs/screenshots/personal-01-sentiment.png" alt="Sentiment over time — relationship arc in a 1-on-1 chat"></td>
-  </tr>
-</table>
+- Persona card with trait chips (night owl / early bird, terse / verbose, initiator / responder, fast / slow)
+- Headline tiles: messages, last-word share, words per message, question share, reply share
+- Tone radar vs. the chat average (questions, exclamations, CAPS, replies)
+- Daily timeline and an hour×weekday heatmap
+- Time-of-day and message-length distributions
+- Reply speed and reciprocity (directional in 1-on-1s)
+- Activity streaks and longest silences
+- How often they start conversations, and their forwards share
+- Characteristic phrases; top words, emojis, and stickers
+- Log-odds distinctive words (what sets them apart in a 1-on-1)
+- Russian-mat leaderboard (`hits / 100 msgs`)
+</details>
+
+Optional **sentiment analysis** (`rubert-tiny2-russian-sentiment`, Russian/English — [a separate install](#optional-sentiment-analysis)) adds a sentiment-over-time arc, per-participant tone lines, an hour/weekday breakdown, and the most positive and negative messages, on the **Words** and **Per-user** tabs.
+
+<p align="center"><b>Network</b> — a force-directed reply graph with auto-detected communities</p>
+
+<p align="center">
+  <img src="docs/screenshots/group-02-network.png" alt="Network tab — force-directed graph with communities" width="900">
+</p>
+
+<p align="center"><b>Words</b> — wordcloud, top words and common phrases</p>
+
+<p align="center">
+  <img src="docs/screenshots/group-03-words.png" alt="Words tab — wordcloud and top phrases" width="900">
+</p>
+
+<p align="center"><b>Per-user</b> — a page per participant: persona, tone radar, timelines</p>
+
+<p align="center">
+  <img src="docs/screenshots/group-04-per-user.png" alt="Per-User tab — speaking style radar and timeline" width="900">
+</p>
+
+<p align="center"><b>Sentiment</b> — the relationship arc over time (optional model)</p>
+
+<p align="center">
+  <img src="docs/screenshots/personal-01-sentiment.png" alt="Sentiment over time — relationship arc in a 1-on-1 chat" width="900">
+</p>
+
+## Manage the archive (reclaim disk space)
+
+A full Telegram archive can be tens of gigabytes of media you'll never open. For writable JSON full archives, a **Manage chats** button ranks every chat by disk size (with a media breakdown) and lets you delete or *slim* them — dropping heavy media while keeping the text. Deletions move to a reversible `.telanalysis_trash/` and aren't freed until you **Empty trash**. Edits happen in place, so point it at a copy to keep the original untouched.
 
 ## Privacy
 
-Everything runs locally. The dashboard does not send your chat data anywhere — no analytics, no telemetry, no remote API calls. The only network activity is on first run:
-
-- NLTK downloads its `stopwords` + `punkt_tab` corpora (~10 MB).
-- *Optional only:* if you install `requirements-sentiment.txt`, HuggingFace downloads the `rubert-tiny2-russian-sentiment` model (~50 MB) the first time you open a tab that needs it.
-
-After that first launch the app works fully offline. There is no telemetry, no analytics, and no remote API calls.
+Everything runs on your machine — no account, no upload, no telemetry. The only thing that touches the network is a one-time download on first run: NLTK's `stopwords` + `punkt_tab` corpora (~10 MB), plus the sentiment model **only if** you opted into it (see [Optional: sentiment analysis](#optional-sentiment-analysis)). After that it works fully offline.
 
 ## Install
 
 Requires **Python 3.11+**. Tested in CI on 3.11, 3.12, 3.13 and 3.14. The frontend build needs **Node.js 20+** (one-time, see [Run](#run)).
 
-### macOS
+The core install is the same on every OS:
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Per-platform notes (system packages, Apple Silicon, Windows PowerShell):
+
+<details>
+<summary><b>macOS</b></summary>
 
 ```bash
 # 1. Python 3.11+ via Homebrew (if not already installed)
@@ -81,8 +133,10 @@ pip install -r requirements.txt
 ```
 
 Apple Silicon (M1/M2/M3) works out of the box — `torch`, `wordcloud` and friends all ship arm64 wheels, nothing to compile.
+</details>
 
-### Linux (Ubuntu / Debian)
+<details>
+<summary><b>Linux (Ubuntu / Debian)</b></summary>
 
 ```bash
 # 1. System packages — Python 3.11+, venv, build-essential for the occasional source build
@@ -99,8 +153,10 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+</details>
 
-### Linux (Fedora / RHEL)
+<details>
+<summary><b>Linux (Fedora / RHEL)</b></summary>
 
 ```bash
 sudo dnf install -y python3 python3-pip python3-virtualenv gcc gcc-c++ make
@@ -109,8 +165,10 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+</details>
 
-### Linux (Arch)
+<details>
+<summary><b>Linux (Arch)</b></summary>
 
 ```bash
 sudo pacman -S --needed python python-pip base-devel
@@ -119,8 +177,10 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
+</details>
 
-### Windows (10 / 11)
+<details>
+<summary><b>Windows (10 / 11)</b></summary>
 
 ```powershell
 # 1. Python 3.11+ — pick ONE
@@ -142,13 +202,13 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
 In Command Prompt instead: `.\.venv\Scripts\activate.bat`. The Microsoft Store build of Python also works, but the python.org / winget installers are easier to find on `PATH`.
+</details>
 
 ## Run
 
 A single local server (FastAPI + uvicorn) serves the React SPA and the
-analysis API same-origin — your export is read locally and never leaves the
-machine. The launcher builds the frontend on first run, which needs
-**Node.js 20+**:
+analysis API on the same origin. The launcher builds the frontend on first
+run, which needs **Node.js 20+**:
 
 ```bash
 source .venv/bin/activate   # Python deps from Install above
@@ -159,16 +219,15 @@ Open <http://127.0.0.1:8000>. On the landing screen paste a path to your
 `result.json` (or open a bundled demo). Pass a port (`./run.sh 9000`) or force
 a fresh frontend build (`./run.sh --rebuild`).
 
-> **Docker:** `docker compose up --build` (or `docker-compose up --build` if you
-> have only the standalone binary, e.g. `brew install docker` without the Compose
-> plugin), then open <http://127.0.0.1:8000>.
-> The image bundles the SPA and the two demos, so the **Try demo** buttons work
-> out of the box. To analyse your own export, mount its folder and paste a path
-> *inside the container* — uncomment the `volumes:` block in `docker-compose.yml`
-> (e.g. `- /path/to/export:/data:ro`), then enter `/data/result.json` in the UI.
-> Russian sentiment (torch + transformers, ~1GB) is off by default — bake it in
-> with `docker build --build-arg WITH_SENTIMENT=1 .` (or uncomment `args:` in the
-> compose file).
+<details>
+<summary><b>Docker</b></summary>
+
+`docker compose up --build` (or `docker-compose up --build` if you have only the standalone binary, e.g. `brew install docker` without the Compose plugin), then open <http://127.0.0.1:8000>. The image bundles the SPA and the two demos, so the **Try demo** buttons work out of the box.
+
+To analyse your own export, mount its folder and paste a path *inside the container* — uncomment the `volumes:` block in `docker-compose.yml` (e.g. `- /path/to/export:/data:ro`), then enter `/data/result.json` in the UI.
+
+Russian sentiment (torch + transformers, ~1 GB) is off by default — bake it in with `docker build --build-arg WITH_SENTIMENT=1 .` (or uncomment `args:` in the compose file).
+</details>
 
 For frontend work with hot-reload, run the two dev servers separately — Vite
 proxies `/api` to the backend:
@@ -199,13 +258,22 @@ Content is sampled from vocab pools with a fixed RNG seed; no real conversations
 
 ## Optional: sentiment analysis
 
-Russian / English sentiment via `rubert-tiny2-russian-sentiment` (~1 GB on disk, 50 MB model on first call):
+Russian / English sentiment via `rubert-tiny2-russian-sentiment`. The `torch` + `transformers` dependencies are ~1 GB on disk; the model weights themselves are ~50 MB, downloaded on first use:
 
 ```bash
 pip install -r requirements-sentiment.txt
 ```
 
-Restart the app after install. The model is not sarcasm-aware and does not understand slang or jokes — read the numbers with healthy scepticism.
+Restart the app after install. The model doesn't understand slang or jokes, and while the app dampens scores on obvious sarcasm markers (🤡 🙄, a trailing `/s`), it stays a rough heuristic — read the numbers with healthy scepticism.
+
+**Use a different model.** The default is Russian-first. To score another language, set `TLA_SENTIMENT_MODEL` to any HuggingFace sequence-classification model whose labels include *positive* / *negative*, then restart:
+
+```bash
+# multilingual (English, Spanish, …)
+TLA_SENTIMENT_MODEL=cardiffnlp/twitter-xlm-roberta-base-sentiment ./run.sh
+# English-only
+TLA_SENTIMENT_MODEL=distilbert-base-uncased-finetuned-sst-2-english ./run.sh
+```
 
 ## Screenshots
 
@@ -231,15 +299,7 @@ CI runs the same on every push and PR (`.github/workflows/ci.yml`).
 
 ## Credits
 
-Inspired by [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)) — thanks for the original idea and for showing how to parse the Telegram export format. This project is an independent rewrite: it shares no UI or architecture with the original (React SPA + FastAPI here vs. server-rendered templates there) and goes well beyond it in analytics.
-
-Highlights of what this version adds:
-- A React SPA served same-origin by a FastAPI backend, over a modular pure-Python analysis engine
-- Interactive force-directed reply graph with Louvain community colouring; activity heatmaps (hour × weekday, calendar)
-- Per-user tab (speaking-style radar, reply latency, monologues, sticker-emoji preferences, forwards ratio)
-- Russian/English sentiment (`rubert-tiny2`), MTLD lexical diversity, n-gram phrases, russian-profanity tracker
-- Reply-chain depth, conversation sessions, Q&A latency split, streaks, anniversaries, "Spotify Wrapped" highlights
-- HTML + JSON export support, full-archive (multi-chat) handling, EN/RU UI, tests and CI
+Inspired by [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)) — thanks for the original idea and for showing how to parse the Telegram export format. This version is an independent rewrite with its own UI and architecture (React SPA + FastAPI here, server-rendered templates there) and a different, broader set of analytics.
 
 ## License
 
