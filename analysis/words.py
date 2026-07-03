@@ -128,7 +128,7 @@ def _mtld_bidirectional(tokens: list[str]) -> float:
     return (fwd + rev) / 2
 
 
-# Log-odds-ratio with Dirichlet prior (Monroe et al. 2008, simplified).
+# Smoothed log-odds ratio (add-α smoothing over the shared vocabulary).
 # Quantifies which words are CHARACTERISTIC of one user vs another, rather
 # than just frequent. "блять" common in both → filtered out; "ага" only used
 # by one → surfaces.
