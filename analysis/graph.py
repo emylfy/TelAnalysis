@@ -114,7 +114,7 @@ def interaction_summary(messages: list[dict]) -> list[dict]:
 
 
 def detect_communities(graph: GraphData) -> dict[str, int]:
-    """Assign each node a community index via Louvain/greedy modularity.
+    """Assign each node a community index via Louvain community detection.
 
     The reply graph is treated as undirected and parallel edges are collapsed
     into a single weighted edge per pair (self-loops dropped). Returns a
@@ -128,7 +128,7 @@ def detect_communities(graph: GraphData) -> dict[str, int]:
 
     try:
         import networkx as nx
-        from networkx.algorithms.community import greedy_modularity_communities
+        from networkx.algorithms.community import louvain_communities
     except Exception:
         return {}
 
@@ -151,7 +151,8 @@ def detect_communities(graph: GraphData) -> dict[str, int]:
 
     communities: dict[str, int] = {}
     try:
-        for idx, comm in enumerate(greedy_modularity_communities(G)):
+        # seed фиксирует разбиение — цвета сообществ стабильны между запусками
+        for idx, comm in enumerate(louvain_communities(G, weight="weight", seed=42)):
             for n in comm:
                 communities[str(n)] = idx
     except Exception:
