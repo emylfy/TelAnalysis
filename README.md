@@ -299,7 +299,7 @@ CI runs the same on every push and PR (`.github/workflows/ci.yml`).
 
 ## Credits
 
-Inspired by [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)) — thanks for the original idea and for showing how to parse the Telegram export format. This version is an independent rewrite with its own UI and architecture (React SPA + FastAPI here, server-rendered templates there) and a different, broader set of analytics.
+Inspired by [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@stdinio](https://t.me/stdinio)) — thanks for the original idea and for showing how to parse the Telegram export format. This version is an independent rewrite with its own UI and architecture (React SPA + FastAPI here, server-rendered templates there) and a different, broader set of analytics.
 
 ## License
 
