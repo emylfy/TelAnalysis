@@ -299,7 +299,7 @@ CI гоняет то же самое на каждый push и PR (`.github/work
 
 ## Источник
 
-Вдохновлено проектом [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@e_isaevsan](https://t.me/stdinio)) — спасибо за исходную идею и за то, как разбирать формат экспорта Telegram. Это независимый рерайт со своим UI и архитектурой (здесь React-SPA + FastAPI, там серверные шаблоны) и другим, более широким набором аналитики.
+Вдохновлено проектом [**TelAnalysis** by Eduard Isaev](https://github.com/krakodjaba/TelAnalysis) ([@stdinio](https://t.me/stdinio)) — спасибо за исходную идею и за то, как разбирать формат экспорта Telegram. Это независимый рерайт со своим UI и архитектурой (здесь React-SPA + FastAPI, там серверные шаблоны) и другим, более широким набором аналитики.
 
 ## Лицензия
 
